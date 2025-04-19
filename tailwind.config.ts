@@ -61,7 +61,20 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
-				}
+				},
+        // Custom trading platform colors
+        trading: {
+          primary: '#3b82f6',
+          secondary: '#8b5cf6',
+          success: '#10b981',
+          danger: '#ef4444',
+          warning: '#f59e0b',
+          dark: '#111827',
+          darkAccent: '#1f2937',
+          highlight: '#6366f1'
+        },
+        solana: '#9945FF',
+        binance: '#F0B90B'
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
@@ -84,12 +97,28 @@ export default {
 					to: {
 						height: '0'
 					}
-				}
+				},
+        'pulse-glow': {
+          '0%, 100%': {
+            opacity: '1',
+            boxShadow: '0 0 20px rgba(99, 102, 241, 0.6)'
+          },
+          '50%': {
+            opacity: '0.7',
+            boxShadow: '0 0 30px rgba(139, 92, 246, 0.8)'
+          }
+        }
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
-				'accordion-up': 'accordion-up 0.2s ease-out'
-			}
+				'accordion-up': 'accordion-up 0.2s ease-out',
+        'pulse-glow': 'pulse-glow 2s infinite'
+			},
+      backgroundImage: {
+        'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
+        'gradient-conic': 'conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))',
+        'blue-purple-gradient': 'linear-gradient(to right, #3b82f6, #8b5cf6)',
+      }
 		}
 	},
 	plugins: [require("tailwindcss-animate")],

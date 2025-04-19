@@ -96,6 +96,55 @@
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-trading-dark text-foreground dark;
+  }
+
+  /* Custom styling for scrollbars */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    background: #1f2937;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    background: #4b5563;
+    border-radius: 3px;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    background: #6366f1;
+  }
+}
+
+@layer components {
+  .glass-panel {
+    @apply bg-black/30 backdrop-blur-md border border-white/10 rounded-lg;
+  }
+  
+  .trading-gradient-text {
+    @apply bg-clip-text text-transparent bg-blue-purple-gradient;
+  }
+  
+  .trading-card {
+    @apply bg-trading-darkAccent border border-white/5 rounded-lg p-4 hover:border-trading-highlight/50 transition-all duration-300;
+  }
+  
+  .trading-button {
+    @apply px-4 py-2 rounded-md bg-blue-purple-gradient text-white font-medium hover:opacity-90 transition-all;
+  }
+  
+  .status-active {
+    @apply text-trading-success flex items-center gap-1;
+  }
+  
+  .status-inactive {
+    @apply text-trading-danger flex items-center gap-1;
+  }
+  
+  .status-pending {
+    @apply text-trading-warning flex items-center gap-1;
   }
 }
