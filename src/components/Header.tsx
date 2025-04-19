@@ -9,7 +9,7 @@ import {
   Zap, 
   Settings, 
   Bell, 
-  CircleDollarSign, 
+  CircleDollarSign,
   Shield,
   Volume2,
   VolumeX
@@ -52,6 +52,7 @@ const Header = ({ walletAddress }: HeaderProps) => {
       title: !isMuted ? "Sound disabled" : "Sound enabled",
       description: !isMuted ? "Notifications will be silent" : "Notifications will play sounds",
     });
+    playSound(!isMuted ? 'alert' : 'success');
   };
   
   return (
