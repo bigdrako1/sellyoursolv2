@@ -1,7 +1,23 @@
 
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BarChart, LineChart, PieChart, Scatter, Bar, Line, Pie, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts';
+import { 
+  BarChart, 
+  LineChart, 
+  PieChart, 
+  ScatterChart, 
+  Scatter, 
+  Bar, 
+  Line, 
+  Pie, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  Legend, 
+  ResponsiveContainer, 
+  Cell 
+} from 'recharts';
 import { calculateStrategyProfitability } from "@/utils/tradingUtils";
 import { Button } from "@/components/ui/button";
 import { Download, Filter, SlidersHorizontal, Share2 } from "lucide-react";
