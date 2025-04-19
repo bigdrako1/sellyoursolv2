@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { ArrowUp, ArrowDown } from "lucide-react";
 import { playSound } from "@/utils/soundUtils";
+import { useToast } from "@/hooks/use-toast";
 
 interface PriceData {
   symbol: string;
@@ -16,6 +17,7 @@ const LivePriceTracker = () => {
     { symbol: "SOL", price: 0, change24h: 0 },
     { symbol: "BNB", price: 0, change24h: 0 }
   ]);
+  const { toast } = useToast();
 
   useEffect(() => {
     const fetchPrices = async () => {
@@ -30,6 +32,15 @@ const LivePriceTracker = () => {
           // Play sound on significant price changes (>1%)
           if (lastPrice && Math.abs((newPrice - lastPrice) / lastPrice) > 0.01) {
             playSound(newPrice > lastPrice ? 'success' : 'alert');
+            
+            // Show toast for significant price changes
+            if (Math.abs((newPrice - lastPrice) / lastPrice) > 0.02) {
+              toast({
+                title: `${token.symbol} ${newPrice > lastPrice ? 'Rising' : 'Dropping'}`,
+                description: `${newPrice > lastPrice ? '+' : '-'}${Math.abs((newPrice - lastPrice) / lastPrice * 100).toFixed(2)}% in the last update`,
+                variant: newPrice > lastPrice ? "default" : "destructive",
+              });
+            }
           }
           
           return {
@@ -46,8 +57,11 @@ const LivePriceTracker = () => {
       }
     };
 
+    // Initial fetch
     fetchPrices();
-    const interval = setInterval(fetchPrices, 10000); // Update every 10 seconds
+    
+    // Update every 10 seconds
+    const interval = setInterval(fetchPrices, 10000);
 
     return () => clearInterval(interval);
   }, [prices]);
