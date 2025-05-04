@@ -11,6 +11,7 @@ const LivePriceTracker = () => {
   const { currency, currencySymbol } = useCurrencyStore();
   const [animatePrice, setAnimatePrice] = useState(false);
   const [priceDirection, setPriceDirection] = useState<'up' | 'down' | null>(null);
+  const [lastPrice, setLastPrice] = useState(0);
   
   // Use React Query to fetch the SOL price
   const { 
@@ -36,8 +37,6 @@ const LivePriceTracker = () => {
   
   // Handle price animation
   useEffect(() => {
-    let lastPrice = 0;
-    
     if (solPrice && lastPrice !== 0) {
       if (solPrice > lastPrice) {
         setPriceDirection('up');
@@ -50,8 +49,10 @@ const LivePriceTracker = () => {
       return () => clearTimeout(timer);
     }
     
-    lastPrice = solPrice || 0;
-  }, [solPrice]);
+    if (solPrice) {
+      setLastPrice(solPrice);
+    }
+  }, [solPrice, lastPrice]);
   
   // Convert SOL price to selected currency
   const convertToCurrency = (value: number): number => {

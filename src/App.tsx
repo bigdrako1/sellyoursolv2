@@ -29,8 +29,8 @@ const queryClient = new QueryClient({
 
 // Protected route wrapper component based on wallet authentication
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  // Check if wallet is connected using local storage
-  const isAuthenticated = localStorage.getItem('connected_wallet') !== null;
+  // Use local storage to check if user is authenticated
+  const isAuthenticated = localStorage.getItem('walletAddress') !== null;
   
   if (!isAuthenticated) {
     // Redirect to login page if not authenticated

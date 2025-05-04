@@ -68,8 +68,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setWalletAddress(result.address);
       }
       
-      // Use the wallet address for authentication
-      const email = `${walletAddress}@solana.wallet`;
+      // Generate a unique identifier for the wallet that is email-compatible
+      const sanitizedWalletAddress = walletAddress?.replace(/[^a-zA-Z0-9]/g, '').slice(0, 8);
+      const email = `user_${sanitizedWalletAddress}@solana-wallet.app`;
       
       // Try sign in first
       let { error } = await supabase.auth.signInWithPassword({ 
