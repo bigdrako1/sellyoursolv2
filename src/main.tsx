@@ -102,9 +102,6 @@ const initializeTokenQualityFilter = () => {
 
 // Setup watchlist price monitoring
 const setupWatchlistMonitoring = () => {
-  // In a real implementation, this would set up WebSocket connections
-  // or polling to monitor prices of watchlisted tokens
-  
   console.log('Setting up price monitoring for watchlisted tokens');
   
   // Set up periodic checking (every 5 minutes in a real app)

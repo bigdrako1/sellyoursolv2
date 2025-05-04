@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -6,8 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Bell, Wallet, ExternalLink, LineChart, ArrowUp } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { trackWalletActivities } from "@/services/tokenDataService";
-import { getTokenMetadata } from "@/services/tokenDataService";
+import { trackWalletActivities, getTokenMetadata } from "@/services/tokenDataService";
 
 interface SmartMoneyAlert {
   id: string;

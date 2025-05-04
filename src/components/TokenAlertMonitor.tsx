@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -53,20 +52,7 @@ const TokenAlertMonitor: React.FC = () => {
         
         if (tokenActivity && Array.isArray(tokenActivity) && tokenActivity.length > 0) {
           // Process token data
-          const tokenData: Token[] = tokenActivity.map((token: any) => ({
-            name: token.name || "Unknown Token",
-            symbol: token.symbol || "???",
-            address: token.address,
-            price: token.price || 0,
-            marketCap: token.marketCap || 0,
-            liquidity: token.liquidity || 0,
-            holders: token.holders || 0,
-            qualityScore: token.qualityScore || 0,
-            source: token.source || "Helius",
-            createdAt: new Date(token.createdAt || Date.now()),
-            change24h: token.change24h || 0,
-            isPumpFun: token.isPumpFun || false
-          }));
+          const tokenData: Token[] = tokenActivity;
           
           setTokens(tokenData);
           
@@ -101,7 +87,7 @@ const TokenAlertMonitor: React.FC = () => {
     const fetchTrendingTokens = async () => {
       setTrendingLoading(true);
       try {
-        const trending = await getTrendingTokens(10);
+        const trending = await getTrendingTokens();
         console.log("Fetched trending tokens:", trending);
         
         if (trending && Array.isArray(trending)) {
@@ -126,7 +112,7 @@ const TokenAlertMonitor: React.FC = () => {
     const fetchPumpFunTokens = async () => {
       setPumpFunLoading(true);
       try {
-        const pumpTokens = await getPumpFunTokens(10);
+        const pumpTokens = await getPumpFunTokens();
         console.log("Fetched pump.fun tokens:", pumpTokens);
         
         if (pumpTokens && Array.isArray(pumpTokens)) {

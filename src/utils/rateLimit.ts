@@ -177,5 +177,36 @@ export const waitForRateLimit = async (api: string): Promise<void> => {
   });
 };
 
+/**
+ * Create a rate limiter function for a specific number of requests per minute
+ * @param requestsPerMinute Maximum requests per minute
+ * @returns Function that when called will delay if needed to respect rate limits
+ */
+export const rateLimit = (requestsPerMinute: number) => {
+  const calls: number[] = [];
+  const periodMs = 60000; // 1 minute in milliseconds
+  
+  return async (): Promise<void> => {
+    const now = Date.now();
+    
+    // Remove timestamps older than our period
+    while (calls.length > 0 && calls[0] < now - periodMs) {
+      calls.shift();
+    }
+    
+    // If we've reached our limit, wait
+    if (calls.length >= requestsPerMinute) {
+      const oldestCall = calls[0];
+      const msToWait = oldestCall + periodMs - now;
+      
+      // Wait until we can make another call
+      await new Promise(resolve => setTimeout(resolve, msToWait));
+    }
+    
+    // Add current timestamp to calls
+    calls.push(Date.now());
+  };
+};
+
 // Export default tier for app initialization
 export const DEFAULT_TIER = RateLimitTier.FREE;

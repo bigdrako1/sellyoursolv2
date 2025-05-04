@@ -53,6 +53,25 @@ const HELIUS_API_KEY = 'a18d2c93-d9fa-4db2-8419-707a4f1782f7';
 const BIRDEYE_API_KEY = '67f79318c29e4eda99c3184c2ac65116';
 
 /**
+ * Test Helius API connection
+ */
+export const testHeliusConnection = async (): Promise<boolean> => {
+  try {
+    const url = `https://api.helius.xyz/v0/tokens/metadata?api-key=${HELIUS_API_KEY}`;
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mintAccounts: ['DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263'] }) // BONK token as test
+    });
+    
+    return response.ok;
+  } catch (error) {
+    console.error('Failed to connect to Helius API:', error);
+    return false;
+  }
+};
+
+/**
  * Fetches token metadata using Helius API
  */
 export const fetchTokenMetadata = async (contractAddress: string) => {
@@ -87,6 +106,11 @@ export const fetchTokenMetadata = async (contractAddress: string) => {
     throw error;
   }
 };
+
+/**
+ * Alias for fetchTokenMetadata to match function calls in components
+ */
+export const getTokenMetadata = fetchTokenMetadata;
 
 /**
  * Fetches token information using BirdEye API
@@ -194,6 +218,53 @@ export const fetchPumpFunData = async (contractAddress: string) => {
 };
 
 /**
+ * Get Pump.fun tokens
+ */
+export const getPumpFunTokens = async (limit = 10) => {
+  const cacheKey = 'pumpfun_tokens';
+  const cachedData = getCachedTokenData(cacheKey);
+  if (cachedData) return cachedData.slice(0, limit);
+  
+  await pumpFunLimit();
+  
+  try {
+    const url = `https://api.pump.fun/trending`;
+    const response = await fetch(url);
+    
+    if (!response.ok) {
+      throw new Error(`Pump.fun API response: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    if (data && data.trending_tokens && Array.isArray(data.trending_tokens)) {
+      const tokens = data.trending_tokens.map(token => ({
+        name: token.name || 'Unknown Pump.fun Token',
+        symbol: token.name?.toUpperCase() || 'PUMP',
+        address: token.token_mint,
+        price: parseFloat(token.price) || 0,
+        change24h: parseFloat(token.price_change_24h || 0),
+        volume: parseFloat(token.volume_24h || 0),
+        liquidity: parseFloat(token.liquidity || 0),
+        marketCap: parseFloat(token.market_cap || 0),
+        holders: token.holders || 0,
+        isPumpFun: true,
+        createdAt: token.created_at ? new Date(token.created_at) : new Date(),
+        source: 'Pump.fun'
+      }));
+      
+      cacheTokenData(cacheKey, tokens);
+      return tokens.slice(0, limit);
+    }
+    
+    return [];
+  } catch (error) {
+    console.error('Error fetching Pump.fun tokens:', error);
+    return [];
+  }
+};
+
+/**
  * Fetches DexScreener data for a token
  */
 export const fetchDexScreenerData = async (contractAddress: string) => {
@@ -228,10 +299,10 @@ export const fetchDexScreenerData = async (contractAddress: string) => {
 /**
  * Gets trending tokens from various sources
  */
-export const getTrendingTokens = async () => {
+export const getTrendingTokens = async (limit = 20) => {
   const cacheKey = 'trending_tokens';
   const cachedData = getCachedTokenData(cacheKey);
-  if (cachedData) return cachedData;
+  if (cachedData) return cachedData.slice(0, limit);
   
   const trendingTokens = new Map();
   
@@ -348,10 +419,154 @@ export const getTrendingTokens = async () => {
   
   // Convert map to array and sort by score
   const result = Array.from(trendingTokens.values())
-    .sort((a, b) => b.score - a.score);
+    .sort((a, b) => b.score - a.score)
+    .map(token => ({
+      name: token.name,
+      symbol: token.symbol,
+      address: token.address,
+      price: 0, // Will be populated with actual price data later if needed
+      marketCap: 0,
+      liquidity: 0,
+      holders: 0,
+      qualityScore: token.score,
+      trendingScore: token.score,
+      trendingSources: token.sources.map(s => s.name),
+      source: token.sources.map(s => s.name).join(', '),
+      createdAt: new Date()
+    }));
   
   cacheTokenData(cacheKey, result);
-  return result;
+  return result.slice(0, limit);
+};
+
+/**
+ * Get recent token activity
+ */
+export const getRecentTokenActivity = async () => {
+  const cacheKey = 'recent_token_activity';
+  const cachedData = getCachedTokenData(cacheKey);
+  
+  // Only use cache if it's less than 1 minute old for recent activity
+  if (cachedData && Date.now() - tokenDataCache.get(cacheKey)!.timestamp < 60000) {
+    return cachedData;
+  }
+  
+  try {
+    // For demo purposes, generate some example token activity
+    // In a real app, this would fetch from Helius or another API
+    const tokens = [
+      {
+        name: "Bonk",
+        symbol: "BONK",
+        address: "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263",
+        price: 0.000017,
+        marketCap: 9800000,
+        liquidity: 7500000,
+        holders: 350000,
+        qualityScore: 85,
+        source: "Birdeye",
+        createdAt: new Date(Date.now() - 15 * 60000), // 15 minutes ago
+        change24h: 12.5
+      },
+      {
+        name: "Jupiter",
+        symbol: "JUP",
+        address: "JUPyiwrYJFskUPiHa7hkeR8VUtAeFoSYbKedZNsDvCN",
+        price: 0.78,
+        marketCap: 1200000000,
+        liquidity: 45000000,
+        holders: 89000,
+        qualityScore: 92,
+        source: "Helius",
+        createdAt: new Date(Date.now() - 45 * 60000), // 45 minutes ago
+        change24h: -2.3
+      },
+      {
+        name: "WEN Token",
+        symbol: "WEN",
+        address: "AFbX8oGjGpmVFywbVouvhQSRmiW2aR1mohfahi4Y2AdB",
+        price: 0.00021,
+        marketCap: 15000000,
+        liquidity: 1200000,
+        holders: 45000,
+        qualityScore: 78,
+        source: "Birdeye",
+        createdAt: new Date(Date.now() - 65 * 60000), // 65 minutes ago
+        change24h: 5.8
+      },
+      {
+        name: "CryptoDoggies",
+        symbol: "DOGS",
+        address: "FmG9zkU5khYd1G8yCUFABkZfqGSNRx7DTssDevRjjXbm",
+        price: 0.0045,
+        marketCap: 3500000,
+        liquidity: 850000,
+        holders: 12000,
+        qualityScore: 72,
+        source: "Helius",
+        createdAt: new Date(Date.now() - 110 * 60000), // 110 minutes ago
+        change24h: 28.7,
+        isPumpFun: true
+      }
+    ];
+    
+    cacheTokenData(cacheKey, tokens);
+    return tokens;
+  } catch (error) {
+    console.error('Error fetching recent token activity:', error);
+    return [];
+  }
+};
+
+/**
+ * Track wallet activities
+ */
+export const trackWalletActivities = async (walletAddresses: string[]) => {
+  const cacheKey = `wallets_${walletAddresses.join('_')}`;
+  const cachedData = getCachedTokenData(cacheKey);
+  
+  // Use cache if less than 5 minutes old for wallet tracking
+  if (cachedData && Date.now() - tokenDataCache.get(cacheKey)!.timestamp < 300000) {
+    return cachedData;
+  }
+  
+  try {
+    // In a real app, this would fetch real wallet activity from Helius
+    // For demo purposes, we'll simulate wallet transaction data
+    const walletActivities = walletAddresses.map(address => ({
+      walletAddress: address,
+      transactions: [
+        {
+          transaction: {
+            signatures: [`sim_${address.substring(0, 8)}_${Date.now()}`]
+          },
+          meta: {
+            preBalances: [105000000, 0],
+            postBalances: [100000000, 5000000],
+            preTokenBalances: [],
+            postTokenBalances: [
+              {
+                mint: "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263", // BONK
+                owner: address,
+                uiTokenAmount: {
+                  amount: "15000000000",
+                  decimals: 5,
+                  uiAmount: 150000
+                }
+              }
+            ]
+          },
+          blockTime: Math.floor(Date.now() / 1000) - 300 // 5 minutes ago
+        }
+      ]
+    }));
+    
+    cacheTokenData(cacheKey, walletActivities);
+    return walletActivities;
+  } catch (error) {
+    console.error('Error tracking wallet activities:', error);
+    return [];
+  }
 };
 
 /**
