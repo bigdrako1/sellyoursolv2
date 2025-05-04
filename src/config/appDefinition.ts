@@ -50,10 +50,40 @@ export const APP_CONFIG = {
       apiKey: "e4a78345-f927-4ed9-b33e-2ca970b1063e",
       environment: "development",
     },
-    // Set this to 'development' to use the development API, or 'production' for the production API
-    environment: "development",
-    defaultApiKey: "e4a78345-f927-4ed9-b33e-2ca970b1063e",
+    // Set this to 'production' to use the production API
+    environment: "production",
+    defaultApiKey: "a18d2c93-d9fa-4db2-8419-707a4f1782f7", // Updated to use production key
     personalApiKeyDescription: "Your personal API key is used for authentication with Helius API services and to increase rate limits above the default tier. It ensures your requests are prioritized and allows access to premium features."
+  },
+  
+  // Trading configuration
+  trading: {
+    defaultRouting: "jupiter",
+    minLiquidityThreshold: 10000,
+    qualityScoreThreshold: 70,
+    autoSecureInitial: true,
+    dexes: {
+      jupiter: {
+        apiUrl: "https://quote-api.jup.ag/v6",
+        swapUrl: "https://jup.ag/swap",
+        enabled: true
+      },
+      raydium: {
+        enabled: true,
+        swapUrl: "https://raydium.io/swap"
+      },
+      orca: {
+        enabled: false
+      }
+    }
+  },
+  
+  // Jupiter configuration
+  jupiter: {
+    apiUrl: "https://quote-api.jup.ag/v6",
+    priceApiUrl: "https://price.jup.ag/v4",
+    swapUrl: "https://jup.ag/swap",
+    defaultSlippage: 0.5, // 0.5%
   },
   
   // Supported currencies
@@ -80,17 +110,22 @@ export const APP_CONFIG = {
     solanaRpc: {
       name: "Solana RPC",
       description: "Direct connection to the Solana blockchain for real-time transaction data",
-      colorCode: "text-green-500" // Added color code
+      colorCode: "text-green-500"
     },
     heliusApi: {
       name: "Helius API",
       description: "Enhanced blockchain data, token metadata, and advanced analytics",
-      colorCode: "text-blue-500" // Added color code
+      colorCode: "text-blue-500"
+    },
+    jupiterApi: {
+      name: "Jupiter API",
+      description: "Routing trades and price discovery",
+      colorCode: "text-purple-500"
     },
     webhooks: {
       name: "Webhooks",
       description: "Real-time event notifications for blockchain activity",
-      colorCode: "text-purple-500" // Added color code
+      colorCode: "text-purple-500"
     }
   }
 };

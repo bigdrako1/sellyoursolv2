@@ -1,5 +1,8 @@
+
 import { TradingPositionData, HeliusTokenData, WalletActivity } from '@/types/database.types';
 import { waitForRateLimit } from '@/utils/rateLimit';
+import { APP_CONFIG } from '@/config/appDefinition';
+import { getTokenPrice, getTokenPrices } from './jupiterService';
 
 // Cache for token data to reduce API calls
 const tokenDataCache: Record<string, { data: any; timestamp: number }> = {};
@@ -99,11 +102,11 @@ export const tokenInfoToToken = (tokenInfo: TokenInfo): Token => {
  */
 export const testHeliusConnection = async (): Promise<boolean> => {
   try {
-    const apiKey = localStorage.getItem('helius_api_key');
+    const apiKey = localStorage.getItem('helius_api_key') || APP_CONFIG.api.defaultApiKey;
     if (!apiKey) return false;
     
     const endpoint = `https://api.helius.xyz/v0/tokens/metadata?api-key=${apiKey}`;
-    const response = await fetch(`${endpoint}&tokenAddresses=${["So11111111111111111111111111111111111111112"]}`);
+    const response = await fetch(`${endpoint}&tokenAddresses=["So11111111111111111111111111111111111111112"]`);
     
     if (!response.ok) {
       throw new Error(`Helius API error: ${response.status}`);
@@ -134,13 +137,13 @@ export const fetchTokenMetadata = async (tokenAddress: string): Promise<HeliusTo
     // Rate limit API calls
     await waitForRateLimit('heliusApi');
     
-    const apiKey = localStorage.getItem('helius_api_key');
+    const apiKey = localStorage.getItem('helius_api_key') || APP_CONFIG.api.defaultApiKey;
     if (!apiKey) {
       throw new Error("Helius API key not found");
     }
     
     const endpoint = `https://api.helius.xyz/v0/tokens/metadata?api-key=${apiKey}`;
-    const response = await fetch(`${endpoint}&tokenAddresses=${[tokenAddress]}`);
+    const response = await fetch(`${endpoint}&tokenAddresses=["${tokenAddress}"]`);
     
     if (!response.ok) {
       throw new Error(`Helius API error: ${response.status}`);
@@ -204,7 +207,66 @@ export const getTokenInfo = async (tokenAddress: string): Promise<TokenInfo | nu
       },
       holders: {
         count: 0
+      },
+      isPumpFunToken: isPumpFunToken(tokenAddress)
+    };
+    
+    // Fetch price data from Jupiter API
+    try {
+      const price = await getTokenPrice(tokenAddress);
+      if (price) {
+        tokenInfo.price.current = price;
+        
+        // Calculate estimated market cap if we have supply info
+        if (metadata.supply?.circulating) {
+          const circulatingSupply = Number(metadata.supply.circulating) / Math.pow(10, metadata.decimals || 9);
+          tokenInfo.marketCap = circulatingSupply * price;
+        }
       }
+    } catch (priceError) {
+      console.error(`Error fetching price for ${tokenAddress}:`, priceError);
+    }
+    
+    // Check if token is trending on Jupiter
+    try {
+      const response = await fetch('https://station.jup.ag/api/trending-tokens');
+      if (response.ok) {
+        const trendingData = await response.json();
+        if (Array.isArray(trendingData)) {
+          tokenInfo.isTrending = trendingData.some(token => token.address === tokenAddress);
+        }
+      }
+    } catch (trendingError) {
+      console.error(`Error checking trending status:`, trendingError);
+    }
+    
+    // Calculate quality score based on available data
+    let qualityScore = 50; // Default moderate quality
+    
+    // Pump.fun tokens generally have less history/auditing
+    if (isPumpFunToken(tokenAddress)) {
+      qualityScore -= 10;
+    }
+    
+    // Verified tokens are more trustworthy
+    if (tokenInfo.metadata.verified) {
+      qualityScore += 20;
+    }
+    
+    // Tokens with good liquidity are safer
+    if (tokenInfo.liquidity.usd > 100000) {
+      qualityScore += 15;
+    } else if (tokenInfo.liquidity.usd > 50000) {
+      qualityScore += 10;
+    } else if (tokenInfo.liquidity.usd > 10000) {
+      qualityScore += 5;
+    }
+    
+    // Add quality score
+    tokenInfo.quality = {
+      score: Math.min(Math.max(qualityScore, 0), 100),
+      label: getQualityLabel(qualityScore),
+      risk: 100 - qualityScore
     };
     
     // Store in cache
@@ -221,69 +283,237 @@ export const getTokenInfo = async (tokenAddress: string): Promise<TokenInfo | nu
 };
 
 /**
+ * Get quality label based on score
+ */
+const getQualityLabel = (score: number): string => {
+  if (score >= 80) return 'High Quality';
+  if (score >= 60) return 'Good Quality';
+  if (score >= 40) return 'Medium Quality';
+  if (score >= 20) return 'Low Quality';
+  return 'Poor Quality';
+};
+
+/**
  * Get recent token activity from the tracking system
  */
 export const getRecentTokenActivity = async (): Promise<TokenInfo[]> => {
-  // This would typically fetch from a backend API or local storage
-  // For now, return a mock empty array
-  return [];
+  try {
+    await waitForRateLimit('heliusApi');
+    
+    // Fetch recently created tokens from Helius via mintlist API
+    const apiKey = localStorage.getItem('helius_api_key') || APP_CONFIG.api.defaultApiKey;
+    
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    
+    const response = await fetch(`https://api.helius.xyz/v0/token-events?api-key=${apiKey}`);
+    
+    if (!response.ok) {
+      throw new Error(`Helius API error: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    if (!Array.isArray(data)) {
+      throw new Error('Invalid token events data');
+    }
+    
+    // Process token events into TokenInfo objects
+    const tokens = await Promise.all(
+      data.slice(0, 10).map(async (event) => {
+        try {
+          if (!event.tokenAddress) return null;
+          
+          return await getTokenInfo(event.tokenAddress);
+        } catch {
+          return null;
+        }
+      })
+    );
+    
+    // Filter out nulls
+    return tokens.filter(token => token !== null) as TokenInfo[];
+  } catch (error) {
+    console.error("Error fetching recent token activity:", error);
+    return [];
+  }
 };
 
 /**
  * Get trending tokens from various DEXes
  */
 export const getTrendingTokens = async (): Promise<TokenInfo[]> => {
-  // This would fetch trending tokens from various DEXes
-  // For now, return a mock empty array
-  return [];
+  try {
+    await waitForRateLimit('jupiterApi');
+    
+    // Fetch trending from Jupiter
+    const response = await fetch('https://station.jup.ag/api/trending-tokens');
+    
+    if (!response.ok) {
+      throw new Error(`Jupiter API error: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    if (!Array.isArray(data)) {
+      throw new Error('Invalid trending tokens data');
+    }
+    
+    // Process trending tokens into TokenInfo objects
+    const tokens = await Promise.all(
+      data.slice(0, 10).map(async (token) => {
+        try {
+          if (!token.address) return null;
+          
+          return await getTokenInfo(token.address);
+        } catch {
+          return null;
+        }
+      })
+    );
+    
+    // Filter out nulls and mark as trending
+    const validTokens = tokens.filter(token => token !== null) as TokenInfo[];
+    
+    // Mark all as trending
+    validTokens.forEach(token => {
+      token.isTrending = true;
+    });
+    
+    return validTokens;
+  } catch (error) {
+    console.error("Error fetching trending tokens:", error);
+    return [];
+  }
 };
 
 /**
  * Get tokens from the Pump.fun platform
  */
 export const getPumpFunTokens = async (): Promise<TokenInfo[]> => {
-  // This would typically fetch from Pump.fun's API
-  // For now, return a mock empty array
-  return [];
+  try {
+    // Fetch trending from Pump.fun
+    const response = await fetch('https://api.pump.fun/trending');
+    
+    if (!response.ok) {
+      throw new Error(`Pump.fun API error: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    if (!data || !Array.isArray(data.tokens)) {
+      throw new Error('Invalid pump.fun tokens data');
+    }
+    
+    // Process pump.fun tokens into TokenInfo objects
+    const tokens = await Promise.all(
+      data.tokens.slice(0, 10).map(async (token: any) => {
+        try {
+          if (!token.mint) return null;
+          
+          // Get token info
+          const tokenInfo = await getTokenInfo(token.mint);
+          
+          // If we got token info, mark it as pump.fun
+          if (tokenInfo) {
+            tokenInfo.isPumpFunToken = true;
+          }
+          
+          return tokenInfo;
+        } catch {
+          return null;
+        }
+      })
+    );
+    
+    // Filter out nulls
+    return tokens.filter(token => token !== null) as TokenInfo[];
+  } catch (error) {
+    console.error("Error fetching pump.fun tokens:", error);
+    return [];
+  }
 };
 
 /**
  * Track wallet activities for specified addresses
  */
 export const trackWalletActivities = async (walletAddresses: string[]): Promise<WalletActivity[]> => {
-  // For demonstration purposes, return mock data that includes buy/sell activities
   try {
     await waitForRateLimit('heliusApi');
     
-    // This would typically fetch real data from an API
     if (walletAddresses.length === 0) return [];
     
-    return [
-      {
-        id: '1',
-        walletAddress: walletAddresses[0],
-        tokenAddress: 'So11111111111111111111111111111111111111112',
-        tokenName: 'Solana',
-        tokenSymbol: 'SOL',
-        activityType: 'buy',
-        amount: 5.2,
-        value: 720,
-        timestamp: new Date().toISOString(),
-        transactionHash: '4ETf86tK5DZ5MnJFUQRTmhSQ9pD6bXEWQe8hEycdYc9ZtG9hrZ7GJkiL1QvJ9DNLZDSKbKMkxJCwTfLTZ9kgfFMt'
-      },
-      {
-        id: '2',
-        walletAddress: walletAddresses[0],
-        tokenAddress: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
-        tokenName: 'USD Coin',
-        tokenSymbol: 'USDC',
-        activityType: 'sell',
-        amount: 1000,
-        value: 1000,
-        timestamp: new Date(Date.now() - 3600000).toISOString(),
-        transactionHash: '5hbxDr8iqxrZi7pPWh4kKNzwAjXnLShxPzZHqQwKKM3aLYxTgxNgJ3H4Pj9ydJnNEmdUZLKd1rCmvYXAQ6bhAf9q'
+    const apiKey = localStorage.getItem('helius_api_key') || APP_CONFIG.api.defaultApiKey;
+    
+    // Fetch recent transactions for each wallet
+    const allActivities: WalletActivity[] = [];
+    
+    // Process each wallet
+    for (const walletAddress of walletAddresses) {
+      try {
+        const response = await fetch(`https://api.helius.xyz/v0/addresses/${walletAddress}/transactions?api-key=${apiKey}&limit=10`);
+        
+        if (!response.ok) {
+          console.error(`Error fetching transactions for wallet ${walletAddress}: ${response.status}`);
+          continue;
+        }
+        
+        const transactions = await response.json();
+        
+        if (!Array.isArray(transactions)) {
+          console.error(`Invalid transaction data for wallet ${walletAddress}`);
+          continue;
+        }
+        
+        // Process transactions to identify token activities
+        for (const tx of transactions) {
+          // Skip failed transactions
+          if (!tx.successful) continue;
+          
+          // Check if this is a token transaction
+          if (tx.tokenTransfers && tx.tokenTransfers.length > 0) {
+            for (const transfer of tx.tokenTransfers) {
+              // Get token data
+              const tokenInfo = await getTokenInfo(transfer.mint);
+              
+              if (!tokenInfo) continue;
+              
+              // Determine activity type
+              let activityType: 'buy' | 'sell' | 'send' | 'receive' | 'swap' | 'mint' | 'burn' | 'create' = 'swap';
+              
+              if (transfer.fromUserAccount === walletAddress && transfer.toUserAccount !== walletAddress) {
+                activityType = 'sell';
+              } else if (transfer.fromUserAccount !== walletAddress && transfer.toUserAccount === walletAddress) {
+                activityType = 'buy';
+              }
+              
+              // Calculate value in USD
+              const value = (transfer.tokenAmount * (tokenInfo.price.current || 0));
+              
+              allActivities.push({
+                id: tx.signature,
+                walletAddress,
+                tokenAddress: transfer.mint,
+                tokenName: tokenInfo.metadata.name,
+                tokenSymbol: tokenInfo.metadata.symbol,
+                activityType,
+                amount: transfer.tokenAmount,
+                value,
+                timestamp: tx.timestamp,
+                transactionHash: tx.signature
+              });
+            }
+          }
+        }
+      } catch (error) {
+        console.error(`Error processing wallet ${walletAddress}:`, error);
       }
-    ];
+    }
+    
+    // Sort by timestamp descending
+    return allActivities.sort((a, b) => 
+      new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+    );
   } catch (error) {
     console.error("Error tracking wallet activities:", error);
     return [];

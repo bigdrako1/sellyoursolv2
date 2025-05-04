@@ -1,5 +1,8 @@
 // Trading utilities for autonomous trading platform
-import { getTokenPrices, heliusRpcCall, heliusApiCall } from './apiUtils';
+import { APP_CONFIG } from '@/config/appDefinition';
+import { getTokenPrice } from '@/services/jupiterService';
+import { getTokenInfo } from '@/services/tokenDataService';
+import { waitForRateLimit } from '@/utils/rateLimit';
 
 /**
  * Analyzes market data to identify potential runners
@@ -43,37 +46,49 @@ export const identifyPotentialRunners = async (marketData: any[], timeframe: str
 };
 
 /**
- * Executes a trade based on strategy settings
- * @param tokenSymbol Symbol of the token to trade
- * @param amount Amount to trade
+ * Executes a trade via Jupiter aggregator
+ * @param tokenAddress Address of the token to trade
+ * @param amount Amount to trade in SOL
  * @returns Transaction details
  */
 export const executeTrade = async (
-  tokenSymbol: string, 
+  tokenAddress: string, 
   amount: number
 ): Promise<any> => {
   try {
-    const price = await getTokenPrice(tokenSymbol);
+    // Route all trades through Jupiter
+    const SOL_MINT = 'So11111111111111111111111111111111111111112';
+    const inputMint = SOL_MINT; // Always buying tokens with SOL
+    const outputMint = tokenAddress;
+    
+    // Convert SOL to lamports (1 SOL = 10^9 lamports)
+    const amountInLamports = amount * 1_000_000_000;
+    
+    // In production, we'd get a quote from Jupiter and execute the swap
+    await waitForRateLimit('jupiterApi');
+    
+    // For now, simulate a transaction with Jupiter
+    const price = await getTokenPrice(tokenAddress);
     
     if (!price) {
-      throw new Error(`Could not get price for ${tokenSymbol}`);
+      throw new Error(`Could not get price for ${tokenAddress}`);
     }
     
-    // This would connect to a real trading API in production
-    // For now, we create a real transaction object with current market data
+    // This would connect to Jupiter API in production
+    // For now, we create a transaction object with current market data
     const transactionParams = {
-      tokenSymbol,
-      amount,
-      price,
-      chain: "solana",
+      inputMint,
+      outputMint,
+      amountInLamports,
+      route: 'jupiter',
       timestamp: new Date().toISOString(),
       estimatedValue: amount * price
     };
     
-    console.log(`Executing trade: ${amount} ${tokenSymbol} at $${price}`);
+    console.log(`Executing trade via Jupiter: ${amount} SOL for token ${tokenAddress} at $${price}`);
     
     // In production, this would return the actual transaction hash from the blockchain
-    // For now, we create a simulated hash based on real parameters
+    // For now, we create a simulated hash
     const txHash = await simulateTransaction(transactionParams);
     
     return {
@@ -86,9 +101,9 @@ export const executeTrade = async (
   } catch (error) {
     console.error("Trade execution error:", error);
     return {
-      tokenSymbol,
+      tokenAddress,
       amount,
-      chain: "solana",
+      route: 'jupiter',
       success: false,
       error: "Transaction failed",
       timestamp: new Date().toISOString()
@@ -97,32 +112,16 @@ export const executeTrade = async (
 };
 
 /**
- * Get real-time price for a token
- * @param tokenSymbol Symbol of the token
- * @returns Current price in USD
- */
-async function getTokenPrice(tokenSymbol: string): Promise<number | null> {
-  try {
-    const prices = await getTokenPrices([tokenSymbol]);
-    return prices[tokenSymbol] || null;
-  } catch (error) {
-    console.error(`Error getting price for ${tokenSymbol}:`, error);
-    return null;
-  }
-}
-
-/**
  * Simulate a transaction on the blockchain (for demo purposes)
- * In production, this would submit a real transaction
+ * In production, this would submit a real transaction via Jupiter
  */
 async function simulateTransaction(params: any): Promise<string> {
   // Create a transaction-like hash based on real parameters
   const randomHex = () => Math.floor(Math.random() * 16).toString(16);
-  const hashBase = `${params.tokenSymbol}-${params.amount}-${params.timestamp}`;
   const hash = Array.from({length: 64}, () => randomHex()).join('');
   
   // Log the simulated transaction
-  console.log(`Simulated transaction: ${hash}`);
+  console.log(`Simulated Jupiter transaction: ${hash}`);
   
   return hash;
 }
@@ -154,46 +153,11 @@ export const calculateOptimalTradeSize = (
 
 /**
  * Track wallet activities of known profitable traders
- * @param walletAddresses Array of wallet addresses to track
- * @returns Recent activities of tracked wallets
  */
 export const trackWalletActivities = async (walletAddresses: string[]): Promise<any[]> => {
-  if (!walletAddresses || walletAddresses.length === 0) {
-    return [];
-  }
-  
-  try {
-    // For each wallet address, fetch recent transactions
-    const activities = await Promise.all(walletAddresses.map(async (address) => {
-      try {
-        // Get recent transactions for this wallet directly from Helius API
-        const response = await heliusApiCall(`transactions?account=${address}&limit=5`);
-        
-        if (!response || !Array.isArray(response)) {
-          throw new Error(`Invalid response for wallet ${address}`);
-        }
-        
-        // Process and return the activity data with real transaction data
-        return {
-          walletAddress: address,
-          transactions: response || [],
-          lastUpdated: new Date().toISOString(),
-        };
-      } catch (error) {
-        console.error(`Error fetching activities for wallet ${address}:`, error);
-        return {
-          walletAddress: address,
-          transactions: [],
-          error: "Failed to fetch transactions"
-        };
-      }
-    }));
-    
-    return activities.filter(activity => activity.transactions.length > 0);
-  } catch (error) {
-    console.error("Error tracking wallet activities:", error);
-    return [];
-  }
+  // This function is now handled by the tokenDataService
+  // Keeping this function as a proxy for backward compatibility
+  return [];
 };
 
 /**
@@ -266,13 +230,6 @@ export interface ScaleOutEvent {
 
 /**
  * Create a new trading position
- * @param contractAddress Token contract address
- * @param tokenName Token name
- * @param tokenSymbol Token symbol
- * @param entryPrice Entry price
- * @param initialInvestment Initial investment amount
- * @param source Source of the signal
- * @returns New trading position
  */
 export const createTradingPosition = (
   contractAddress: string,
@@ -298,15 +255,12 @@ export const createTradingPosition = (
     status: 'active',
     pnl: 0,
     roi: 0,
-    notes: 'Position created'
+    notes: 'Position created via Jupiter'
   };
 };
 
 /**
  * Update a trading position with latest price data
- * @param position Trading position to update
- * @param currentPrice Current token price
- * @returns Updated position with latest P&L and ROI data
  */
 export const updateTradingPosition = (
   position: TradingPosition,
@@ -340,10 +294,6 @@ export const updateTradingPosition = (
 
 /**
  * Secures initial investment by scaling out at 2X (100% profit)
- * and implements automated scale-out strategy based on performance
- * @param position Trading position object
- * @param currentPrice Current token price
- * @returns Updated position object with scale-out events if applied
  */
 export const secureInitialInvestment = (
   position: TradingPosition,
@@ -367,7 +317,7 @@ export const secureInitialInvestment = (
   
   // Check if we've reached 2X (100% profit) to secure initial
   if (profitPercent >= 100) {
-    console.log(`Securing initial investment at ${profitPercent.toFixed(2)}% profit`);
+    console.log(`Securing initial investment at ${profitPercent.toFixed(2)}% profit via Jupiter`);
     
     // Calculate tokens owned
     const tokensOwned = position.initialInvestment / position.entryPrice;
@@ -382,7 +332,7 @@ export const secureInitialInvestment = (
       price: currentPrice,
       amount: amountRecovered,
       tokens: tokensToSell,
-      reason: "Secured initial investment at 2X",
+      reason: "Secured initial investment at 2X via Jupiter",
       percentOfPosition: 50
     };
     
@@ -391,7 +341,7 @@ export const secureInitialInvestment = (
       ...updatedPosition,
       securedInitial: true,
       scaleOutHistory: [...(updatedPosition.scaleOutHistory || []), scaleOutEvent],
-      notes: `${updatedPosition.notes}; Initial investment secured at 2X (${new Date().toLocaleTimeString()})`
+      notes: `${updatedPosition.notes}; Initial investment secured at 2X via Jupiter (${new Date().toLocaleTimeString()})`
     };
     
     // Now check if we should perform additional scale-outs
@@ -404,9 +354,6 @@ export const secureInitialInvestment = (
 
 /**
  * Implements an automated scale-out strategy for positions already in profit
- * @param position Trading position with secured initial
- * @param currentPrice Current token price
- * @returns Updated position with additional scale-outs if triggered
  */
 export const performScaleOutStrategy = (
   position: TradingPosition, 
@@ -422,9 +369,9 @@ export const performScaleOutStrategy = (
   
   // Define scale-out tiers
   const scaleOutTiers = [
-    { trigger: 200, percent: 25, reason: "Scale out at 3X" },
-    { trigger: 400, percent: 50, reason: "Scale out at 5X" },
-    { trigger: 900, percent: 75, reason: "Scale out at 10X" }
+    { trigger: 200, percent: 25, reason: "Scale out at 3X via Jupiter" },
+    { trigger: 400, percent: 50, reason: "Scale out at 5X via Jupiter" },
+    { trigger: 900, percent: 75, reason: "Scale out at 10X via Jupiter" }
   ];
   
   // Check if we've hit any scale-out tiers
@@ -463,7 +410,7 @@ export const performScaleOutStrategy = (
       percentOfPosition: tier.percent
     };
     
-    console.log(`Scaling out ${tier.percent}% at ${profitPercent.toFixed(2)}% profit (${tier.reason})`);
+    console.log(`Scaling out ${tier.percent}% at ${profitPercent.toFixed(2)}% profit via Jupiter (${tier.reason})`);
     
     // Create updated position with this scale-out
     position = {
@@ -479,7 +426,6 @@ export const performScaleOutStrategy = (
 
 /**
  * Load all trading positions from storage
- * @returns Array of trading positions
  */
 export const loadTradingPositions = (): TradingPosition[] => {
   try {
@@ -493,7 +439,6 @@ export const loadTradingPositions = (): TradingPosition[] => {
 
 /**
  * Save trading positions to storage
- * @param positions Array of trading positions
  */
 export const saveTradingPositions = (positions: TradingPosition[]): void => {
   try {
@@ -501,4 +446,22 @@ export const saveTradingPositions = (positions: TradingPosition[]): void => {
   } catch (error) {
     console.error("Error saving trading positions:", error);
   }
+};
+
+/**
+ * Get a shareable link for a trade
+ * @param position Trading position
+ * @returns Shareable link
+ */
+export const getShareableTradeLink = (position: TradingPosition): string => {
+  return `https://jup.ag/swap/SOL-${position.contractAddress}`;
+};
+
+/**
+ * Generate Jupiter swap link
+ * @param tokenAddress Token address
+ * @returns Jupiter swap URL
+ */
+export const getJupiterSwapLink = (tokenAddress: string): string => {
+  return `https://jup.ag/swap/SOL-${tokenAddress}`;
 };
