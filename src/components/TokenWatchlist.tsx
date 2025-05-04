@@ -1,187 +1,476 @@
 
-import React, { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { Eye, EyeOff, PlusCircle, Trash2, ExternalLink } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import React, { useState, useEffect } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import {
+  Star,
+  Trash2,
+  ExternalLink,
+  Plus,
+  Bell,
+  BellOff,
+  AlertCircle,
+  Check,
+  Eye,
+  TrendingUp,
+  MessageSquare
+} from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Slider } from "@/components/ui/slider";
+import {
+  getWatchlist,
+  addToWatchlist,
+  removeFromWatchlist,
+  updateWatchlistToken,
+  setPriceAlert,
+  addTokenNotes,
+  WatchlistToken
+} from "@/utils/watchlistUtils";
 
-interface WatchedToken {
-  id: string;
-  symbol: string;
-  name: string;
-  address: string;
-  addedAt: string;
-  lastPrice?: number;
-  priceChange?: number;
-}
-
-const TokenWatchlist = () => {
-  const [watchedTokens, setWatchedTokens] = useState<WatchedToken[]>([
-    {
-      id: '1',
-      symbol: 'SOL',
-      name: 'Solana',
-      address: '0x123...456',
-      addedAt: new Date().toISOString(),
-      lastPrice: 138.45,
-      priceChange: 2.3
-    },
-    {
-      id: '2',
-      symbol: 'BONK',
-      name: 'Bonk',
-      address: '0xabc...def',
-      addedAt: new Date().toISOString(),
-      lastPrice: 0.00001234,
-      priceChange: -1.2
-    }
-  ]);
+const TokenWatchlist: React.FC = () => {
+  const [watchlist, setWatchlist] = useState<WatchlistToken[]>([]);
+  const [activeTab, setActiveTab] = useState<string>("all");
+  const [addDialogOpen, setAddDialogOpen] = useState(false);
+  const [newToken, setNewToken] = useState({
+    address: "",
+    name: "",
+    symbol: ""
+  });
+  const [notesDialogOpen, setNotesDialogOpen] = useState(false);
+  const [alertDialogOpen, setAlertDialogOpen] = useState(false);
+  const [selectedToken, setSelectedToken] = useState<WatchlistToken | null>(null);
+  const [alertThreshold, setAlertThreshold] = useState(5);
+  const [tokenNotes, setTokenNotes] = useState("");
+  const [loading, setLoading] = useState(false);
   
-  const [newToken, setNewToken] = useState('');
-  const [isWatching, setIsWatching] = useState(true);
   const { toast } = useToast();
   
+  // Load watchlist on component mount
+  useEffect(() => {
+    setWatchlist(getWatchlist());
+  }, []);
+  
   const handleAddToken = () => {
-    if (!newToken) return;
+    if (!newToken.address || !newToken.name || !newToken.symbol) {
+      toast({
+        title: "Missing Information",
+        description: "Please provide all required token information",
+        variant: "destructive"
+      });
+      return;
+    }
     
-    // In a real implementation, we would validate the token address and fetch token details
-    const mockNewToken: WatchedToken = {
-      id: Date.now().toString(),
-      symbol: newToken.slice(0, 4).toUpperCase(),
-      name: `Token ${newToken.slice(0, 6)}`,
-      address: newToken,
-      addedAt: new Date().toISOString(),
-      lastPrice: Math.random() * 10,
-      priceChange: (Math.random() * 10) - 5
-    };
+    setLoading(true);
     
-    setWatchedTokens(prev => [...prev, mockNewToken]);
-    setNewToken('');
+    // Simulate API call to verify token
+    setTimeout(() => {
+      try {
+        const updatedWatchlist = addToWatchlist({
+          ...newToken,
+          addedAt: new Date().toISOString()
+        });
+        
+        setWatchlist(updatedWatchlist);
+        setAddDialogOpen(false);
+        setNewToken({ address: "", name: "", symbol: "" });
+        setLoading(false);
+        
+        toast({
+          title: "Token Added",
+          description: `${newToken.symbol} has been added to your watchlist`,
+        });
+      } catch (error) {
+        console.error("Error adding token:", error);
+        setLoading(false);
+        
+        toast({
+          title: "Error Adding Token",
+          description: "There was a problem adding the token to your watchlist",
+          variant: "destructive"
+        });
+      }
+    }, 1000);
+  };
+  
+  const handleRemoveToken = (token: WatchlistToken) => {
+    const updatedWatchlist = removeFromWatchlist(token.address);
+    setWatchlist(updatedWatchlist);
     
     toast({
-      title: "Token added to watchlist",
-      description: `${mockNewToken.symbol} has been added to your watchlist.`
+      title: "Token Removed",
+      description: `${token.symbol} has been removed from your watchlist`,
     });
   };
   
-  const handleRemoveToken = (id: string) => {
-    setWatchedTokens(prev => prev.filter(token => token.id !== id));
+  const openNotesDialog = (token: WatchlistToken) => {
+    setSelectedToken(token);
+    setTokenNotes(token.notes || "");
+    setNotesDialogOpen(true);
+  };
+  
+  const openAlertDialog = (token: WatchlistToken) => {
+    setSelectedToken(token);
+    setAlertThreshold(token.alertThreshold || 5);
+    setAlertDialogOpen(true);
+  };
+  
+  const saveTokenNotes = () => {
+    if (!selectedToken) return;
+    
+    const updatedWatchlist = addTokenNotes(selectedToken.address, tokenNotes);
+    setWatchlist(updatedWatchlist);
+    setNotesDialogOpen(false);
     
     toast({
-      title: "Token removed",
-      description: "Token has been removed from your watchlist."
+      title: "Notes Saved",
+      description: `Your notes for ${selectedToken.symbol} have been saved`,
     });
   };
   
-  const toggleWatching = () => {
-    setIsWatching(!isWatching);
+  const saveAlertSettings = () => {
+    if (!selectedToken) return;
+    
+    const updatedWatchlist = setPriceAlert(selectedToken.address, alertThreshold, true);
+    setWatchlist(updatedWatchlist);
+    setAlertDialogOpen(false);
     
     toast({
-      title: isWatching ? "Watchlist paused" : "Watchlist active",
-      description: isWatching 
-        ? "Token price updates have been paused." 
-        : "Token prices will now be updated in real-time."
+      title: "Alert Set",
+      description: `You'll be notified when ${selectedToken.symbol} price changes by ${alertThreshold}%`,
     });
   };
+  
+  const toggleAlertStatus = (token: WatchlistToken) => {
+    const currentStatus = token.priceAlert || false;
+    const updatedWatchlist = setPriceAlert(
+      token.address, 
+      token.alertThreshold || 5, 
+      !currentStatus
+    );
+    
+    setWatchlist(updatedWatchlist);
+    
+    toast({
+      title: currentStatus ? "Alert Disabled" : "Alert Enabled",
+      description: currentStatus 
+        ? `Price alerts for ${token.symbol} have been disabled`
+        : `Price alerts for ${token.symbol} have been enabled`,
+    });
+  };
+  
+  // Filter tokens based on active tab
+  const filteredTokens = activeTab === "all" 
+    ? watchlist 
+    : activeTab === "alerts" 
+      ? watchlist.filter(token => token.priceAlert)
+      : watchlist;
   
   return (
-    <Card className="bg-trading-darkAccent border-trading-highlight/20">
-      <CardHeader className="flex flex-row items-center justify-between">
-        <div>
-          <CardTitle className="text-lg">Token Watchlist</CardTitle>
-          <CardDescription>Track tokens of interest and receive price alerts</CardDescription>
-        </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={toggleWatching}
-          className={`${isWatching ? 'bg-trading-success/20 text-trading-success' : 'bg-trading-danger/20 text-trading-danger'} border-white/10`}
-        >
-          {isWatching ? <Eye size={16} /> : <EyeOff size={16} />}
-        </Button>
-      </CardHeader>
-      <CardContent>
-        <div className="flex space-x-2 mb-4">
-          <Input
-            placeholder="Enter token address or symbol"
-            value={newToken}
-            onChange={(e) => setNewToken(e.target.value)}
-            className="bg-trading-dark border-trading-highlight/30"
-          />
+    <div className="space-y-4">
+      <Card className="card-with-border">
+        <CardHeader className="flex flex-row items-center justify-between pb-2">
+          <CardTitle className="flex items-center gap-2">
+            <Star className="h-5 w-5 text-yellow-400" />
+            Token Watchlist
+          </CardTitle>
           <Button
-            onClick={handleAddToken}
-            disabled={!newToken}
-            className="bg-trading-highlight hover:bg-trading-highlight/80 whitespace-nowrap"
+            variant="outline"
+            size="sm"
+            onClick={() => setAddDialogOpen(true)}
+            className="bg-black/20 border-white/10"
           >
-            <PlusCircle className="w-4 h-4 mr-2" />
-            Add
+            <Plus className="mr-2 h-4 w-4" />
+            Add Token
           </Button>
-        </div>
-        
-        {watchedTokens.length === 0 ? (
-          <div className="text-center py-6 text-gray-400">
-            <p>No tokens in your watchlist</p>
-            <p className="text-sm mt-2">Add tokens to start tracking them</p>
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {watchedTokens.map((token) => (
-              <div 
-                key={token.id} 
-                className="flex items-center justify-between p-3 bg-trading-dark/50 rounded-md border border-trading-highlight/10 hover:border-trading-highlight/30 transition-colors"
-              >
-                <div className="flex items-center space-x-2">
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white font-bold">
-                    {token.symbol.charAt(0)}
-                  </div>
-                  <div>
-                    <div className="font-medium flex items-center">
-                      {token.symbol}
-                      <Badge 
-                        variant="outline" 
-                        className="ml-2 text-xs py-0 h-5 bg-trading-dark border-trading-highlight/20"
-                      >
-                        {token.name}
-                      </Badge>
-                    </div>
-                    <div className="text-xs text-gray-400 truncate max-w-[200px]">
-                      {token.address}
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="flex items-center">
-                  {token.lastPrice && (
-                    <div className="text-right mr-4">
-                      <div className="font-medium">${token.lastPrice.toFixed(token.lastPrice < 0.01 ? 8 : 4)}</div>
-                      <div className={`text-xs ${token.priceChange && token.priceChange >= 0 ? 'text-trading-success' : 'text-trading-danger'}`}>
-                        {token.priceChange && token.priceChange >= 0 ? '+' : ''}{token.priceChange?.toFixed(2)}%
+        </CardHeader>
+        <CardContent>
+          <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab} className="pb-2">
+            <TabsList className="grid grid-cols-2 w-full">
+              <TabsTrigger value="all">All Tokens</TabsTrigger>
+              <TabsTrigger value="alerts">With Alerts</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value={activeTab} className="mt-4">
+              {filteredTokens.length > 0 ? (
+                <div className="space-y-3 max-h-[500px] overflow-y-auto">
+                  {filteredTokens.map(token => (
+                    <div key={token.address} className="bg-black/20 p-3 rounded-lg">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">{token.name}</span>
+                          <span className="text-gray-400">${token.symbol}</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          {token.priceAlert && (
+                            <Badge className="bg-yellow-500/30 text-yellow-400 border-yellow-500/20">
+                              Alert: {token.alertThreshold}%
+                            </Badge>
+                          )}
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 rounded-full hover:bg-red-900/20 text-red-400"
+                            onClick={() => handleRemoveToken(token)}
+                          >
+                            <Trash2 size={14} />
+                          </Button>
+                        </div>
+                      </div>
+                      
+                      {token.lastPrice && (
+                        <div className="mt-1 mb-2">
+                          <div className="text-xs text-gray-400">Last Price</div>
+                          <div className="text-sm">${token.lastPrice.toFixed(8)}</div>
+                        </div>
+                      )}
+                      
+                      {token.notes && (
+                        <div className="bg-gray-800/50 p-2 rounded-md text-xs mt-2 mb-2">
+                          <div className="text-gray-400 mb-0.5">Notes</div>
+                          <div className="text-gray-200">{token.notes}</div>
+                        </div>
+                      )}
+                      
+                      <div className="flex flex-wrap gap-2 mt-3">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-7 px-2 text-xs bg-black/30 border-white/5 hover:bg-black/40"
+                          onClick={() => window.open(`https://birdeye.so/token/${token.address}?chain=solana`, '_blank')}
+                        >
+                          <Eye size={12} className="mr-1" />
+                          View
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-7 px-2 text-xs bg-black/30 border-white/5 hover:bg-black/40"
+                          onClick={() => window.open(`https://jup.ag/swap/SOL-${token.address}`, '_blank')}
+                        >
+                          <TrendingUp size={12} className="mr-1" />
+                          Trade
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-7 px-2 text-xs bg-black/30 border-white/5 hover:bg-black/40"
+                          onClick={() => openAlertDialog(token)}
+                        >
+                          <Bell size={12} className="mr-1" />
+                          Alert
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-7 px-2 text-xs bg-black/30 border-white/5 hover:bg-black/40"
+                          onClick={() => openNotesDialog(token)}
+                        >
+                          <MessageSquare size={12} className="mr-1" />
+                          Notes
+                        </Button>
+                        <Button
+                          variant={token.priceAlert ? "default" : "outline"}
+                          size="sm"
+                          className={`h-7 px-2 text-xs ${token.priceAlert 
+                            ? 'bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30 border-yellow-500/30' 
+                            : 'bg-black/30 border-white/5 hover:bg-black/40'}`}
+                          onClick={() => toggleAlertStatus(token)}
+                        >
+                          {token.priceAlert ? (
+                            <>
+                              <BellOff size={12} className="mr-1" />
+                              Disable Alert
+                            </>
+                          ) : (
+                            <>
+                              <Bell size={12} className="mr-1" />
+                              Enable Alert
+                            </>
+                          )}
+                        </Button>
                       </div>
                     </div>
-                  )}
-                  
-                  <div className="flex space-x-1">
-                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                      <ExternalLink size={14} />
-                    </Button>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={() => handleRemoveToken(token.id)}
-                      className="h-8 w-8 p-0 hover:bg-trading-danger/20 hover:text-trading-danger"
-                    >
-                      <Trash2 size={14} />
-                    </Button>
-                  </div>
+                  ))}
                 </div>
-              </div>
-            ))}
+              ) : (
+                <div className="py-10 text-center">
+                  <AlertCircle className="mx-auto h-10 w-10 text-gray-400 mb-3" />
+                  <p className="text-gray-400">No tokens in your watchlist</p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Add tokens to your watchlist to track their prices and receive alerts
+                  </p>
+                </div>
+              )}
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+      </Card>
+      
+      {/* Add Token Dialog */}
+      <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
+        <DialogContent className="sm:max-w-[425px] bg-gray-900">
+          <DialogHeader>
+            <DialogTitle>Add Token to Watchlist</DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="tokenAddress">Token Address</Label>
+              <Input
+                id="tokenAddress"
+                value={newToken.address}
+                onChange={(e) => setNewToken({...newToken, address: e.target.value})}
+                placeholder="Enter token contract address"
+                className="bg-black/20 border-white/10"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="tokenName">Token Name</Label>
+              <Input
+                id="tokenName"
+                value={newToken.name}
+                onChange={(e) => setNewToken({...newToken, name: e.target.value})}
+                placeholder="Enter token name"
+                className="bg-black/20 border-white/10"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="tokenSymbol">Token Symbol</Label>
+              <Input
+                id="tokenSymbol"
+                value={newToken.symbol}
+                onChange={(e) => setNewToken({...newToken, symbol: e.target.value})}
+                placeholder="Enter token symbol"
+                className="bg-black/20 border-white/10"
+              />
+            </div>
           </div>
-        )}
-      </CardContent>
-    </Card>
+          
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setAddDialogOpen(false)}
+              disabled={loading}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleAddToken}
+              disabled={loading || !newToken.address || !newToken.name || !newToken.symbol}
+            >
+              {loading ? (
+                <>
+                  <span className="mr-2">Adding...</span>
+                  <span className="h-4 w-4 rounded-full border-2 border-t-transparent border-current animate-spin"></span>
+                </>
+              ) : (
+                <>
+                  <Check className="mr-2 h-4 w-4" />
+                  Add Token
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Notes Dialog */}
+      <Dialog open={notesDialogOpen} onOpenChange={setNotesDialogOpen}>
+        <DialogContent className="sm:max-w-[425px] bg-gray-900">
+          <DialogHeader>
+            <DialogTitle>
+              Token Notes - {selectedToken?.symbol}
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="tokenNotes">Notes</Label>
+              <Textarea
+                id="tokenNotes"
+                value={tokenNotes}
+                onChange={(e) => setTokenNotes(e.target.value)}
+                placeholder="Add your notes about this token..."
+                className="bg-black/20 border-white/10 min-h-[150px]"
+              />
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setNotesDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button onClick={saveTokenNotes}>
+              Save Notes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Alert Dialog */}
+      <Dialog open={alertDialogOpen} onOpenChange={setAlertDialogOpen}>
+        <DialogContent className="sm:max-w-[425px] bg-gray-900">
+          <DialogHeader>
+            <DialogTitle>
+              Price Alert - {selectedToken?.symbol}
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <Label htmlFor="alertThreshold">Price Change Threshold: {alertThreshold}%</Label>
+              </div>
+              <Slider
+                id="alertThreshold"
+                min={1}
+                max={50}
+                step={1}
+                value={[alertThreshold]}
+                onValueChange={([value]) => setAlertThreshold(value)}
+              />
+              <div className="flex justify-between text-xs text-gray-400">
+                <span>1%</span>
+                <span>10%</span>
+                <span>25%</span>
+                <span>50%</span>
+              </div>
+            </div>
+            
+            <div className="bg-blue-500/10 border border-blue-500/20 rounded-md p-3">
+              <p className="text-xs text-blue-300">
+                You will receive an alert when the price of {selectedToken?.symbol} changes (up or down)
+                by {alertThreshold}% or more.
+              </p>
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setAlertDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button onClick={saveAlertSettings}>
+              Set Alert
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 };
 

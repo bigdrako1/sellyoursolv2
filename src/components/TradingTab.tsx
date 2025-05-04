@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import TradeAlerts from '@/components/TradeAlerts';
@@ -19,15 +19,46 @@ import PotentialRunnersDetector from '@/components/PotentialRunnersDetector';
 import TokenWatchlist from '@/components/TokenWatchlist';
 import WebhookMonitor from '@/components/WebhookMonitor';
 import TradingAnalyticsDashboard from '@/components/TradingAnalyticsDashboard';
+import HeliusSetup from '@/components/HeliusSetup';
+import { useToast } from '@/hooks/use-toast';
 
 const TradingTab = () => {
   const [activeTab, setActiveTab] = useState('monitor');
   const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
   const [showMonitoring, setShowMonitoring] = useState(true);
+  const [apiKeyConfigured, setApiKeyConfigured] = useState(false);
+  const { toast } = useToast();
+  
+  // Check if Helius API key is already set
+  useEffect(() => {
+    const storedApiKey = localStorage.getItem('helius_api_key');
+    if (storedApiKey) {
+      setApiKeyConfigured(true);
+    }
+  }, []);
   
   // Toggle monitoring status
   const toggleMonitoring = () => {
     setShowMonitoring(!showMonitoring);
+    
+    toast({
+      title: showMonitoring ? "Monitoring Paused" : "Monitoring Resumed",
+      description: showMonitoring 
+        ? "Token monitoring has been paused. You won't receive new alerts." 
+        : "Token monitoring has been resumed. You'll now receive alerts for new tokens."
+    });
+  };
+  
+  const handleApiKeySet = (apiKey: string) => {
+    if (apiKey) {
+      setApiKeyConfigured(true);
+      toast({
+        title: "API Key Configured",
+        description: "Your Helius API key has been set up successfully.",
+      });
+    } else {
+      setApiKeyConfigured(false);
+    }
   };
   
   return (
@@ -65,6 +96,10 @@ const TradingTab = () => {
           </Badge>
         </div>
       </div>
+      
+      {!apiKeyConfigured && (
+        <HeliusSetup onApiKeySet={handleApiKeySet} />
+      )}
       
       <Tabs defaultValue="monitor" value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList className="bg-black/20 border-white/10 border">
