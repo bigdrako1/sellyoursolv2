@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -47,7 +46,6 @@ const Settings = () => {
     toast({
       title: "Settings saved",
       description: "Your preferences have been updated successfully.",
-      icon: <CheckCircle2 className="h-4 w-4 text-green-500" />
     });
   };
   
