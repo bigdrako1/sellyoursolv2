@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, Wallet, Key, Lock } from "lucide-react";
+import { Loader2, Wallet, Key, Lock, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { APP_CONFIG } from "@/config/appDefinition";
@@ -11,7 +11,7 @@ import { APP_CONFIG } from "@/config/appDefinition";
 const Auth = () => {
   const [isConnecting, setIsConnecting] = useState(false);
   const { toast } = useToast();
-  const { signIn, isAuthenticated, walletAddress } = useAuth();
+  const { signIn, isAuthenticated, walletAddress, isPhantomInstalled } = useAuth();
   const navigate = useNavigate();
   
   useEffect(() => {
@@ -66,7 +66,24 @@ const Auth = () => {
           
           <CardContent className="pt-6">
             <div className="mb-6">          
-              {walletAddress ? (
+              {!isPhantomInstalled ? (
+                <div className="bg-red-900/20 border border-red-500/30 p-4 rounded-lg mb-4 flex items-start gap-3">
+                  <AlertCircle className="h-5 w-5 text-red-400 mt-0.5" />
+                  <div>
+                    <h4 className="font-medium text-red-400 mb-1">Phantom Wallet Not Detected</h4>
+                    <p className="text-sm text-gray-300">
+                      You need to install the Phantom browser extension to connect your wallet.
+                    </p>
+                    <Button 
+                      variant="link" 
+                      className="text-red-400 p-0 h-auto mt-2" 
+                      onClick={() => window.open('https://phantom.app/', '_blank')}
+                    >
+                      Download Phantom Wallet
+                    </Button>
+                  </div>
+                </div>
+              ) : walletAddress ? (
                 <div className="bg-trading-dark/40 p-4 rounded-md mb-4">
                   <div className="text-sm text-gray-400 mb-1">Connected Wallet</div>
                   <div className="font-mono text-trading-highlight flex items-center">
@@ -79,7 +96,7 @@ const Auth = () => {
               <Button
                 onClick={handleWalletConnect}
                 className="w-full trading-button"
-                disabled={isConnecting}
+                disabled={isConnecting || !isPhantomInstalled}
               >
                 {isConnecting ? (
                   <>

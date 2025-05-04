@@ -1,38 +1,9 @@
 import { getActiveApiConfig } from '@/config/appDefinition';
+import { TradingPosition, ScaleOutEvent } from '@/utils/tradingUtils';
 
 // Cache for API responses
 const apiCache = new Map<string, { data: any, timestamp: number }>();
 const CACHE_TTL = 60000; // 1 minute cache
-
-// Position management interface - defined locally to avoid import conflict
-export interface TradingPosition {
-  contractAddress: string;
-  tokenName: string;
-  tokenSymbol: string;
-  entryPrice: number;
-  entryTime: string;
-  initialInvestment: number;
-  currentAmount: number;
-  currentPrice: number;
-  lastUpdateTime: string;
-  securedInitial: boolean;
-  scaleOutHistory: ScaleOutEvent[];
-  source: string;
-  status: 'active' | 'closed' | 'failed';
-  pnl: number;
-  roi: number;
-  notes: string;
-}
-
-// Scale out event interface
-export interface ScaleOutEvent {
-  time: string;
-  price: number;
-  amount: number;
-  tokens: number;
-  reason: string;
-  percentSecured: number;
-}
 
 /**
  * Tests connection to the Helius RPC API
@@ -207,6 +178,9 @@ export const getRecentTokenActivity = async (): Promise<any[]> => {
       // Get token metadata
       const tokenInfo = await getTokenMetadata(tokenAddress);
       
+      // Check if it's a Pump.fun token
+      const isPumpFunToken = await isPumpFunToken(tokenAddress);
+      
       return {
         name: tokenInfo?.name || 'Unknown Token',
         symbol: tokenInfo?.symbol || '???',
@@ -216,8 +190,9 @@ export const getRecentTokenActivity = async (): Promise<any[]> => {
         liquidity: tokenInfo?.liquidity || 0,
         holders: tokenInfo?.holders || 0,
         qualityScore: calculateTokenQuality(tokenInfo),
-        source: 'Helius',
-        createdAt: new Date(tx.blockTime * 1000 || Date.now())
+        source: isPumpFunToken ? 'Pump.fun' : 'Helius',
+        createdAt: new Date(tx.blockTime * 1000 || Date.now()),
+        isPumpFun: isPumpFunToken
       };
     }));
     
@@ -236,6 +211,26 @@ export const getRecentTokenActivity = async (): Promise<any[]> => {
     
     // If real data fails, return an empty array rather than mock data
     return [];
+  }
+};
+
+/**
+ * Check if a token is a Pump.fun token
+ * @param tokenAddress Token address to check
+ * @returns Promise<boolean> - True if it's a Pump.fun token
+ */
+export const isPumpFunToken = async (tokenAddress: string): Promise<boolean> => {
+  try {
+    // First check if the address has "pump" or "boop" suffix
+    if (tokenAddress.toLowerCase().endsWith('pump') || tokenAddress.toLowerCase().endsWith('boop')) {
+      return true;
+    }
+    
+    // Then try to fetch from pump.fun API
+    const response = await fetch(`https://api.pump.fun/token/${tokenAddress}`);
+    return response.ok;
+  } catch (error) {
+    return false;
   }
 };
 
@@ -294,10 +289,116 @@ export const getTokenMetadata = async (tokenAddress: string): Promise<any> => {
       return tokenData;
     }
     
+    // If all fails, try pump.fun API if it might be a pump token
+    if (tokenAddress.toLowerCase().endsWith('pump') || tokenAddress.toLowerCase().endsWith('boop')) {
+      try {
+        const pumpResponse = await fetch(`https://api.pump.fun/token/${tokenAddress}`);
+        if (pumpResponse.ok) {
+          const pumpData = await pumpResponse.json();
+          
+          const tokenData = {
+            name: pumpData.name || pumpData.symbol || 'Pump Token',
+            symbol: pumpData.symbol || tokenAddress.slice(0, 4).toUpperCase(),
+            address: tokenAddress,
+            price: pumpData.price || 0,
+            marketCap: pumpData.marketCap || 0,
+            liquidity: pumpData.liquidity || 0,
+            holders: pumpData.holders || 0,
+            isPumpFun: true
+          };
+          
+          // Cache the results
+          apiCache.set(cacheKey, {
+            data: tokenData,
+            timestamp: Date.now()
+          });
+          
+          return tokenData;
+        }
+      } catch (e) {
+        console.error("Error fetching from pump.fun API:", e);
+        // Continue to return null below
+      }
+    }
+    
     return null;
   } catch (error) {
     console.error(`Error fetching token metadata for ${tokenAddress}:`, error);
     return null;
+  }
+};
+
+/**
+ * Get specific pump.fun tokens
+ * @param limit Number of tokens to return
+ * @returns Array of pump.fun token data
+ */
+export const getPumpFunTokens = async (limit: number = 10): Promise<any[]> => {
+  const cacheKey = 'pump_fun_tokens';
+  const cached = apiCache.get(cacheKey);
+  
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+    return cached.data.slice(0, limit);
+  }
+  
+  try {
+    console.log('Fetching pump.fun tokens...');
+    
+    // Fetch from Pump.fun API
+    const response = await fetch('https://api.pump.fun/trending');
+    
+    if (!response.ok) {
+      throw new Error(`Pump.fun API returned status ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    if (!data || !data.tokens || !Array.isArray(data.tokens)) {
+      throw new Error('Invalid response format from Pump.fun API');
+    }
+    
+    const pumpTokens = await Promise.all(data.tokens.map(async (token: any) => {
+      try {
+        // Try to get more details for each token
+        const tokenDetails = await getTokenMetadata(token.mint);
+        
+        return {
+          name: token.name || tokenDetails?.name || 'Pump Token',
+          symbol: token.symbol || tokenDetails?.symbol || token.mint.slice(0, 4).toUpperCase(),
+          address: token.mint,
+          price: token.price || tokenDetails?.price || 0,
+          marketCap: tokenDetails?.marketCap || 0, 
+          liquidity: tokenDetails?.liquidity || 0,
+          holders: tokenDetails?.holders || 0,
+          change24h: token.change24h || 0,
+          source: 'Pump.fun',
+          createdAt: token.createdAt ? new Date(token.createdAt) : new Date(),
+          isPumpFun: true
+        };
+      } catch (error) {
+        console.error(`Error enriching pump token data for ${token.mint}:`, error);
+        
+        return {
+          name: token.name || 'Pump Token',
+          symbol: token.symbol || token.mint.slice(0, 4).toUpperCase(),
+          address: token.mint, 
+          price: token.price || 0,
+          source: 'Pump.fun',
+          isPumpFun: true
+        };
+      }
+    }));
+    
+    // Cache the results
+    apiCache.set(cacheKey, {
+      data: pumpTokens,
+      timestamp: Date.now()
+    });
+    
+    return pumpTokens.slice(0, limit);
+  } catch (error) {
+    console.error("Error fetching pump.fun tokens:", error);
+    return [];
   }
 };
 
@@ -340,6 +441,9 @@ export const calculateTokenQuality = (tokenInfo: any): number => {
   
   // Trending factor (0-10 points)
   if (tokenInfo.isTrending) score += 10;
+  
+  // Pump.fun bonus (0-5 points)
+  if (tokenInfo.isPumpFun) score += 5;
   
   // Additional factors
   const volume = tokenInfo.volume24h || 0;
