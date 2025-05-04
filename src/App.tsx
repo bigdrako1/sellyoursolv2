@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -14,6 +13,8 @@ import MarketAnalysis from "./pages/MarketAnalysis";
 import Settings from "./pages/Settings";
 import AutoTrading from "./pages/AutoTrading";
 import Auth from "./pages/Auth";
+import TwitterSentimentScanner from './components/TwitterSentimentScanner';
+import RiskScoring from './components/RiskScoring';
 
 // Create a new QueryClient instance with production-ready settings
 const queryClient = new QueryClient({

@@ -13,6 +13,7 @@ import { Eye, EyeOff } from 'lucide-react';
 import TokenList from '@/components/TokenList';
 import { identifyPotentialRunners } from '@/utils/tradingUtils';
 import LivePriceTracker from '@/components/LivePriceTracker';
+import TwitterSentimentScanner from '@/components/TwitterSentimentScanner';
 
 const TradingTab = () => {
   const [activeTab, setActiveTab] = useState('monitor');
@@ -64,6 +65,7 @@ const TradingTab = () => {
         <TabsList className="bg-black/20 border-white/10 border">
           <TabsTrigger value="monitor">Token Monitor</TabsTrigger>
           <TabsTrigger value="detector">Token Detector</TabsTrigger>
+          <TabsTrigger value="sentiment">Sentiment</TabsTrigger>
           <TabsTrigger value="strategy">Strategy</TabsTrigger>
           <TabsTrigger value="alerts">Alerts</TabsTrigger>
         </TabsList>
@@ -87,6 +89,12 @@ const TradingTab = () => {
                 <TokenDetector />
               </div>
             </div>
+          )}
+        </TabsContent>
+        
+        <TabsContent value="sentiment" className="space-y-4">
+          {activeTab === 'sentiment' && (
+            <TwitterSentimentScanner />
           )}
         </TabsContent>
         
