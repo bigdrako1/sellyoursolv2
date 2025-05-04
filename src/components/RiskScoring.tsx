@@ -76,8 +76,7 @@ const RiskScoring: React.FC<RiskScoringProps> = ({
             </div>
             <Progress 
               value={calculatedRiskScore} 
-              className="h-3" 
-              indicatorClassName={riskInfo.color}
+              className={`h-3 ${riskInfo.color}`}
             />
             <div className="flex justify-between mt-1 text-xs">
               <span className="text-green-500">Safe</span>
@@ -86,7 +85,7 @@ const RiskScoring: React.FC<RiskScoringProps> = ({
             </div>
             
             {/* Risk summary alert */}
-            <Alert variant="outline" className="mt-4 border-l-4" 
+            <Alert className="mt-4 border-l-4" 
               style={{ borderLeftColor: calculatedRiskScore > 60 ? 'rgb(239, 68, 68)' : 
                                         calculatedRiskScore > 40 ? 'rgb(250, 204, 21)' : 
                                         'rgb(34, 197, 94)' }}
@@ -127,7 +126,7 @@ const RiskScoring: React.FC<RiskScoringProps> = ({
                         <div className={`w-2 h-2 rounded-full ${factorRisk.color} mr-2`}></div>
                         <span className="text-sm">{factor.name}</span>
                       </div>
-                      <Badge variant={factor.impact === 'high' ? 'destructive' : factor.impact === 'medium' ? 'default' : 'outline'}>
+                      <Badge variant={factor.impact === 'high' ? 'destructive' : 'default'}>
                         {factor.impact} impact
                       </Badge>
                     </div>

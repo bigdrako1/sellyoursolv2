@@ -228,7 +228,7 @@ const TwitterSentimentScanner = () => {
                 </div>
               </div>
               
-              <Alert variant="outline" className="mt-4">
+              <Alert className="mt-4">
                 <TrendingUp className="h-4 w-4" />
                 <AlertDescription>
                   {sentimentSummary.totalScore > 0.3 
