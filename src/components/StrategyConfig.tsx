@@ -5,7 +5,8 @@ import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Activity, Lock, Unlock, Settings, Save } from "lucide-react";
+import { Activity, Lock, Unlock, Settings, Save, TrendingUp } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 interface StrategyConfigProps {
   title: string;
@@ -19,6 +20,8 @@ interface StrategySettings {
   riskLevel: number;
   maxBudget: number;
   autoReinvest: boolean;
+  secureInitial: boolean;
+  secureInitialPercentage: number;
 }
 
 const StrategyConfig = ({ 
@@ -27,16 +30,25 @@ const StrategyConfig = ({
   defaultEnabled = false,
   onSave 
 }: StrategyConfigProps) => {
+  const { toast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
   const [settings, setSettings] = useState<StrategySettings>({
     enabled: defaultEnabled,
     riskLevel: 3,
     maxBudget: 0.5,
-    autoReinvest: true
+    autoReinvest: true,
+    secureInitial: true,
+    secureInitialPercentage: 100
   });
 
   const handleSave = () => {
     setIsEditing(false);
+    
+    toast({
+      title: "Strategy Updated",
+      description: `${title} configuration has been saved.`,
+    });
+    
     if (onSave) onSave(settings);
   };
 
@@ -110,6 +122,30 @@ const StrategyConfig = ({
               />
             </div>
             
+            <div className="flex justify-between items-center">
+              <label className="text-sm">Secure Initial Investment</label>
+              <Switch
+                checked={settings.secureInitial}
+                onCheckedChange={(checked) => setSettings({...settings, secureInitial: checked})}
+              />
+            </div>
+            
+            {settings.secureInitial && (
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <label className="text-sm">Secure Initial %</label>
+                  <span className="text-sm font-medium">{settings.secureInitialPercentage}%</span>
+                </div>
+                <Slider
+                  value={[settings.secureInitialPercentage]}
+                  min={25}
+                  max={100}
+                  step={25}
+                  onValueChange={(value) => setSettings({...settings, secureInitialPercentage: value[0]})}
+                />
+              </div>
+            )}
+            
             <Button onClick={handleSave} className="w-full mt-2 trading-button">
               <Save className="h-4 w-4 mr-2" /> Save Configuration
             </Button>
@@ -128,6 +164,14 @@ const StrategyConfig = ({
               <div className="text-xs text-gray-400">Max Budget</div>
               <div className="font-medium">{settings.maxBudget.toFixed(1)} SOL</div>
             </div>
+            {settings.secureInitial && (
+              <div className="bg-black/20 p-2 rounded text-center col-span-2">
+                <div className="flex items-center justify-center gap-2">
+                  <TrendingUp size={14} className="text-trading-success" />
+                  <span className="text-sm">Secures {settings.secureInitialPercentage}% of initial investment</span>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>

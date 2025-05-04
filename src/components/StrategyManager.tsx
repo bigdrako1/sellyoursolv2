@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -17,9 +17,11 @@ import {
   BarChart2,
   Activity, 
   Zap,
-  Bot 
+  Bot,
+  Shield 
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { secureInitialInvestment } from "@/utils/tradingUtils";
 
 interface Strategy {
   id: string;
@@ -31,6 +33,8 @@ interface Strategy {
   riskLevel: number;
   profitTarget: number;
   stopLoss: number;
+  secureInitial: boolean;
+  secureInitialPercentage: number;
   type: string;
 }
 
@@ -47,6 +51,8 @@ const StrategyManager = () => {
       riskLevel: 65,
       profitTarget: 8,
       stopLoss: 3,
+      secureInitial: true,
+      secureInitialPercentage: 100,
       type: "ai"
     },
     {
@@ -59,6 +65,8 @@ const StrategyManager = () => {
       riskLevel: 45,
       profitTarget: 12,
       stopLoss: 6,
+      secureInitial: true,
+      secureInitialPercentage: 75,
       type: "detection"
     },
     {
@@ -71,6 +79,8 @@ const StrategyManager = () => {
       riskLevel: 75,
       profitTarget: 15,
       stopLoss: 8,
+      secureInitial: false,
+      secureInitialPercentage: 0,
       type: "tracking"
     }
   ]);
@@ -78,12 +88,34 @@ const StrategyManager = () => {
   const [activeStrategy, setActiveStrategy] = useState<Strategy | null>(strategies[0]);
   const [activeTab, setActiveTab] = useState("active");
   
+  // Load strategies from localStorage on component mount
+  useEffect(() => {
+    const savedStrategies = localStorage.getItem("trading_strategies");
+    if (savedStrategies) {
+      try {
+        const parsedStrategies = JSON.parse(savedStrategies);
+        setStrategies(parsedStrategies);
+        // Set the first strategy as active if available
+        if (parsedStrategies.length > 0) {
+          setActiveStrategy(parsedStrategies[0]);
+        }
+      } catch (error) {
+        console.error("Error parsing saved strategies:", error);
+      }
+    }
+  }, []);
+  
   const toggleStrategy = (strategyId: string) => {
-    setStrategies(strategies.map(strategy => 
+    const updatedStrategies = strategies.map(strategy => 
       strategy.id === strategyId 
         ? { ...strategy, enabled: !strategy.enabled } 
         : strategy
-    ));
+    );
+    
+    setStrategies(updatedStrategies);
+    
+    // Update localStorage
+    localStorage.setItem("trading_strategies", JSON.stringify(updatedStrategies));
     
     // Show toast when enabling/disabling a strategy
     const strategy = strategies.find(s => s.id === strategyId);
@@ -97,9 +129,15 @@ const StrategyManager = () => {
   };
   
   const saveStrategySettings = (updatedStrategy: Strategy) => {
-    setStrategies(strategies.map(strategy => 
+    const updatedStrategies = strategies.map(strategy => 
       strategy.id === updatedStrategy.id ? updatedStrategy : strategy
-    ));
+    );
+    
+    setStrategies(updatedStrategies);
+    setActiveStrategy(updatedStrategy);
+    
+    // Update localStorage
+    localStorage.setItem("trading_strategies", JSON.stringify(updatedStrategies));
     
     // Show success toast
     toast({
@@ -130,6 +168,14 @@ const StrategyManager = () => {
     : activeTab === "inactive"
     ? strategies.filter(s => !s.enabled)
     : strategies;
+
+  const secureAllInitials = () => {
+    // Simulate securing all active strategies' initials
+    toast({
+      title: "Initial Investments Secured",
+      description: "Initial investments have been secured for all active strategies.",
+    });
+  };
   
   return (
     <div className="space-y-6">
@@ -145,13 +191,25 @@ const StrategyManager = () => {
             <CardDescription>Configure and manage your trading algorithms</CardDescription>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue="all" className="mb-4" onValueChange={setActiveTab}>
-              <TabsList className="bg-black/20 w-full">
-                <TabsTrigger value="all">All</TabsTrigger>
-                <TabsTrigger value="active">Active</TabsTrigger>
-                <TabsTrigger value="inactive">Inactive</TabsTrigger>
-              </TabsList>
-            </Tabs>
+            <div className="flex justify-between mb-4">
+              <Tabs defaultValue="all" className="mb-4" onValueChange={setActiveTab}>
+                <TabsList className="bg-black/20 w-full">
+                  <TabsTrigger value="all">All</TabsTrigger>
+                  <TabsTrigger value="active">Active</TabsTrigger>
+                  <TabsTrigger value="inactive">Inactive</TabsTrigger>
+                </TabsList>
+              </Tabs>
+              
+              <Button 
+                variant="outline" 
+                size="sm"
+                className="ml-2 flex items-center gap-1 bg-trading-success/10 text-trading-success border-trading-success/30"
+                onClick={secureAllInitials}
+              >
+                <Shield size={14} />
+                <span>Secure All Initials</span>
+              </Button>
+            </div>
             
             <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
               {filteredStrategies.map(strategy => (
@@ -191,6 +249,13 @@ const StrategyManager = () => {
                       Risk: {strategy.riskLevel > 65 ? 'High' : strategy.riskLevel > 35 ? 'Medium' : 'Low'}
                     </Badge>
                   </div>
+                  
+                  {strategy.secureInitial && (
+                    <div className="mt-2 flex items-center gap-1 text-xs text-trading-success">
+                      <Shield size={12} className="text-trading-success" />
+                      <span>Secures {strategy.secureInitialPercentage}% of initial</span>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -294,8 +359,38 @@ const StrategyManager = () => {
                         step={5}
                         value={[activeStrategy.riskLevel]}
                         onValueChange={(value) => setActiveStrategy({...activeStrategy, riskLevel: value[0]})}
+                        className="mb-6"
                       />
                     </div>
+                    
+                    <div className="flex justify-between items-center mb-4">
+                      <Label htmlFor="secureInitial" className="flex items-center gap-2">
+                        <Shield size={16} className={activeStrategy.secureInitial ? 'text-trading-success' : 'text-gray-400'} />
+                        Secure Initial Investment
+                      </Label>
+                      <Switch 
+                        id="secureInitial"
+                        checked={activeStrategy.secureInitial}
+                        onCheckedChange={(checked) => setActiveStrategy({...activeStrategy, secureInitial: checked})}
+                      />
+                    </div>
+                    
+                    {activeStrategy.secureInitial && (
+                      <div>
+                        <div className="flex justify-between mb-2">
+                          <Label htmlFor="securePercentage">Secure Initial Percentage: {activeStrategy.secureInitialPercentage}%</Label>
+                        </div>
+                        <Slider 
+                          id="securePercentage"
+                          min={25} 
+                          max={100} 
+                          step={25}
+                          value={[activeStrategy.secureInitialPercentage]}
+                          onValueChange={(value) => setActiveStrategy({...activeStrategy, secureInitialPercentage: value[0]})}
+                          className="mb-6"
+                        />
+                      </div>
+                    )}
                   </div>
                   
                   <div className="flex justify-end pt-4">

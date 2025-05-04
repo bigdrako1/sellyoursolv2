@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
@@ -5,6 +6,7 @@ import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useToast } from "@/hooks/use-toast";
 import { 
   Brain, 
   Cpu, 
@@ -13,7 +15,8 @@ import {
   AlertCircle, 
   Zap,
   Bot,
-  ArrowUpRight
+  ArrowUpRight,
+  Save
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { APP_CONFIG } from "@/config/appDefinition";
@@ -48,6 +51,7 @@ const AutoTradeConfig = () => {
       targetChains: ["solana"]
     }
   });
+  const { toast } = useToast();
 
   const toggleSetting = (feature: string, setting: string) => {
     setSettings({
@@ -82,6 +86,58 @@ const AutoTradeConfig = () => {
         targetChains: updatedChains
       }
     });
+  };
+
+  const handleSaveAndApply = () => {
+    // Save settings to localStorage for persistence
+    localStorage.setItem('trading_settings', JSON.stringify(settings));
+    
+    toast({
+      title: "Settings Applied",
+      description: "Your trading configuration has been saved and applied.",
+    });
+  };
+
+  const handleImport = () => {
+    try {
+      // Open a file picker dialog
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = '.json';
+      
+      input.onchange = (e: any) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        const reader = new FileReader();
+        reader.onload = (event: any) => {
+          try {
+            const importedSettings = JSON.parse(event.target.result);
+            setSettings(importedSettings);
+            
+            toast({
+              title: "Settings Imported",
+              description: "Trading configuration has been imported successfully.",
+            });
+          } catch (error) {
+            toast({
+              title: "Import Failed",
+              description: "Invalid configuration file format.",
+              variant: "destructive"
+            });
+          }
+        };
+        reader.readAsText(file);
+      };
+      
+      input.click();
+    } catch (error) {
+      toast({
+        title: "Import Failed",
+        description: "Could not import settings file.",
+        variant: "destructive"
+      });
+    }
   };
 
   const renderContent = () => {
@@ -443,12 +499,22 @@ const AutoTradeConfig = () => {
             <p className="text-sm text-gray-400 mt-1">Configure your automated trading strategies</p>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" className="gap-2 bg-black/30">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="gap-2 bg-black/30"
+              onClick={handleImport}
+            >
               <Upload size={14} />
               <span>Import</span>
             </Button>
-            <Button variant="default" size="sm" className="gap-2 trading-button">
-              <Activity size={14} />
+            <Button 
+              variant="default" 
+              size="sm" 
+              className="gap-2 trading-button"
+              onClick={handleSaveAndApply}
+            >
+              <Save size={14} />
               <span>Save & Apply</span>
             </Button>
           </div>
