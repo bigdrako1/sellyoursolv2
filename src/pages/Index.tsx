@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import WelcomeScreen from "@/components/WelcomeScreen";
 import Footer from "@/components/Footer";
@@ -8,6 +9,8 @@ import TokenAlertMonitor from "@/components/TokenAlertMonitor";
 const Index: React.FC = () => {
   const [connectedWallet, setConnectedWallet] = useState<string | null>(null);
   const { isAuthenticated } = useAuth();
+  const [systemActive, setSystemActive] = useState(true);
+  const [systemLatency, setSystemLatency] = useState<number | null>(42);
   
   useEffect(() => {
     // Check if wallet is already connected on mount
@@ -15,6 +18,14 @@ const Index: React.FC = () => {
     if (storedWallet) {
       setConnectedWallet(storedWallet);
     }
+    
+    // Simulate random system status and latency
+    const interval = setInterval(() => {
+      setSystemActive(Math.random() > 0.1);
+      setSystemLatency(Math.floor(Math.random() * 100) + 30);
+    }, 60000);
+    
+    return () => clearInterval(interval);
   }, []);
   
   const handleWalletConnect = (address: string) => {
@@ -44,7 +55,7 @@ const Index: React.FC = () => {
         )}
       </main>
       
-      <Footer />
+      <Footer systemActive={systemActive} systemLatency={systemLatency} />
     </div>
   );
 };

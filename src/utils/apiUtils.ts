@@ -1,3 +1,4 @@
+
 // API utility functions for interacting with Solana blockchain and external services
 import { PublicKey } from '@solana/web3.js';
 
@@ -10,6 +11,13 @@ interface TokenMetadata {
   symbol: string;
   logo: string;
   mint: string;
+}
+
+export interface WebhookConfig {
+  url: string;
+  events: string[];
+  description?: string;
+  active: boolean;
 }
 
 import { waitForRateLimit, setRateLimitTier, RateLimitTier } from './rateLimit';
@@ -147,6 +155,28 @@ export const heliusRpcCall = async (method: string, params: any[] = []) => {
 };
 
 /**
+ * Fetches token prices from various sources
+ * @param mintAddresses Array of token mint addresses
+ * @returns Array of token price data
+ */
+export const getTokenPrices = async (mintAddresses: string[]): Promise<any[]> => {
+  try {
+    // Mock implementation - would call a price API in a real app
+    return mintAddresses.map(mint => ({
+      mint,
+      name: `Token ${mint.substring(0, 4)}`,
+      symbol: mint.substring(0, 4),
+      price: Math.random() * 100,
+      priceChange24h: (Math.random() * 20) - 10,
+      volume24h: Math.random() * 1000000
+    }));
+  } catch (error) {
+    console.error("Error fetching token prices:", error);
+    return [];
+  }
+};
+
+/**
  * Fetches the current SOL price in USD
  * @returns SOL price in USD
  */
@@ -182,4 +212,64 @@ export const getToken24hChange = async (tokenSymbol: string): Promise<number> =>
 export const updateHeliusRateLimitTier = (tier: RateLimitTier) => {
   setRateLimitTier('heliusRpc', tier);
   setRateLimitTier('heliusApi', tier);
+};
+
+/**
+ * Get API usage statistics for monitoring
+ */
+export const getApiUsageStats = () => {
+  const heliusRpcStats = {
+    name: 'Helius RPC',
+    requests: Math.floor(Math.random() * 100),
+    limit: 500,
+    percentage: Math.floor(Math.random() * 100),
+  };
+  
+  const heliusApiStats = {
+    name: 'Helius API',
+    requests: Math.floor(Math.random() * 200),
+    limit: 1000,
+    percentage: Math.floor(Math.random() * 100),
+  };
+  
+  return [heliusRpcStats, heliusApiStats];
+};
+
+/**
+ * Create a new webhook
+ */
+export const createWebhook = async (config: WebhookConfig): Promise<boolean> => {
+  // Mock implementation
+  console.log('Creating webhook:', config);
+  return true;
+};
+
+/**
+ * Get all webhooks
+ */
+export const getWebhooks = async (): Promise<WebhookConfig[]> => {
+  // Mock implementation
+  return [
+    {
+      url: 'https://example.com/webhook1',
+      events: ['transaction', 'block'],
+      description: 'Transaction and block notifications',
+      active: true
+    },
+    {
+      url: 'https://example.com/webhook2',
+      events: ['nft_sale'],
+      description: 'NFT sales notifications',
+      active: false
+    }
+  ];
+};
+
+/**
+ * Delete a webhook
+ */
+export const deleteWebhook = async (url: string): Promise<boolean> => {
+  // Mock implementation
+  console.log('Deleting webhook:', url);
+  return true;
 };

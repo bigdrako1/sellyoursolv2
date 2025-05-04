@@ -1,178 +1,124 @@
 
-import { useEffect, useState, useRef } from "react";
-import { Card } from "@/components/ui/card";
-import { ArrowUp, ArrowDown } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { heliusApiCall } from "@/utils/apiUtils";
-
-interface PriceData {
-  symbol: string;
-  price: number;
-  change24h: number;
-  lastPrice?: number;
-  priceChangeTimestamp?: number;
-}
+import React, { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { getSolPrice, getToken24hChange } from '@/utils/apiUtils';
+import { formatCurrency } from '@/utils/marketUtils';
+import { Card, CardContent } from '@/components/ui/card';
+import { ArrowUp, ArrowDown, Loader2 } from 'lucide-react';
+import { useCurrencyStore } from '@/store/currencyStore';
 
 const LivePriceTracker = () => {
-  const [prices, setPrices] = useState<PriceData[]>([
-    { symbol: "SOL", price: 0, change24h: 0 }
-  ]);
-  const { toast } = useToast();
-  const fetchTimerRef = useRef<number | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-
+  const { currency, currencySymbol } = useCurrencyStore();
+  const [animatePrice, setAnimatePrice] = useState(false);
+  const [priceDirection, setPriceDirection] = useState<'up' | 'down' | null>(null);
+  
+  // Use React Query to fetch the SOL price
+  const { 
+    data: solPrice, 
+    isLoading: solLoading, 
+    error: solError 
+  } = useQuery({
+    queryKey: ['solPrice'],
+    queryFn: getSolPrice,
+    refetchInterval: 30000 // Refetch every 30 seconds
+  });
+  
+  // Use React Query to fetch the 24h change
+  const { 
+    data: sol24hChange, 
+    isLoading: changeLoading, 
+    error: changeError 
+  } = useQuery({
+    queryKey: ['sol24hChange'],
+    queryFn: () => getToken24hChange('SOL'),
+    refetchInterval: 60000 // Refetch every minute
+  });
+  
+  // Handle price animation
   useEffect(() => {
-    const fetchInitialPrices = async () => {
-      setIsLoading(true);
-      try {
-        const response = await heliusApiCall<any>('/token-prices', 'GET');
-        
-        if (response && response.tokens) {
-          const solData = response.tokens.find((token: any) => 
-            token.symbol.toLowerCase() === "sol" || token.name.toLowerCase() === "solana");
-          
-          const initialPrices: PriceData[] = [];
-          
-          if (solData) {
-            initialPrices.push({
-              symbol: "SOL",
-              price: parseFloat(solData.price) || 0,
-              change24h: parseFloat(solData.change24h) || 0
-            });
-          } else {
-            initialPrices.push({ symbol: "SOL", price: 0, change24h: 0 });
-          }
-          
-          setPrices(initialPrices);
-        }
-        setIsLoading(false);
-        startPriceFetching();
-      } catch (error) {
-        console.error("Failed to fetch initial prices:", error);
-        // Fallback to default values
-        setPrices([
-          { symbol: "SOL", price: 140, change24h: 0 }
-        ]);
-        setIsLoading(false);
-        startPriceFetching();
+    let lastPrice = 0;
+    
+    if (solPrice && lastPrice !== 0) {
+      if (solPrice > lastPrice) {
+        setPriceDirection('up');
+      } else if (solPrice < lastPrice) {
+        setPriceDirection('down');
       }
+      
+      setAnimatePrice(true);
+      const timer = setTimeout(() => setAnimatePrice(false), 2000);
+      return () => clearTimeout(timer);
+    }
+    
+    lastPrice = solPrice || 0;
+  }, [solPrice]);
+  
+  // Convert SOL price to selected currency
+  const convertToCurrency = (value: number): number => {
+    const rates = {
+      USD: 1,
+      EUR: 0.92,
+      GBP: 0.79,
+      JPY: 150.56,
+      KES: 129.45
     };
-
-    fetchInitialPrices();
-
-    return () => {
-      if (fetchTimerRef.current !== null) {
-        clearTimeout(fetchTimerRef.current);
-      }
-    };
-  }, []);
-
-  const startPriceFetching = () => {
-    const updatePrices = async () => {
-      try {
-        const response = await heliusApiCall<any>('/token-prices', 'GET');
-        
-        if (response && response.tokens) {
-          setPrices(currentPrices => {
-            return currentPrices.map(token => {
-              const lastPrice = token.price;
-              
-              // Find the matching token in the API response
-              const tokenData = response.tokens.find((t: any) => 
-                t.symbol.toLowerCase() === token.symbol.toLowerCase() ||
-                (token.symbol === "SOL" && t.name.toLowerCase() === "solana")
-              );
-              
-              if (!tokenData) return token;
-              
-              const newPrice = parseFloat(tokenData.price) || lastPrice;
-              const change24h = parseFloat(tokenData.change24h) || 0;
-              
-              // Check for significant price changes (>2%)
-              const significantChange = lastPrice && Math.abs((newPrice - lastPrice) / lastPrice) > 0.02;
-              const currentTime = Date.now();
-              const hasTimeElapsed = !token.priceChangeTimestamp || 
-                (currentTime - token.priceChangeTimestamp > 5000); // 5 seconds cooldown
-              
-              // Show toast for very significant price changes (>2%)
-              if (significantChange && hasTimeElapsed) {
-                toast({
-                  title: `${token.symbol} ${newPrice > lastPrice ? 'Rising' : 'Dropping'}`,
-                  description: `${newPrice > lastPrice ? '+' : '-'}${Math.abs((newPrice - lastPrice) / lastPrice * 100).toFixed(2)}% in the last update`,
-                  variant: newPrice > lastPrice ? "default" : "destructive",
-                });
-              }
-              
-              return {
-                ...token,
-                lastPrice,
-                price: newPrice,
-                change24h: change24h,
-                priceChangeTimestamp: significantChange && hasTimeElapsed ? currentTime : token.priceChangeTimestamp
-              };
-            });
-          });
-        }
-        
-        // Schedule next update with a slight randomization to make it feel more natural
-        const nextUpdateDelay = 10000 + (Math.random() * 2000);
-        fetchTimerRef.current = window.setTimeout(updatePrices, nextUpdateDelay);
-      } catch (error) {
-        console.error("Failed to fetch prices:", error);
-        // Retry on failure after a delay
-        fetchTimerRef.current = window.setTimeout(updatePrices, 15000);
-      }
-    };
-
-    // Initial fetch schedule
-    fetchTimerRef.current = window.setTimeout(updatePrices, 10000);
+    
+    return value * (rates[currency as keyof typeof rates] || 1);
   };
-
-  const getPriceChangeClass = (token: PriceData) => {
-    if (!token.lastPrice) return '';
-    
-    const currentTime = Date.now();
-    const hasRecentChange = token.priceChangeTimestamp && 
-      (currentTime - token.priceChangeTimestamp < 2000); // Animation lasts 2 seconds max
-    
-    if (!hasRecentChange) return '';
-    
-    return token.price > token.lastPrice 
-      ? 'animate-pulse border-trading-success/20' 
-      : 'animate-pulse border-trading-danger/20';
-  };
-
-  if (isLoading) {
+  
+  // Display loading state
+  if (solLoading || changeLoading) {
     return (
-      <div className="flex gap-2">
-        <Card className="px-3 py-1 bg-trading-darkAccent border-white/5 opacity-50">
-          <div className="flex items-center gap-1">
-            <span className="font-medium text-xs">SOL: Loading...</span>
+      <Card className="trading-card min-h-[72px] flex items-center justify-center">
+        <CardContent className="p-3">
+          <div className="flex items-center justify-center">
+            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+            <span className="text-sm">Loading price data...</span>
           </div>
-        </Card>
-      </div>
+        </CardContent>
+      </Card>
     );
   }
-
+  
+  // Display error state
+  if (solError || changeError) {
+    return (
+      <Card className="trading-card min-h-[72px] border border-trading-danger/30">
+        <CardContent className="p-3">
+          <div className="text-xs text-trading-danger text-center">
+            Failed to load price data
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+  
   return (
-    <div className="flex gap-2">
-      {prices.map((price) => (
-        <Card 
-          key={price.symbol}
-          className={`
-            px-3 py-1 flex items-center gap-1 bg-trading-darkAccent border-white/5
-            ${getPriceChangeClass(price)}
-          `}
-        >
-          <span className="font-medium text-xs">{price.symbol}:</span>
-          <span className="text-xs">${price.price.toFixed(2)}</span>
-          <span className={`text-xs flex items-center ${price.change24h >= 0 ? 'text-trading-success' : 'text-trading-danger'}`}>
-            {price.change24h >= 0 ? <ArrowUp size={10} /> : <ArrowDown size={10} />}
-            {Math.abs(price.change24h).toFixed(1)}%
-          </span>
-        </Card>
-      ))}
-    </div>
+    <Card className="trading-card card-with-border">
+      <CardContent className="p-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="text-xs text-gray-400">SOL Price</div>
+            <div className={`text-lg font-bold ${animatePrice ? (priceDirection === 'up' ? 'text-trading-success' : 'text-trading-danger') : ''}`}>
+              {currencySymbol}{solPrice ? convertToCurrency(solPrice).toFixed(2) : '-.--'}
+            </div>
+          </div>
+          
+          {sol24hChange !== undefined && (
+            <div className={`flex items-center ${sol24hChange >= 0 ? 'text-trading-success' : 'text-trading-danger'}`}>
+              {sol24hChange >= 0 ? (
+                <ArrowUp className="h-3.5 w-3.5 mr-1" />
+              ) : (
+                <ArrowDown className="h-3.5 w-3.5 mr-1" />
+              )}
+              <span className="text-sm font-medium">
+                {Math.abs(sol24hChange).toFixed(2)}%
+              </span>
+            </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
   );
 };
 

@@ -4,7 +4,7 @@
  * Functions to interact with market data from Solana ecosystem
  */
 
-import { getTokenPrices, heliusRpcCall } from './apiUtils';
+import { heliusRpcCall, getTokenPrices } from './apiUtils';
 
 // Mock data for testing when API is unavailable
 const MOCK_TOKEN_DATA = [
