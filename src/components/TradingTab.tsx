@@ -14,6 +14,8 @@ import TokenList from '@/components/TokenList';
 import { identifyPotentialRunners } from '@/utils/tradingUtils';
 import LivePriceTracker from '@/components/LivePriceTracker';
 import TwitterSentimentScanner from '@/components/TwitterSentimentScanner';
+import TokenQualityFilter from '@/components/TokenQualityFilter';
+import PotentialRunnersDetector from '@/components/PotentialRunnersDetector';
 
 const TradingTab = () => {
   const [activeTab, setActiveTab] = useState('monitor');
@@ -66,6 +68,8 @@ const TradingTab = () => {
           <TabsTrigger value="monitor">Token Monitor</TabsTrigger>
           <TabsTrigger value="detector">Token Detector</TabsTrigger>
           <TabsTrigger value="sentiment">Sentiment</TabsTrigger>
+          <TabsTrigger value="quality">Quality Filter</TabsTrigger>
+          <TabsTrigger value="runners">Potential Runners</TabsTrigger>
           <TabsTrigger value="strategy">Strategy</TabsTrigger>
           <TabsTrigger value="alerts">Alerts</TabsTrigger>
         </TabsList>
@@ -95,6 +99,18 @@ const TradingTab = () => {
         <TabsContent value="sentiment" className="space-y-4">
           {activeTab === 'sentiment' && (
             <TwitterSentimentScanner />
+          )}
+        </TabsContent>
+        
+        <TabsContent value="quality" className="space-y-4">
+          {activeTab === 'quality' && (
+            <TokenQualityFilter />
+          )}
+        </TabsContent>
+        
+        <TabsContent value="runners" className="space-y-4">
+          {activeTab === 'runners' && (
+            <PotentialRunnersDetector />
           )}
         </TabsContent>
         
