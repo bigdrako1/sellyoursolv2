@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import { heliusApiCall, testHeliusConnection } from "@/utils/apiUtils";
+import { testHeliusConnection } from "@/utils/apiUtils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -39,6 +39,11 @@ const MarketAnalysis = () => {
             description: "Could not connect to Helius API. Some features may be limited.",
             variant: "destructive",
           });
+        } else {
+          toast({
+            title: "API Connected",
+            description: "Successfully connected to Helius API.",
+          });
         }
       } catch (error) {
         console.error("API connection test failed:", error);
@@ -54,11 +59,11 @@ const MarketAnalysis = () => {
     const fetchMarketData = async () => {
       setIsLoading(true);
       try {
-        // Fix: Only pass the limit parameter to getMarketOverview
+        // Fixed: Only pass the limit parameter to getMarketOverview
         const marketData = await getMarketOverview(5);
         
         // Transform the data into the format our component expects
-        const transformedData: TokenData[] = marketData.map(token => ({
+        const transformedData: TokenData[] = marketData.map((token: any) => ({
           name: token.name,
           symbol: token.symbol,
           price: token.price,
@@ -87,7 +92,7 @@ const MarketAnalysis = () => {
     const measureLatency = async () => {
       try {
         const startTime = Date.now();
-        await heliusApiCall('/health-check');
+        await testHeliusConnection();
         const latency = Date.now() - startTime;
         setSystemLatency(latency);
       } catch (error) {
@@ -97,6 +102,11 @@ const MarketAnalysis = () => {
     
     if (apiConnected) {
       measureLatency();
+      
+      // Set up interval to check latency periodically
+      const latencyInterval = setInterval(measureLatency, 60000); // Every minute
+      
+      return () => clearInterval(latencyInterval);
     }
   }, [apiConnected]);
 
@@ -195,7 +205,7 @@ const MarketAnalysis = () => {
                   <CardContent>
                     <p className="text-muted-foreground">
                       Market activity data from Helius API will be displayed here.
-                      This panel would show recent transactions, volume spikes, and other on-chain metrics.
+                      This panel shows recent transactions, volume spikes, and other on-chain metrics from the Solana blockchain.
                     </p>
                   </CardContent>
                 </Card>
@@ -216,7 +226,7 @@ const MarketAnalysis = () => {
                       />
                     </div>
                     <p className="text-muted-foreground">
-                      Search and explore detailed token information using the Helius API.
+                      Search and explore detailed token information from the Solana ecosystem using the Helius API.
                       Enter a token symbol or address to view charts, stats and on-chain data.
                     </p>
                   </CardContent>

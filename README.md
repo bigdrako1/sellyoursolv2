@@ -1,73 +1,37 @@
-# Welcome to your Lovable project
 
-## Project info
+# SellYourSOL V2 AI Trading Platform
 
-**URL**: https://lovable.dev/projects/711fe7c4-e2ea-4a84-9194-330008ff0196
+## Overview
+SellYourSOL V2 is an advanced algorithmic trading platform for the Solana ecosystem. The platform leverages artificial intelligence to analyze market trends, track on-chain activity, and execute automated trading strategies with minimal latency.
 
-## How can I edit this code?
+## Core Features
+- **Live Market Analysis**: Real-time tracking of Solana token prices and market movements
+- **AI-Powered Trading**: Automated trading strategies utilizing machine learning algorithms
+- **Wallet Integration**: Connect your Solana wallets for seamless transactions
+- **Transaction Monitoring**: Track transaction history and portfolio performance
+- **Webhook Integration**: Configure custom alerts and notifications for market events
+- **API Management**: Connect to Helius and other Solana data providers
 
-There are several ways of editing your application.
+## Target Users
+- Cryptocurrency traders focused on the Solana ecosystem
+- Investors looking for automated trading solutions
+- Developers building on Solana who need market insights
 
-**Use Lovable**
+## Technical Architecture
+- **Frontend**: React with TypeScript for type safety
+- **Design System**: TailwindCSS with ShadcnUI components
+- **Data Provider**: Helius API for Solana blockchain data
+- **State Management**: Zustand for global state
+- **Charting**: Recharts for data visualization
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/711fe7c4-e2ea-4a84-9194-330008ff0196) and start prompting.
+## Getting Started
+1. Clone the repository
+2. Install dependencies with `npm install`
+3. Start the development server with `npm run dev`
+4. Connect a wallet to access all features
 
-Changes made via Lovable will be committed automatically to this repo.
+## Configuration
+The platform is preconfigured with Helius API integration. Users can add their own API keys in the Settings page.
 
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
-
-**Edit a file directly in GitHub**
-
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/711fe7c4-e2ea-4a84-9194-330008ff0196) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+## Disclaimer
+This platform is for educational and demonstration purposes. Always exercise caution when trading cryptocurrencies and never invest more than you can afford to lose.

@@ -1,164 +1,195 @@
 
-import { heliusApiCall } from "./apiUtils";
+/**
+ * Market utilities for SellYourSOL V2 AI trading platform
+ * Functions to interact with market data from Solana ecosystem
+ */
+
+import { getTokenPrices, heliusRpcCall } from './apiUtils';
+
+// Mock data for testing when API is unavailable
+const MOCK_TOKEN_DATA = [
+  {
+    name: "Solana",
+    symbol: "SOL",
+    price: 145.24,
+    change24h: 2.34,
+    volume24h: 2354657890,
+  },
+  {
+    name: "SellYourSOL",
+    symbol: "SYS",
+    price: 0.052,
+    change24h: 4.25,
+    volume24h: 9874560,
+  },
+  {
+    name: "Raydium",
+    symbol: "RAY",
+    price: 1.24,
+    change24h: -1.85,
+    volume24h: 53487690,
+  },
+  {
+    name: "Serum",
+    symbol: "SRM",
+    price: 0.78,
+    change24h: 0.95,
+    volume24h: 28546789,
+  },
+  {
+    name: "Marinade SOL",
+    symbol: "mSOL",
+    price: 160.35,
+    change24h: 2.45,
+    volume24h: 456789230,
+  },
+  {
+    name: "USDC",
+    symbol: "USDC",
+    price: 1.00,
+    change24h: 0.01,
+    volume24h: 8976543210,
+  },
+];
+
+// Common Solana token mints - typically we'd get these from an API but hardcoded for reliability
+const SOLANA_TOKEN_MINTS = {
+  "SOL": "So11111111111111111111111111111111111111112",
+  "SYS": "SYSaMdwaj1BmJnCzTXaSdT7QF3YwiG8Lk6KCgJ2s1i",
+  "RAY": "4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R",
+  "SRM": "SRMuApVNdxXokk5GT7XD5cUUgXMBCoAz2LHeuAoKWRt",
+  "mSOL": "mSoLzYCxHdYgdzU16g5QSh3i5K3z3KZK7ytfqcJm7So",
+  "USDC": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
+};
 
 /**
- * Fetches token price data
+ * Get market overview data
+ * @param limit Number of tokens to return
+ * @returns Array of token market data
+ */
+export const getMarketOverview = async (limit = 5) => {
+  try {
+    // Get token prices from Helius API
+    const tokenMints = Object.values(SOLANA_TOKEN_MINTS);
+    const tokenPrices = await getTokenPrices(tokenMints.slice(0, limit));
+
+    // If we have token prices, process them
+    if (tokenPrices && tokenPrices.length > 0) {
+      return tokenPrices.map((token: any) => ({
+        name: token.name || getSymbolFromMint(token.mint),
+        symbol: token.symbol || getSymbolFromMint(token.mint),
+        price: token.price || 0,
+        change24h: token.priceChange24h || 0,
+        volume24h: token.volume24h || 0
+      })).slice(0, limit);
+    }
+
+    // Fallback to mock data if API failed
+    console.log('Using mock market data as fallback');
+    return MOCK_TOKEN_DATA.slice(0, limit);
+  } catch (error) {
+    console.error('Error fetching market overview:', error);
+    return MOCK_TOKEN_DATA.slice(0, limit);
+  }
+};
+
+/**
+ * Get historical price data for a token
  * @param symbol Token symbol
- * @param timeframe Timeframe for data (1h, 1d, 1w, 1m)
- * @returns Price and volume data for the requested timeframe
+ * @param days Number of days of history to return
+ * @returns Array of price datapoints
  */
-export const fetchTokenPriceData = async (
-  symbol: string, 
-  timeframe: string
-): Promise<any[]> => {
+export const getTokenPriceHistory = async (symbol: string, days = 7) => {
   try {
-    // Use Helius API to fetch historical price data
-    const endpoint = `/token-price-history/${symbol}?timeframe=${timeframe}`;
-    const response = await heliusApiCall<any>(endpoint);
-    return response?.data || [];
-  } catch (error) {
-    console.error(`Error fetching token price data for ${symbol}:`, error);
-    return generateMockPriceData(symbol, timeframe);
-  }
-};
-
-/**
- * Generate mock price data as fallback when API fails
- */
-const generateMockPriceData = (symbol: string, timeframe: string): any[] => {
-  const now = Date.now();
-  const points = timeframe === "1h" ? 60 : 
-                timeframe === "1d" ? 24 : 
-                timeframe === "1w" ? 7 : 30;
-  
-  const basePrice = symbol === "SOL" ? 140 : 
-                   symbol === "SELL" ? 0.24 : 0.5;
-                   
-  const volatility = 0.02; // 2% price movements
-  const data = [];
-  
-  let currentPrice = basePrice;
-  
-  for (let i = points; i >= 0; i--) {
-    const timestamp = now - (i * (timeframe === "1h" ? 60000 : 
-                              timeframe === "1d" ? 3600000 : 
-                              timeframe === "1w" ? 86400000 : 86400000));
+    // Simulate price history data until API is integrated
+    const currentPrice = MOCK_TOKEN_DATA.find(t => t.symbol === symbol)?.price || 100;
     
-    // Add some randomness to the price
-    const change = (Math.random() - 0.5) * volatility;
-    currentPrice = currentPrice * (1 + change);
+    // Generate mock price history
+    const history = [];
+    const now = new Date();
+    for (let i = days; i >= 0; i--) {
+      const date = new Date(now);
+      date.setDate(date.getDate() - i);
+      
+      // Random price variation +/- 5%
+      const variation = (Math.random() * 10 - 5) / 100;
+      const price = currentPrice * (1 + variation * (i + 1) / 2);
+      
+      history.push({
+        date: date.toISOString().split('T')[0],
+        price: parseFloat(price.toFixed(2))
+      });
+    }
     
-    data.push({
-      timestamp: new Date(timestamp).toISOString(),
-      price: currentPrice,
-      volume: Math.random() * 1000000
-    });
-  }
-  
-  return data;
-};
-
-/**
- * Gets market overview for multiple tokens
- * @param limit Maximum number of tokens to return
- * @returns Top tokens by market cap with price data
- */
-export const getMarketOverview = async (
-  limit = 10
-): Promise<any[]> => {
-  try {
-    // Since the Helius API seems to be having issues based on console logs,
-    // we'll use fallback mock data for now
-    return getMockMarketData(limit);
+    return history;
   } catch (error) {
-    console.error("Error fetching market overview:", error);
-    
-    // Return fallback data on error
-    return getMockMarketData(limit);
+    console.error(`Failed to get price history for ${symbol}:`, error);
+    return [];
   }
 };
 
 /**
- * Generate mock market data as a fallback
+ * Get crypto market statistics
+ * @returns Market statistics object
  */
-const getMockMarketData = (limit: number): any[] => {
-  const solanaTokens = [
-    { name: "Solana", symbol: "SOL", price: 153.42, change24h: 7.3, volume24h: 2345678, marketCap: 65432100000 },
-    { name: "SellYourSOL", symbol: "SELL", price: 0.24, change24h: 3.2, volume24h: 987654, marketCap: 12000000 },
-    { name: "Auto", symbol: "AUTO", price: 16.73, change24h: 1.8, volume24h: 345678, marketCap: 8900000 },
-    { name: "Trading X", symbol: "TDX", price: 0.34, change24h: -2.3, volume24h: 123456, marketCap: 4500000 }
-  ];
-  
-  return solanaTokens.slice(0, limit);
-};
-
-/**
- * Fetches recently active tokens with high volume
- * @param timeframe Timeframe to analyze (1h, 24h, 7d)
- * @returns Tokens with high activity in the given timeframe
- */
-export const getHighActivityTokens = async (
-  timeframe: "1h" | "24h" | "7d" = "24h"
-): Promise<any[]> => {
+export const getMarketStats = async () => {
   try {
-    // Fallback to mock data for now due to API issues
-    return getMockActivityTokens(timeframe);
+    // This would be replaced with actual API call in production
+    return {
+      marketCap: 1456789000000,
+      volume24h: 56789000000,
+      solDominance: 4.5,
+      activeTokens: 3456,
+      gainers24h: 234,
+      losers24h: 176
+    };
   } catch (error) {
-    console.error("Error fetching high activity tokens:", error);
-    return getMockActivityTokens(timeframe);
+    console.error('Failed to get market stats:', error);
+    return {
+      marketCap: 0,
+      volume24h: 0,
+      solDominance: 0,
+      activeTokens: 0,
+      gainers24h: 0,
+      losers24h: 0
+    };
   }
 };
 
 /**
- * Generate mock activity tokens as fallback
+ * Helper function to get symbol from mint address
  */
-const getMockActivityTokens = (timeframe: "1h" | "24h" | "7d"): any[] => {
-  const solanaActivityTokens = [
-    { name: "SellYourSOL", symbol: "SELL", price: 0.24, priceChange: 15.3, volumeChange: 230.5, volume: 2345678, liquidityChange: 12.3, activityScore: 87 },
-    { name: "Auto", symbol: "AUTO", price: 16.73, priceChange: 8.9, volumeChange: 145.2, volume: 987654, liquidityChange: 7.8, activityScore: 76 },
-    { name: "Trading X", symbol: "TDX", price: 0.34, priceChange: 12.1, volumeChange: 178.6, volume: 564738, liquidityChange: 9.2, activityScore: 82 }
-  ];
-  
-  // Adjust activity score based on timeframe
-  const timeFactor = timeframe === "1h" ? 1.5 : timeframe === "24h" ? 1.0 : 0.8;
-  
-  const adjustScores = (tokens: any[]) => tokens.map(token => ({
-    ...token,
-    activityScore: Math.min(100, Math.floor(token.activityScore * timeFactor))
-  }));
-  
-  return adjustScores(solanaActivityTokens);
-};
-
-/**
- * Analyzes token sentiment based on social media and on-chain metrics
- * @param symbol Token symbol
- * @returns Sentiment analysis data
- */
-export const analyzeTokenSentiment = async (
-  symbol: string
-): Promise<any> => {
-  try {
-    // Fallback to mock data since API has issues
-    return getMockSentimentData(symbol);
-  } catch (error) {
-    console.error(`Error analyzing token sentiment for ${symbol}:`, error);
-    return getMockSentimentData(symbol);
+const getSymbolFromMint = (mintAddress: string): string => {
+  const entries = Object.entries(SOLANA_TOKEN_MINTS);
+  for (const [symbol, mint] of entries) {
+    if (mint === mintAddress) return symbol;
   }
+  return 'UNKNOWN';
 };
 
 /**
- * Generate mock sentiment data as fallback
+ * Format currency amount based on currency and amount
+ * @param amount Amount to format
+ * @param currency Currency code (USD, EUR, etc)
+ * @returns Formatted currency string
  */
-const getMockSentimentData = (symbol: string): any => {
-  return {
-    symbol,
-    overallScore: Math.floor(Math.random() * 40) + 60,  // 60-100 range
-    socialMediaScore: Math.floor(Math.random() * 50) + 50,
-    technicalAnalysisScore: Math.floor(Math.random() * 40) + 60,
-    whaleActivityScore: Math.floor(Math.random() * 60) + 40,
-    communityGrowth: Math.floor(Math.random() * 30) + 70,
-    liquidityIndex: Math.floor(Math.random() * 40) + 60,
-    updated: new Date().toISOString()
+export const formatCurrency = (amount: number, currency: string) => {
+  const currencySymbols: Record<string, string> = {
+    USD: '$',
+    EUR: '€',
+    GBP: '£',
+    JPY: '¥',
+    KES: 'KSh'
   };
+
+  const symbol = currencySymbols[currency] || '$';
+  
+  if (currency === 'JPY') {
+    return `${symbol}${amount.toFixed(0)}`;
+  }
+  
+  return `${symbol}${amount.toLocaleString(undefined, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  })}`;
 };

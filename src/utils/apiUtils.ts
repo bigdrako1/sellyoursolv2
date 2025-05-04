@@ -1,11 +1,11 @@
 
 /**
- * API utilities for rate limiting and usage tracking
+ * API utilities for Helius API integration
  */
 
 // Helius API configuration
 const HELIUS_API_KEY = "a18d2c93-d9fa-4db2-8419-707a4f1782f7";
-const HELIUS_BASE_URL = "https://api.helius.xyz/v0";
+const HELIUS_BASE_URL = "https://api.helius.xyz/v1";  // Updated to v1 from v0
 const HELIUS_RPC_URL = "https://mainnet.helius-rpc.com";
 const HELIUS_WEBSOCKET_URL = "wss://mainnet.helius-rpc.com";
 
@@ -165,11 +165,22 @@ export const heliusRpcCall = async <T>(method: string, params: any[] = []): Prom
 // Test Helius API connection
 export const testHeliusConnection = async (): Promise<boolean> => {
   try {
-    await heliusApiCall('/health-check');
-    return true;
+    // Use getBalances as a test endpoint - more reliable than health-check
+    const rpcResult = await heliusRpcCall<any>("getHealth", []);
+    return rpcResult ? true : false;
   } catch (error) {
     console.error("Failed to connect to Helius API:", error);
     return false;
+  }
+};
+
+// Get token prices from Helius API
+export const getTokenPrices = async (tokenMints: string[]): Promise<any> => {
+  try {
+    return await heliusRpcCall<any>("getTokenPrices", [tokenMints]);
+  } catch (error) {
+    console.error("Failed to get token prices:", error);
+    throw error;
   }
 };
 
