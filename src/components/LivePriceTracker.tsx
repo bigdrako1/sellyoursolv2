@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Card } from "@/components/ui/card";
 import { ArrowUp, ArrowDown } from "lucide-react";
 import { playSound, initAudio } from "@/utils/soundUtils";
@@ -10,6 +10,7 @@ interface PriceData {
   price: number;
   change24h: number;
   lastPrice?: number;
+  priceChangeTimestamp?: number;
 }
 
 const LivePriceTracker = () => {
@@ -19,6 +20,7 @@ const LivePriceTracker = () => {
   ]);
   const { toast } = useToast();
   const [audioInitialized, setAudioInitialized] = useState(false);
+  const fetchTimerRef = useRef<number | null>(null);
 
   // Initialize audio on component mount or user interaction
   useEffect(() => {
@@ -38,55 +40,109 @@ const LivePriceTracker = () => {
       // Clean up listeners
       document.removeEventListener('click', initAudioContext);
       document.removeEventListener('touchstart', initAudioContext);
+      
+      // Clear the timer on unmount
+      if (fetchTimerRef.current !== null) {
+        clearTimeout(fetchTimerRef.current);
+      }
     };
   }, []);
 
   useEffect(() => {
-    const fetchPrices = async () => {
+    const fetchInitialPrices = async () => {
+      // Simulate initial price load - In production, this would fetch from a real API
+      const initialPrices = [
+        { 
+          symbol: "SOL", 
+          price: 140 + Math.random() * 5,
+          change24h: -2.5 + Math.random() * 5
+        },
+        { 
+          symbol: "BNB", 
+          price: 580 + Math.random() * 10,
+          change24h: -2.5 + Math.random() * 5
+        }
+      ];
+      
+      setPrices(initialPrices);
+      startPriceFetching();
+    };
+
+    fetchInitialPrices();
+
+    return () => {
+      if (fetchTimerRef.current !== null) {
+        clearTimeout(fetchTimerRef.current);
+      }
+    };
+  }, []);
+
+  const startPriceFetching = () => {
+    const updatePrices = async () => {
       try {
-        // Simulate price updates - In production, this would fetch from a real API
-        const newPrices = prices.map(token => {
-          const lastPrice = token.price;
-          const newPrice = token.symbol === "SOL" 
-            ? 140 + Math.random() * 5 
-            : 580 + Math.random() * 10;
-          
-          // Play sound on significant price changes (>1%) only if audio is initialized
-          if (lastPrice && Math.abs((newPrice - lastPrice) / lastPrice) > 0.01 && audioInitialized) {
-            playSound(newPrice > lastPrice ? 'success' : 'alert');
+        setPrices(currentPrices => {
+          return currentPrices.map(token => {
+            const lastPrice = token.price;
+            const newPrice = token.symbol === "SOL" 
+              ? 140 + Math.random() * 5 
+              : 580 + Math.random() * 10;
             
-            // Show toast for significant price changes
-            if (Math.abs((newPrice - lastPrice) / lastPrice) > 0.02) {
-              toast({
-                title: `${token.symbol} ${newPrice > lastPrice ? 'Rising' : 'Dropping'}`,
-                description: `${newPrice > lastPrice ? '+' : '-'}${Math.abs((newPrice - lastPrice) / lastPrice * 100).toFixed(2)}% in the last update`,
-                variant: newPrice > lastPrice ? "default" : "destructive",
-              });
+            // Only play sound on significant price changes (>1%) if audio is initialized
+            const significantChange = lastPrice && Math.abs((newPrice - lastPrice) / lastPrice) > 0.01;
+            const currentTime = Date.now();
+            const hasTimeElapsed = !token.priceChangeTimestamp || 
+              (currentTime - token.priceChangeTimestamp > 5000); // 5 seconds cooldown
+            
+            if (significantChange && audioInitialized && hasTimeElapsed) {
+              playSound(newPrice > lastPrice ? 'success' : 'alert');
+              
+              // Show toast for very significant price changes (>2%)
+              if (Math.abs((newPrice - lastPrice) / lastPrice) > 0.02) {
+                toast({
+                  title: `${token.symbol} ${newPrice > lastPrice ? 'Rising' : 'Dropping'}`,
+                  description: `${newPrice > lastPrice ? '+' : '-'}${Math.abs((newPrice - lastPrice) / lastPrice * 100).toFixed(2)}% in the last update`,
+                  variant: newPrice > lastPrice ? "default" : "destructive",
+                });
+              }
             }
-          }
-          
-          return {
-            ...token,
-            lastPrice: token.price,
-            price: newPrice,
-            change24h: -2.5 + Math.random() * 5
-          };
+            
+            return {
+              ...token,
+              lastPrice,
+              price: newPrice,
+              change24h: -2.5 + Math.random() * 5,
+              priceChangeTimestamp: significantChange && hasTimeElapsed ? currentTime : token.priceChangeTimestamp
+            };
+          });
         });
         
-        setPrices(newPrices);
+        // Schedule next update with a slight randomization to make it feel more natural
+        const nextUpdateDelay = 10000 + (Math.random() * 2000);
+        fetchTimerRef.current = window.setTimeout(updatePrices, nextUpdateDelay);
       } catch (error) {
         console.error("Failed to fetch prices:", error);
+        // Retry on failure after a delay
+        fetchTimerRef.current = window.setTimeout(updatePrices, 15000);
       }
     };
 
-    // Initial fetch
-    fetchPrices();
-    
-    // Update every 10 seconds
-    const interval = setInterval(fetchPrices, 10000);
+    // Initial fetch schedule
+    fetchTimerRef.current = window.setTimeout(updatePrices, 10000);
+  };
 
-    return () => clearInterval(interval);
-  }, [prices, audioInitialized]);
+  const getPriceChangeClass = (token: PriceData) => {
+    if (!token.lastPrice) return '';
+    
+    const currentTime = Date.now();
+    const hasRecentChange = token.priceChangeTimestamp && 
+      (currentTime - token.priceChangeTimestamp < 2000); // Animation lasts 2 seconds max
+    
+    if (!hasRecentChange) return '';
+    
+    return token.price > token.lastPrice 
+      ? 'animate-pulse border-trading-success/20' 
+      : 'animate-pulse border-trading-danger/20';
+  };
 
   return (
     <div className="flex gap-2">
@@ -95,8 +151,7 @@ const LivePriceTracker = () => {
           key={price.symbol}
           className={`
             px-3 py-2 flex items-center gap-2 bg-trading-darkAccent border-white/5
-            ${price.lastPrice && price.price > price.lastPrice ? 'animate-pulse border-trading-success/20' : ''}
-            ${price.lastPrice && price.price < price.lastPrice ? 'animate-pulse border-trading-danger/20' : ''}
+            ${getPriceChangeClass(price)}
           `}
         >
           <span className="font-medium text-sm">{price.symbol}</span>
