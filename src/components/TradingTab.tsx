@@ -9,13 +9,16 @@ import StrategyManager from '@/components/StrategyManager';
 import ApiUsageMonitor from '@/components/ApiUsageMonitor';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, LineChart, Bell } from 'lucide-react';
 import TokenList from '@/components/TokenList';
 import { identifyPotentialRunners } from '@/utils/tradingUtils';
 import LivePriceTracker from '@/components/LivePriceTracker';
 import TwitterSentimentScanner from '@/components/TwitterSentimentScanner';
 import TokenQualityFilter from '@/components/TokenQualityFilter';
 import PotentialRunnersDetector from '@/components/PotentialRunnersDetector';
+import TokenWatchlist from '@/components/TokenWatchlist';
+import WebhookMonitor from '@/components/WebhookMonitor';
+import TradingAnalyticsDashboard from '@/components/TradingAnalyticsDashboard';
 
 const TradingTab = () => {
   const [activeTab, setActiveTab] = useState('monitor');
@@ -67,9 +70,12 @@ const TradingTab = () => {
         <TabsList className="bg-black/20 border-white/10 border">
           <TabsTrigger value="monitor">Token Monitor</TabsTrigger>
           <TabsTrigger value="detector">Token Detector</TabsTrigger>
+          <TabsTrigger value="analytics">Analytics</TabsTrigger>
           <TabsTrigger value="sentiment">Sentiment</TabsTrigger>
           <TabsTrigger value="quality">Quality Filter</TabsTrigger>
           <TabsTrigger value="runners">Potential Runners</TabsTrigger>
+          <TabsTrigger value="watchlist">Watchlist</TabsTrigger>
+          <TabsTrigger value="webhooks">Webhooks</TabsTrigger>
           <TabsTrigger value="strategy">Strategy</TabsTrigger>
           <TabsTrigger value="alerts">Alerts</TabsTrigger>
         </TabsList>
@@ -96,6 +102,12 @@ const TradingTab = () => {
           )}
         </TabsContent>
         
+        <TabsContent value="analytics" className="space-y-4">
+          {activeTab === 'analytics' && (
+            <TradingAnalyticsDashboard />
+          )}
+        </TabsContent>
+        
         <TabsContent value="sentiment" className="space-y-4">
           {activeTab === 'sentiment' && (
             <TwitterSentimentScanner />
@@ -111,6 +123,18 @@ const TradingTab = () => {
         <TabsContent value="runners" className="space-y-4">
           {activeTab === 'runners' && (
             <PotentialRunnersDetector />
+          )}
+        </TabsContent>
+        
+        <TabsContent value="watchlist" className="space-y-4">
+          {activeTab === 'watchlist' && (
+            <TokenWatchlist />
+          )}
+        </TabsContent>
+        
+        <TabsContent value="webhooks" className="space-y-4">
+          {activeTab === 'webhooks' && (
+            <WebhookMonitor />
           )}
         </TabsContent>
         
