@@ -8,7 +8,6 @@ import StrategyConfig from "@/components/StrategyConfig";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import LivePriceTracker from "@/components/LivePriceTracker";
 import { testHeliusConnection } from "@/utils/apiUtils";
 
 const AutoTrading = () => {
@@ -49,10 +48,7 @@ const AutoTrading = () => {
       <Header />
       
       <main className="flex-grow container mx-auto px-4 py-8">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold">Automated Trading</h1>
-          <LivePriceTracker />
-        </div>
+        <h1 className="text-2xl font-bold mb-6">Automated Trading</h1>
         
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">

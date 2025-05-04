@@ -5,7 +5,7 @@ import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Activity, Lock, Unlock, Settings, Save, TrendingUp } from "lucide-react";
+import { Activity, Lock, Settings, Save, TrendingUp } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface StrategyConfigProps {
@@ -15,13 +15,14 @@ interface StrategyConfigProps {
   onSave?: (config: StrategySettings) => void;
 }
 
-interface StrategySettings {
+export interface StrategySettings {
   enabled: boolean;
   riskLevel: number;
   maxBudget: number;
   autoReinvest: boolean;
   secureInitial: boolean;
   secureInitialPercentage: number;
+  profitTarget?: number;
 }
 
 const StrategyConfig = ({ 
@@ -38,11 +39,18 @@ const StrategyConfig = ({
     maxBudget: 0.5,
     autoReinvest: true,
     secureInitial: true,
-    secureInitialPercentage: 100
+    secureInitialPercentage: 100,
+    profitTarget: 25
   });
 
   const handleSave = () => {
     setIsEditing(false);
+    
+    // Save to localStorage for persistence
+    if (title) {
+      const strategyKey = `strategy_${title.toLowerCase().replace(/\s+/g, '_')}`;
+      localStorage.setItem(strategyKey, JSON.stringify(settings));
+    }
     
     toast({
       title: "Strategy Updated",
@@ -50,6 +58,22 @@ const StrategyConfig = ({
     });
     
     if (onSave) onSave(settings);
+  };
+
+  // Function to secure initial investment when profit target is hit
+  const secureInitialInvestment = () => {
+    if (settings.secureInitial && settings.profitTarget && settings.profitTarget >= 25) {
+      // In a real app, this would connect to trade execution logic
+      return true;
+    }
+    return false;
+  };
+
+  // Calculate potential return based on risk level and other settings
+  const calculatePotentialReturn = (): string => {
+    const baseReturn = settings.riskLevel * 10;
+    const multiplier = settings.autoReinvest ? 1.5 : 1;
+    return `${(baseReturn * multiplier).toFixed(1)}%`;
   };
 
   return (
@@ -131,19 +155,35 @@ const StrategyConfig = ({
             </div>
             
             {settings.secureInitial && (
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <label className="text-sm">Secure Initial %</label>
-                  <span className="text-sm font-medium">{settings.secureInitialPercentage}%</span>
+              <>
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <label className="text-sm">Secure Initial %</label>
+                    <span className="text-sm font-medium">{settings.secureInitialPercentage}%</span>
+                  </div>
+                  <Slider
+                    value={[settings.secureInitialPercentage]}
+                    min={25}
+                    max={100}
+                    step={25}
+                    onValueChange={(value) => setSettings({...settings, secureInitialPercentage: value[0]})}
+                  />
                 </div>
-                <Slider
-                  value={[settings.secureInitialPercentage]}
-                  min={25}
-                  max={100}
-                  step={25}
-                  onValueChange={(value) => setSettings({...settings, secureInitialPercentage: value[0]})}
-                />
-              </div>
+                
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <label className="text-sm">Profit Target %</label>
+                    <span className="text-sm font-medium">{settings.profitTarget}%</span>
+                  </div>
+                  <Slider
+                    value={[settings.profitTarget || 25]}
+                    min={10}
+                    max={100}
+                    step={5}
+                    onValueChange={(value) => setSettings({...settings, profitTarget: value[0]})}
+                  />
+                </div>
+              </>
             )}
             
             <Button onClick={handleSave} className="w-full mt-2 trading-button">
@@ -168,7 +208,7 @@ const StrategyConfig = ({
               <div className="bg-black/20 p-2 rounded text-center col-span-2">
                 <div className="flex items-center justify-center gap-2">
                   <TrendingUp size={14} className="text-trading-success" />
-                  <span className="text-sm">Secures {settings.secureInitialPercentage}% of initial investment</span>
+                  <span className="text-sm">Secures {settings.secureInitialPercentage}% at {settings.profitTarget}% profit</span>
                 </div>
               </div>
             )}
