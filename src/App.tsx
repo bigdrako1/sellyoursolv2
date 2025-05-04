@@ -1,4 +1,5 @@
 
+import React from "react"; // Add this import
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -8,12 +9,10 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Portfolio from "./pages/Portfolio";
 import MarketAnalysis from "./pages/MarketAnalysis";
+import Settings from "./pages/Settings";
+import AutoTrading from "./pages/AutoTrading";
 
 const queryClient = new QueryClient();
-
-// Create placeholder pages for new routes
-const AutoTrading = () => <div>Auto Trading Page</div>;
-const Settings = () => <div>Settings Page</div>;
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
