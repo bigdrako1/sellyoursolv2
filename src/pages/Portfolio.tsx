@@ -7,11 +7,20 @@ import PortfolioAssets from "@/components/PortfolioAssets";
 import PortfolioHistory from "@/components/PortfolioHistory";
 import PortfolioPerformance from "@/components/PortfolioPerformance";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useToast } from "@/hooks/use-toast";
 
 const Portfolio = () => {
   const [walletAddress, setWalletAddress] = useState("DWTA6...h9Ro");
   const [systemActive, setSystemActive] = useState(true);
   const [systemLatency, setSystemLatency] = useState(25);
+  const { toast } = useToast();
+  
+  const connectWallet = () => {
+    toast({
+      title: "Wallet connection",
+      description: "Connect your wallet to view actual portfolio data",
+    });
+  };
   
   return (
     <div className="min-h-screen flex flex-col bg-trading-dark text-white">

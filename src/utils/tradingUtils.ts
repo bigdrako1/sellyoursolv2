@@ -8,13 +8,16 @@
  * @returns Array of potential market runners with confidence score
  */
 export const identifyPotentialRunners = (marketData: any[], timeframe: string): any[] => {
-  // In a real implementation, this would use sophisticated algorithms
-  // to detect early market runners based on various indicators
+  if (!marketData || marketData.length === 0) {
+    return [];
+  }
   
+  // Process real market data to detect potential runners
   return marketData.map(token => {
-    const volumeIncrease = Math.random() * 100;
-    const priceMovement = Math.random() * 20 - 5;
-    const socialMentions = Math.floor(Math.random() * 1000);
+    // Calculate volume increase (could be from real data in future)
+    const volumeIncrease = token.volume24h ? (token.volume24h / (token.volume48h || token.volume24h * 0.8)) * 100 - 100 : 0;
+    const priceMovement = token.change24h || 0;
+    const socialMentions = token.socialScore || 0;
     
     // Calculate a confidence score based on multiple factors
     const confidenceScore = 
@@ -94,32 +97,8 @@ export const calculateOptimalTradeSize = (
  * @returns Recent activities of tracked wallets
  */
 export const trackWalletActivities = (walletAddresses: string[]): any[] => {
-  // In a real implementation, this would fetch on-chain data
-  
-  const activities = [];
-  const actions = ["Buy", "Sell", "Swap", "Add Liquidity", "Remove Liquidity"];
-  const tokens = ["SOL", "SRUN", "BNB", "FBOT", "ETH", "AUTO", "TDX"];
-  
-  for (const wallet of walletAddresses) {
-    const numActivities = Math.floor(Math.random() * 3) + 1;
-    
-    for (let i = 0; i < numActivities; i++) {
-      const timestamp = new Date(Date.now() - Math.floor(Math.random() * 86400000)); // Last 24h
-      
-      activities.push({
-        walletAddress: wallet,
-        action: actions[Math.floor(Math.random() * actions.length)],
-        token: tokens[Math.floor(Math.random() * tokens.length)],
-        amount: Math.random() * 10,
-        timestamp: timestamp.toISOString(),
-        blockNumber: Math.floor(Math.random() * 1000000) + 15000000
-      });
-    }
-  }
-  
-  return activities.sort((a, b) => 
-    new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-  );
+  // This would fetch real on-chain data in a production implementation
+  return [];
 };
 
 /**

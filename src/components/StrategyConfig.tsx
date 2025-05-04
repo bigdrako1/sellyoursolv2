@@ -90,7 +90,7 @@ const StrategyConfig = ({
             
             <div className="space-y-2">
               <div className="flex justify-between items-center">
-                <label className="text-sm">Max Budget (ETH)</label>
+                <label className="text-sm">Max Budget (SOL)</label>
                 <span className="text-sm font-medium">{settings.maxBudget.toFixed(1)}</span>
               </div>
               <Slider
@@ -126,7 +126,7 @@ const StrategyConfig = ({
             </div>
             <div className="bg-black/20 p-2 rounded text-center">
               <div className="text-xs text-gray-400">Max Budget</div>
-              <div className="font-medium">{settings.maxBudget.toFixed(1)} ETH</div>
+              <div className="font-medium">{settings.maxBudget.toFixed(1)} SOL</div>
             </div>
           </div>
         )}
