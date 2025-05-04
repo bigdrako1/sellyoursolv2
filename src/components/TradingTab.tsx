@@ -4,13 +4,13 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import TradeAlerts from '@/components/TradeAlerts';
 import TokenMonitor from '@/components/TokenMonitor';
-import { TokenDetector } from '@/components/TokenDetector';
-import { StrategyManager } from '@/components/StrategyManager';
+import TokenDetector from '@/components/TokenDetector';
+import StrategyManager from '@/components/StrategyManager';
 import ApiUsageMonitor from '@/components/ApiUsageMonitor';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Eye, EyeOff } from 'lucide-react';
-import { TokenList } from '@/components/TokenList';
+import TokenList from '@/components/TokenList';
 import { identifyPotentialRunners } from '@/utils/tradingUtils';
 import LivePriceTracker from '@/components/LivePriceTracker';
 
