@@ -2,7 +2,6 @@
 import { useEffect, useState, useRef } from "react";
 import { Card } from "@/components/ui/card";
 import { ArrowUp, ArrowDown } from "lucide-react";
-import { playSound, initAudio } from "@/utils/soundUtils";
 import { useToast } from "@/hooks/use-toast";
 import { heliusApiCall } from "@/utils/apiUtils";
 
@@ -19,35 +18,8 @@ const LivePriceTracker = () => {
     { symbol: "SOL", price: 0, change24h: 0 }
   ]);
   const { toast } = useToast();
-  const [audioInitialized, setAudioInitialized] = useState(false);
   const fetchTimerRef = useRef<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-
-  // Initialize audio on component mount or user interaction
-  useEffect(() => {
-    const initAudioContext = () => {
-      initAudio();
-      setAudioInitialized(true);
-      // Remove event listeners after initialization
-      document.removeEventListener('click', initAudioContext);
-      document.removeEventListener('touchstart', initAudioContext);
-    };
-    
-    // Add event listeners for user interaction to initialize audio
-    document.addEventListener('click', initAudioContext);
-    document.addEventListener('touchstart', initAudioContext);
-    
-    return () => {
-      // Clean up listeners
-      document.removeEventListener('click', initAudioContext);
-      document.removeEventListener('touchstart', initAudioContext);
-      
-      // Clear the timer on unmount
-      if (fetchTimerRef.current !== null) {
-        clearTimeout(fetchTimerRef.current);
-      }
-    };
-  }, []);
 
   useEffect(() => {
     const fetchInitialPrices = async () => {
@@ -116,23 +88,19 @@ const LivePriceTracker = () => {
               const newPrice = parseFloat(tokenData.price) || lastPrice;
               const change24h = parseFloat(tokenData.change24h) || 0;
               
-              // Only play sound on significant price changes (>1%) if audio is initialized
-              const significantChange = lastPrice && Math.abs((newPrice - lastPrice) / lastPrice) > 0.01;
+              // Check for significant price changes (>2%)
+              const significantChange = lastPrice && Math.abs((newPrice - lastPrice) / lastPrice) > 0.02;
               const currentTime = Date.now();
               const hasTimeElapsed = !token.priceChangeTimestamp || 
                 (currentTime - token.priceChangeTimestamp > 5000); // 5 seconds cooldown
               
-              if (significantChange && audioInitialized && hasTimeElapsed) {
-                playSound(newPrice > lastPrice ? 'success' : 'alert');
-                
-                // Show toast for very significant price changes (>2%)
-                if (Math.abs((newPrice - lastPrice) / lastPrice) > 0.02) {
-                  toast({
-                    title: `${token.symbol} ${newPrice > lastPrice ? 'Rising' : 'Dropping'}`,
-                    description: `${newPrice > lastPrice ? '+' : '-'}${Math.abs((newPrice - lastPrice) / lastPrice * 100).toFixed(2)}% in the last update`,
-                    variant: newPrice > lastPrice ? "default" : "destructive",
-                  });
-                }
+              // Show toast for very significant price changes (>2%)
+              if (significantChange && hasTimeElapsed) {
+                toast({
+                  title: `${token.symbol} ${newPrice > lastPrice ? 'Rising' : 'Dropping'}`,
+                  description: `${newPrice > lastPrice ? '+' : '-'}${Math.abs((newPrice - lastPrice) / lastPrice * 100).toFixed(2)}% in the last update`,
+                  variant: newPrice > lastPrice ? "default" : "destructive",
+                });
               }
               
               return {

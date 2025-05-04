@@ -91,9 +91,9 @@
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 217.2 91.2% 59.8%;
     
-    /* Trading platform dark theme colors */
-    --trading-dark: 222 47% 11%;
-    --trading-darkAccent: 215 28% 17%;
+    /* Trading platform dark theme colors - updated to be even darker */
+    --trading-dark: 220 50% 6%;
+    --trading-darkAccent: 220 40% 10%;
     --trading-success: 142 70% 45%;
     --trading-danger: 0 84% 60%;
     --trading-warning: 38 95% 50%;
@@ -121,16 +121,16 @@
   }
   
   .dark ::-webkit-scrollbar-track {
-    background: #1f2937;
+    background: #121621;
   }
   
   .dark ::-webkit-scrollbar-thumb {
-    background: #4b5563;
+    background: #2d3748;
     border-radius: 3px;
   }
   
   .dark ::-webkit-scrollbar-thumb:hover {
-    background: #6366f1;
+    background: #4f46e5;
   }
   
   ::-webkit-scrollbar-track {
@@ -217,5 +217,10 @@
   /* Modal and popup styling improvements */
   .modal-content {
     @apply bg-trading-darkAccent border border-white/10 rounded-lg shadow-lg;
+  }
+  
+  /* Add proper border styling for AI trading component */
+  .ai-trading-card {
+    @apply border border-white/10 rounded-lg bg-trading-darkAccent p-4;
   }
 }

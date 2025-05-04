@@ -27,10 +27,10 @@ const queryClient = new QueryClient({
   },
 });
 
-// Protected route wrapper component
+// Protected route wrapper component based on wallet authentication
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  // Check if user is authenticated from local storage
-  const isAuthenticated = localStorage.getItem('supabase.auth.token') !== null;
+  // Check if wallet is connected using local storage
+  const isAuthenticated = localStorage.getItem('connected_wallet') !== null;
   
   if (!isAuthenticated) {
     // Redirect to login page if not authenticated

@@ -13,7 +13,7 @@ const defaultContext: ThemeContextType = {
 const ThemeContext = createContext<ThemeContextType>(defaultContext);
 
 export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
-  // In this app we're using dark theme exclusively
+  // In this app we're using dark theme exclusively with no toggle option
   const [theme] = useState<'dark' | 'light'>('dark');
 
   useEffect(() => {

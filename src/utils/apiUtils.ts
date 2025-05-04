@@ -9,10 +9,11 @@ const HELIUS_BASE_URL = "https://api.helius.xyz/v1";  // Updated to v1 from v0
 const HELIUS_RPC_URL = "https://mainnet.helius-rpc.com";
 const HELIUS_WEBSOCKET_URL = "wss://mainnet.helius-rpc.com";
 
-// Rate limiting configuration
-const RATE_LIMIT = 5; // requests per second
-const RATE_WINDOW = 1000; // 1 second in milliseconds
-const BURST_LIMIT = 10; // maximum burst requests
+// Rate limiting configuration based on Helius documentation
+// Free tier: 2 req/sec, 200 req/min, 600 req/hour
+const REQUEST_PER_SECOND = 2; // requests per second for free tier
+const REQUESTS_PER_MIN = 200; // requests per minute for free tier
+const BURST_LIMIT = 5; // allow small burst
 
 // Tracking state
 interface ApiUsageStats {
@@ -41,18 +42,47 @@ const resetDailyCalls = () => {
   }
 };
 
-// Token bucket for rate limiting
-let tokens = BURST_LIMIT;
-let lastRefill = Date.now();
+// Time window tracking for rate limiting
+const requestTimestamps: number[] = [];
+const minuteTimestamps: number[] = [];
 
-// Refill tokens based on rate limit
-const refillTokens = () => {
+// Check if we can make an API call based on rate limiting
+const canMakeApiCall = (): boolean => {
   const now = Date.now();
-  const timePassed = now - lastRefill;
-  const newTokens = Math.floor(timePassed / RATE_WINDOW) * RATE_LIMIT;
-  tokens = Math.min(BURST_LIMIT, tokens + newTokens);
-  lastRefill = now - (timePassed % RATE_WINDOW);
-  return tokens > 0;
+  const oneSecondAgo = now - 1000;
+  const oneMinuteAgo = now - 60000;
+  
+  // Remove timestamps outside the current window
+  while (requestTimestamps.length > 0 && requestTimestamps[0] < oneSecondAgo) {
+    requestTimestamps.shift();
+  }
+  
+  while (minuteTimestamps.length > 0 && minuteTimestamps[0] < oneMinuteAgo) {
+    minuteTimestamps.shift();
+  }
+  
+  // Check against limits
+  if (requestTimestamps.length >= REQUEST_PER_SECOND && requestTimestamps.length < BURST_LIMIT) {
+    // Allow bursts up to the burst limit
+    requestTimestamps.push(now);
+    minuteTimestamps.push(now);
+    return true;
+  } else if (requestTimestamps.length >= BURST_LIMIT) {
+    // No more burst capacity
+    usageStats.rateExceeded++;
+    return false;
+  }
+  
+  // Check minute limit
+  if (minuteTimestamps.length >= REQUESTS_PER_MIN) {
+    usageStats.rateExceeded++;
+    return false;
+  }
+  
+  // We're under the limit, record this request
+  requestTimestamps.push(now);
+  minuteTimestamps.push(now);
+  return true;
 };
 
 // Track API usage
@@ -66,17 +96,6 @@ const trackApiCall = (method: string) => {
   
   // Track by method
   usageStats.methodCalls[method] = (usageStats.methodCalls[method] || 0) + 1;
-};
-
-// Check if we can make an API call based on rate limiting
-const canMakeApiCall = (): boolean => {
-  refillTokens();
-  if (tokens > 0) {
-    tokens--;
-    return true;
-  }
-  usageStats.rateExceeded++;
-  return false;
 };
 
 // Get Helius API usage statistics
@@ -165,7 +184,7 @@ export const heliusRpcCall = async <T>(method: string, params: any[] = []): Prom
 // Test Helius API connection
 export const testHeliusConnection = async (): Promise<boolean> => {
   try {
-    // Use getBalances as a test endpoint - more reliable than health-check
+    // Use getHealth as a test endpoint - more reliable than health-check
     const rpcResult = await heliusRpcCall<any>("getHealth", []);
     return rpcResult ? true : false;
   } catch (error) {

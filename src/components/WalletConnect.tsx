@@ -137,7 +137,7 @@ const WalletConnect = ({ onConnect, onDisconnect }: WalletConnectProps) => {
   };
 
   return (
-    <Card className="trading-card">
+    <Card className="trading-card card-with-border">
       <div className="flex flex-col md:flex-row justify-between items-center p-3 gap-4">
         <div className="flex items-center gap-3">
           <Wallet className="h-6 w-6 text-trading-highlight" />
