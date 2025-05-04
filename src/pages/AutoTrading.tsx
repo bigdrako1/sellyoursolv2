@@ -12,7 +12,8 @@ import { useToast } from "@/hooks/use-toast";
 import { testHeliusConnection } from "@/utils/apiUtils";
 
 const AutoTrading = () => {
-  const [apiConnected, setApiConnected] = useState(false);
+  const [apiConnected, setApiConnected] = useState(true); // Default to true to prevent immediate warning
+  const [apiConnectionChecked, setApiConnectionChecked] = useState(false);
   const [systemLatency, setSystemLatency] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState("config");
   const { toast } = useToast();
@@ -25,19 +26,47 @@ const AutoTrading = () => {
         const connected = await testHeliusConnection();
         const latency = Date.now() - startTime;
         
-        setApiConnected(connected);
-        setSystemLatency(latency);
-        
-        if (!connected) {
+        if (apiConnectionChecked && connected !== apiConnected) {
+          // Only show toast when status changes after initial check
+          if (connected) {
+            toast({
+              title: "API Connection Restored",
+              description: "Successfully connected to trading API.",
+              variant: "default",
+            });
+          } else {
+            toast({
+              title: "API Connection Lost",
+              description: "Connection to trading API has been lost. Some features may be limited.",
+              variant: "destructive",
+            });
+          }
+        } else if (!apiConnectionChecked && !connected) {
+          // Only show disconnection toast on first load
           toast({
             title: "API Connection Failed",
             description: "Could not connect to trading API. Auto-trading features may be limited.",
             variant: "destructive",
           });
         }
+        
+        setApiConnected(connected);
+        setApiConnectionChecked(true);
+        setSystemLatency(latency);
       } catch (error) {
         console.error("API connection test failed:", error);
+        
+        if (apiConnected) {
+          // Only show toast when going from connected to disconnected
+          toast({
+            title: "API Connection Lost",
+            description: "Connection to trading API has been lost. Some features may be limited.",
+            variant: "destructive",
+          });
+        }
+        
         setApiConnected(false);
+        setApiConnectionChecked(true);
       }
     };
     
@@ -47,7 +76,7 @@ const AutoTrading = () => {
     const intervalId = setInterval(checkApiConnection, 60000); // Check every minute
     
     return () => clearInterval(intervalId);
-  }, [toast]);
+  }, [toast, apiConnected, apiConnectionChecked]);
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -106,17 +135,17 @@ const AutoTrading = () => {
                   
                   <div className="flex justify-between">
                     <span className="text-sm text-muted-foreground">Active Strategies</span>
-                    <span className="font-medium">0</span>
+                    <span className="font-medium">-</span>
                   </div>
                   
                   <div className="flex justify-between">
                     <span className="text-sm text-muted-foreground">Today's Trades</span>
-                    <span className="font-medium">0</span>
+                    <span className="font-medium">-</span>
                   </div>
                   
                   <div className="flex justify-between">
                     <span className="text-sm text-muted-foreground">Profit/Loss</span>
-                    <span className="text-gray-400 font-medium">--</span>
+                    <span className="text-gray-400 font-medium">-</span>
                   </div>
                 </div>
               </CardContent>

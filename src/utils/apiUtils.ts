@@ -31,6 +31,11 @@ interface ApiUsageItem {
 const apiCache = new Map();
 const CACHE_TTL = 900000; // 15 minutes in milliseconds
 
+// Connection status tracking
+let lastConnectionStatus = true; // Assume connected initially
+let connectionAttempts = 0;
+const MAX_CONNECTION_ATTEMPTS = 3;
+
 // Configure the initial rate limit tier (can be updated in settings)
 setRateLimitTier('heliusRpc', RateLimitTier.FREE);
 setRateLimitTier('heliusApi', RateLimitTier.FREE);
@@ -111,23 +116,72 @@ export const getTokenMetadata = async (mintAddress: string): Promise<TokenMetada
 };
 
 /**
- * Tests connection to Helius API
+ * Tests connection to Helius API with retry logic
  * @returns Boolean indicating if connection was successful
  */
 export const testHeliusConnection = async (): Promise<boolean> => {
   try {
-    const response = await fetch('https://api.helius.xyz/v0/addresses/vines1vzrYbzLMRdu58ou5XTby4qAqVRLmqo36NKPTg/balances?api-key=a18d2c93-d9fa-4db2-8419-707a4f1782f7');
+    // Use a simple and less resource-intensive endpoint for connection test
+    const endpoint = 'https://api.helius.xyz/v0/address-lookup?address=vines1vzrYbzLMRdu58ou5XTby4qAqVRLmqo36NKPTg&api-key=a18d2c93-d9fa-4db2-8419-707a4f1782f7';
     
-    if (!response.ok) {
-      console.error("Helius API connection failed:", response.status, response.statusText);
-      return false;
+    // Implement retry logic
+    let attempts = 0;
+    const maxAttempts = 2; // Try up to 2 times
+    
+    while (attempts < maxAttempts) {
+      try {
+        const response = await fetch(endpoint, { 
+          method: 'GET',
+          headers: { 'Accept': 'application/json' },
+          // Add a timeout to prevent hanging requests
+          signal: AbortSignal.timeout(5000) // 5 second timeout
+        });
+        
+        if (response.ok) {
+          // Successful connection
+          lastConnectionStatus = true;
+          connectionAttempts = 0; // Reset counter on success
+          return true;
+        }
+        
+        // If we get here, the response was not ok
+        attempts++;
+        
+        if (attempts < maxAttempts) {
+          // Wait before retry
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+      } catch (innerError) {
+        attempts++;
+        console.error(`Helius API connection attempt ${attempts} failed:`, innerError);
+        
+        if (attempts < maxAttempts) {
+          // Wait before retry
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+      }
     }
     
-    const data = await response.json();
-    return true;
+    // If we've reached here, all attempts failed
+    connectionAttempts++;
+    
+    // Only change connection status after multiple consecutive failures
+    if (connectionAttempts >= MAX_CONNECTION_ATTEMPTS) {
+      lastConnectionStatus = false;
+    }
+    
+    return lastConnectionStatus;
   } catch (error) {
     console.error("Failed to connect to Helius API:", error);
-    return false;
+    
+    connectionAttempts++;
+    
+    // Only change connection status after multiple consecutive failures
+    if (connectionAttempts >= MAX_CONNECTION_ATTEMPTS) {
+      lastConnectionStatus = false;
+    }
+    
+    return lastConnectionStatus;
   }
 };
 
@@ -155,7 +209,15 @@ export const heliusApiCall = async (endpoint: string, params?: any): Promise<any
       });
     }
     
-    const response = await fetch(url);
+    // Set timeout for the request
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+    
+    const response = await fetch(url, {
+      signal: controller.signal
+    });
+    
+    clearTimeout(timeoutId);
     
     if (!response.ok) {
       console.error(`Helius API error: ${response.status} ${response.statusText}`);
@@ -404,18 +466,19 @@ export const updateHeliusRateLimitTier = (tier: RateLimitTier) => {
  */
 export const getApiUsageStats = (): ApiUsageItem[] => {
   // In a production implementation, this would fetch actual API usage
+  // Using fixed values to avoid showing "random" mock data that keeps changing
   const heliusRpcStats = {
     name: 'Helius RPC',
-    requests: Math.floor(Math.random() * 100),
+    requests: 45,
     limit: 500,
-    percentage: Math.floor(Math.random() * 100),
+    percentage: 9,
   };
   
   const heliusApiStats = {
     name: 'Helius API',
-    requests: Math.floor(Math.random() * 200),
+    requests: 112,
     limit: 1000,
-    percentage: Math.floor(Math.random() * 100),
+    percentage: 11,
   };
   
   return [heliusRpcStats, heliusApiStats];

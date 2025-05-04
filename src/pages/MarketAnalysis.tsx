@@ -23,7 +23,8 @@ interface TokenData {
 
 const MarketAnalysis = () => {
   const [isLoading, setIsLoading] = useState(true);
-  const [apiConnected, setApiConnected] = useState(false);
+  const [apiConnected, setApiConnected] = useState(true); // Default to true to prevent immediate warning
+  const [apiConnectionChecked, setApiConnectionChecked] = useState(false);
   const [topTokens, setTopTokens] = useState<TokenData[]>([]);
   const [systemLatency, setSystemLatency] = useState<number | null>(null);
   const { toast } = useToast();
@@ -36,24 +37,57 @@ const MarketAnalysis = () => {
         const connected = await testHeliusConnection();
         const latency = Date.now() - startTime;
         
-        setApiConnected(connected);
-        setSystemLatency(latency);
-        
-        if (!connected) {
+        if (apiConnectionChecked && connected !== apiConnected) {
+          // Only show toast when status changes after initial check
+          if (connected) {
+            toast({
+              title: "API Connection Restored",
+              description: "Successfully connected to Helius API.",
+              variant: "default",
+            });
+          } else {
+            toast({
+              title: "API Connection Lost",
+              description: "Connection to Helius API has been lost. Some features may be limited.",
+              variant: "destructive",
+            });
+          }
+        } else if (!apiConnectionChecked && !connected) {
+          // Only show disconnection toast on first load
           toast({
             title: "API Connection Failed",
             description: "Could not connect to Helius API. Some features may be limited.",
             variant: "destructive",
           });
         }
+        
+        setApiConnected(connected);
+        setApiConnectionChecked(true);
+        setSystemLatency(latency);
       } catch (error) {
         console.error("API connection test failed:", error);
+        
+        if (apiConnected) {
+          // Only show toast when going from connected to disconnected
+          toast({
+            title: "API Connection Lost",
+            description: "Connection to Helius API has been lost. Some features may be limited.",
+            variant: "destructive",
+          });
+        }
+        
         setApiConnected(false);
+        setApiConnectionChecked(true);
       }
     };
     
     checkApiConnection();
-  }, [toast]);
+    
+    // Set up periodic connection checks with a longer interval to prevent excessive API calls
+    const intervalId = setInterval(checkApiConnection, 120000); // Check every 2 minutes
+    
+    return () => clearInterval(intervalId);
+  }, [toast, apiConnected, apiConnectionChecked]);
 
   // Load real trending token data
   useEffect(() => {
@@ -79,13 +113,18 @@ const MarketAnalysis = () => {
     
     fetchTrendingTokens();
     
-    // Set up refresh interval
+    // Set up refresh interval - less frequent to avoid rate limit issues
     const intervalId = setInterval(() => {
       fetchTrendingTokens();
     }, 300000); // Refresh every 5 minutes
     
     return () => clearInterval(intervalId);
   }, [toast]);
+
+  // Service status color indicator function
+  const getStatusColorClass = (isConnected: boolean) => {
+    return isConnected ? 'bg-green-500' : 'bg-red-500';
+  };
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -251,6 +290,30 @@ const MarketAnalysis = () => {
                 <div className="flex justify-between">
                   <span className="text-sm text-muted-foreground">Rate Limit</span>
                   <span className="font-medium">5 req/sec</span>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader>
+                <CardTitle>Connected Services</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm">Personal API Key</span>
+                  <span className="text-xs bg-gray-800 px-2 py-1 rounded">For authentication and rate limits</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm">Solana RPC</span>
+                  <span className={`inline-block w-3 h-3 rounded-full ${getStatusColorClass(apiConnected)}`}></span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm">Helius API</span>
+                  <span className={`inline-block w-3 h-3 rounded-full ${getStatusColorClass(apiConnected)}`}></span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm">Webhooks</span>
+                  <span className={`inline-block w-3 h-3 rounded-full ${getStatusColorClass(false)}`}></span>
                 </div>
               </CardContent>
             </Card>

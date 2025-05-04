@@ -35,7 +35,8 @@ export const APP_CONFIG = {
     baseUrl: "https://api.helius.xyz/v1",
     rpcUrl: "https://mainnet.helius-rpc.com",
     wsUrl: "wss://mainnet.helius-rpc.com",
-    defaultApiKey: "a18d2c93-d9fa-4db2-8419-707a4f1782f7"
+    defaultApiKey: "a18d2c93-d9fa-4db2-8419-707a4f1782f7",
+    personalApiKeyDescription: "Your personal API key is used for authentication with Helius API services and to increase rate limits above the default tier. It ensures your requests are prioritized and allows access to premium features."
   },
   
   // Supported currencies
@@ -55,6 +56,22 @@ export const APP_CONFIG = {
     support: "support@sellyoursol.ai",
     twitter: "@SellYourSOL_AI",
     telegram: "t.me/SellYourSOL"
+  },
+  
+  // Connected services status tracking
+  connectedServices: {
+    solanaRpc: {
+      name: "Solana RPC",
+      description: "Direct connection to the Solana blockchain for real-time transaction data"
+    },
+    heliusApi: {
+      name: "Helius API",
+      description: "Enhanced blockchain data, token metadata, and advanced analytics"
+    },
+    webhooks: {
+      name: "Webhooks",
+      description: "Real-time event notifications for blockchain activity"
+    }
   }
 };
 
