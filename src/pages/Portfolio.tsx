@@ -62,7 +62,7 @@ const Portfolio: React.FC = () => {
             <PortfolioPerformance />
           </div>
           
-          <PortfolioAssets walletAddress={walletAddress} />
+          <PortfolioAssets />
           <div className="mt-4">
             <PortfolioHistory walletAddress={walletAddress} />
           </div>
