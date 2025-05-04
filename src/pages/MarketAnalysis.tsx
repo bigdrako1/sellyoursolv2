@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -117,8 +116,7 @@ const MarketAnalysis = () => {
       <main className="flex-grow container mx-auto px-4 py-8">
         <h1 className="text-2xl font-bold mb-6">Market Analysis</h1>
         
-        <div className="flex justify-between items-center mb-6">
-          <LivePriceTracker />
+        <div className="flex justify-end mb-6">
           <div className="flex items-center">
             <span className={`inline-flex h-2 w-2 rounded-full mr-2 ${apiConnected ? 'bg-green-500' : 'bg-red-500'}`}></span>
             <span className="text-sm">{apiConnected ? 'API Connected' : 'API Disconnected'}</span>

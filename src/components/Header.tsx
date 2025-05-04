@@ -3,8 +3,8 @@ import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import CurrencySelector from "@/components/CurrencySelector";
 import { useState } from "react";
-import { Menu, X, Sun, Moon } from "lucide-react";
-import { useTheme } from "@/hooks/use-theme";
+import { Menu, X, Settings } from "lucide-react";
+import LivePriceTracker from "@/components/LivePriceTracker";
 
 interface HeaderProps {
   walletAddress?: string;
@@ -13,7 +13,6 @@ interface HeaderProps {
 const Header = ({ walletAddress = "" }: HeaderProps) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
-  const { theme, toggleTheme } = useTheme();
   
   const navItems = [
     { path: "/", label: "Dashboard" },
@@ -50,16 +49,17 @@ const Header = ({ walletAddress = "" }: HeaderProps) => {
           
           {/* Right side controls */}
           <div className="flex items-center space-x-4">
+            <div className="hidden sm:block">
+              <LivePriceTracker />
+            </div>
             <CurrencySelector />
             
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              onClick={toggleTheme}
-              className="text-white hover:text-trading-highlight"
-            >
-              {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-            </Button>
+            <Link to="/settings">
+              <Button variant="outline" size="sm" className="gap-1 bg-trading-darkAccent hover:bg-white/10 border-white/10">
+                <Settings size={14} />
+                <span className="hidden md:inline">Settings</span>
+              </Button>
+            </Link>
             
             {/* Mobile menu button */}
             <Button 
@@ -90,6 +90,9 @@ const Header = ({ walletAddress = "" }: HeaderProps) => {
                 </Link>
               ))}
             </nav>
+            <div className="mt-3 pt-2 border-t border-white/10">
+              <LivePriceTracker />
+            </div>
           </div>
         </div>
       )}

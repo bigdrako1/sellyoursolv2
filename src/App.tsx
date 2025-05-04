@@ -13,12 +13,14 @@ import MarketAnalysis from "./pages/MarketAnalysis";
 import Settings from "./pages/Settings";
 import AutoTrading from "./pages/AutoTrading";
 
-// Create a new QueryClient instance
+// Create a new QueryClient instance with production-ready settings
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      retry: 1,
+      retry: 2,
       refetchOnWindowFocus: false,
+      staleTime: 60000, // 1 minute
+      gcTime: 300000, // 5 minutes
     },
   },
 });

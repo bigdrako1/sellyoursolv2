@@ -142,10 +142,10 @@ export default {
   },
   plugins: [
     require("tailwindcss-animate"),
-    // Add custom variant for light mode
+    // Add custom variant for dark mode
     plugin(function({ addVariant }) {
-      // Add light variant that's applied when .light class is present or when there's no .dark class
-      addVariant('light', ['&:not(.dark)', '.light &']);
+      // Add dark variant
+      addVariant('dark', ['.dark &', '.dark&']);
     }),
   ],
 } satisfies Config;

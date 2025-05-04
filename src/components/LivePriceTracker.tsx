@@ -177,9 +177,9 @@ const LivePriceTracker = () => {
   if (isLoading) {
     return (
       <div className="flex gap-2">
-        <Card className="px-3 py-2 bg-trading-darkAccent border-white/5 opacity-50">
-          <div className="flex items-center gap-2">
-            <span className="font-medium text-sm">Loading...</span>
+        <Card className="px-3 py-1 bg-trading-darkAccent border-white/5 opacity-50">
+          <div className="flex items-center gap-1">
+            <span className="font-medium text-xs">SOL: Loading...</span>
           </div>
         </Card>
       </div>
@@ -192,15 +192,15 @@ const LivePriceTracker = () => {
         <Card 
           key={price.symbol}
           className={`
-            px-3 py-2 flex items-center gap-2 bg-trading-darkAccent border-white/5
+            px-3 py-1 flex items-center gap-1 bg-trading-darkAccent border-white/5
             ${getPriceChangeClass(price)}
           `}
         >
-          <span className="font-medium text-sm">{price.symbol}</span>
-          <span className="text-sm">${price.price.toFixed(2)}</span>
+          <span className="font-medium text-xs">{price.symbol}:</span>
+          <span className="text-xs">${price.price.toFixed(2)}</span>
           <span className={`text-xs flex items-center ${price.change24h >= 0 ? 'text-trading-success' : 'text-trading-danger'}`}>
-            {price.change24h >= 0 ? <ArrowUp size={12} /> : <ArrowDown size={12} />}
-            {Math.abs(price.change24h).toFixed(2)}%
+            {price.change24h >= 0 ? <ArrowUp size={10} /> : <ArrowDown size={10} />}
+            {Math.abs(price.change24h).toFixed(1)}%
           </span>
         </Card>
       ))}
