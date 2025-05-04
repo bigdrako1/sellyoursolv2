@@ -149,7 +149,9 @@
 
 @layer components {
   .glass-panel {
-    @apply bg-black/30 backdrop-blur-md border border-white/10 rounded-lg dark:bg-black/30 dark:border-white/10 light:bg-white/20 light:border-black/5;
+    @apply bg-black/30 backdrop-blur-md border border-white/10 rounded-lg;
+    @apply dark:bg-black/30 dark:border-white/10;
+    @apply light:bg-white/20 light:border-black/5;
   }
   
   .trading-gradient-text {
@@ -157,7 +159,9 @@
   }
   
   .trading-card {
-    @apply bg-trading-darkAccent border border-white/5 rounded-lg p-4 hover:border-trading-highlight/50 transition-all duration-300 dark:bg-trading-darkAccent dark:border-white/5 light:bg-white light:border-gray-200 light:shadow-sm;
+    @apply bg-trading-darkAccent border border-white/5 rounded-lg p-4 hover:border-trading-highlight/50 transition-all duration-300;
+    @apply dark:bg-trading-darkAccent dark:border-white/5;
+    @apply light:bg-white light:border-gray-200 light:shadow-sm;
   }
   
   .trading-button {

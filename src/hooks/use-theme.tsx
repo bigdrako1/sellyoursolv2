@@ -33,8 +33,10 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
     // Apply theme to document
     if (theme === 'dark') {
       document.documentElement.classList.add('dark');
+      document.documentElement.classList.remove('light');
     } else {
       document.documentElement.classList.remove('dark');
+      document.documentElement.classList.add('light');
     }
 
     // Save theme preference
