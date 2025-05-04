@@ -13,7 +13,7 @@ const WelcomeScreen = ({ onConnect, onDisconnect }: WelcomeScreenProps) => {
       <div className="mb-8 text-center">
         <h1 className="text-4xl font-bold mb-3 trading-gradient-text">SellYourSOL™ v2</h1>
         <p className="text-gray-400 max-w-lg">
-          Autonomous, AFK-capable trading system for Solana and Binance Smart Chain.
+          Autonomous, AFK-capable trading system for Solana.
           Connect your wallet to begin trading with advanced AI strategies.
         </p>
       </div>
@@ -29,7 +29,7 @@ const WelcomeScreen = ({ onConnect, onDisconnect }: WelcomeScreenProps) => {
         />
         <FeatureCard 
           title="Portfolio Management"
-          description="Track assets, monitor performance, and analyze ROI across chains."
+          description="Track assets, monitor performance, and analyze ROI on Solana."
           icon="📊"
         />
         <FeatureCard 
