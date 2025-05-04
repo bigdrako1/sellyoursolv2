@@ -10,8 +10,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { testHeliusConnection } from "@/utils/apiUtils";
-import { Shield } from "lucide-react";
-import { Button } from "@/components/ui/button";
 
 const AutoTrading = () => {
   const [apiConnected, setApiConnected] = useState(false);
@@ -50,26 +48,6 @@ const AutoTrading = () => {
     
     return () => clearInterval(intervalId);
   }, [toast]);
-  
-  const handleSecureAll = () => {
-    // Get all active strategies from localStorage
-    const savedStrategies = localStorage.getItem("trading_strategies");
-    let strategiesCount = 0;
-    
-    if (savedStrategies) {
-      try {
-        const strategies = JSON.parse(savedStrategies);
-        strategiesCount = strategies.filter((s: any) => s.enabled).length;
-      } catch (e) {
-        console.error("Error parsing strategies:", e);
-      }
-    }
-    
-    toast({
-      title: "Initial Investments Secured",
-      description: `Initial investments have been secured for ${strategiesCount || 'all'} active strategies.`,
-    });
-  };
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -87,16 +65,6 @@ const AutoTrading = () => {
                   <TabsTrigger value="strategies">Strategy Manager</TabsTrigger>
                   <TabsTrigger value="create">Create Strategy</TabsTrigger>
                 </TabsList>
-                
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  className="flex items-center gap-1 bg-trading-success/10 text-trading-success border-trading-success/30 hover:bg-trading-success/20"
-                  onClick={handleSecureAll}
-                >
-                  <Shield size={14} />
-                  <span>Secure All Initials</span>
-                </Button>
               </div>
               
               <TabsContent value="config" className="ai-trading-card card-with-border">

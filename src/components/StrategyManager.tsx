@@ -12,8 +12,6 @@ import {
   Settings, 
   Save, 
   Plus, 
-  ChevronUp, 
-  ChevronDown, 
   BarChart2,
   Activity, 
   Zap,
@@ -27,8 +25,8 @@ interface Strategy {
   name: string;
   description: string;
   enabled: boolean;
-  performance: number;
-  tradingVolume: number;
+  performance: number | null;
+  tradingVolume: number | null;
   riskLevel: number;
   profitTarget: number;
   stopLoss: number;
@@ -44,10 +42,10 @@ const StrategyManager = () => {
       id: "strategy-1",
       name: "Front Running AI",
       description: "Detect and execute trades ahead of identified market movements",
-      enabled: true,
-      performance: 68,
-      tradingVolume: 12500,
-      riskLevel: 65,
+      enabled: false,
+      performance: null,
+      tradingVolume: null,
+      riskLevel: 50,
       profitTarget: 8,
       stopLoss: 3,
       secureInitial: true,
@@ -58,9 +56,9 @@ const StrategyManager = () => {
       id: "strategy-2",
       name: "Market Runner Detection",
       description: "Identify early market trends and capitalize on momentum",
-      enabled: true,
-      performance: 72,
-      tradingVolume: 8740,
+      enabled: false,
+      performance: null,
+      tradingVolume: null,
       riskLevel: 45,
       profitTarget: 12,
       stopLoss: 6,
@@ -73,9 +71,9 @@ const StrategyManager = () => {
       name: "Wallet Activity Tracker",
       description: "Track and mimic profitable wallet activities",
       enabled: false,
-      performance: 81,
-      tradingVolume: 5200,
-      riskLevel: 75,
+      performance: null,
+      tradingVolume: null,
+      riskLevel: 50,
       profitTarget: 15,
       stopLoss: 8,
       secureInitial: false,
@@ -216,14 +214,20 @@ const StrategyManager = () => {
                   <p className="text-xs text-gray-400 mb-2">{strategy.description}</p>
                   
                   <div className="flex justify-between text-xs">
-                    <div className={`flex items-center gap-1 ${
-                      strategy.performance > 70 ? 'text-trading-success' : 
-                      strategy.performance > 50 ? 'text-trading-warning' : 
-                      'text-trading-danger'
-                    }`}>
-                      <Activity size={12} />
-                      <span>{strategy.performance}% perf.</span>
-                    </div>
+                    {strategy.performance !== null ? (
+                      <div className={`flex items-center gap-1 ${
+                        strategy.performance > 70 ? 'text-trading-success' : 
+                        strategy.performance > 50 ? 'text-trading-warning' : 
+                        'text-trading-danger'
+                      }`}>
+                        <Activity size={12} />
+                        <span>{strategy.performance}% perf.</span>
+                      </div>
+                    ) : (
+                      <div className="text-gray-400">
+                        <span>No data yet</span>
+                      </div>
+                    )}
                     <Badge variant="outline" className="text-[10px] h-5 bg-black/20">
                       Risk: {strategy.riskLevel > 65 ? 'High' : strategy.riskLevel > 35 ? 'Medium' : 'Low'}
                     </Badge>
@@ -263,21 +267,30 @@ const StrategyManager = () => {
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="bg-black/20 p-4 rounded-lg">
                       <div className="text-sm text-gray-400 mb-1">Performance</div>
-                      <div className="text-2xl font-bold mb-1">{activeStrategy.performance}%</div>
-                      <div className={`text-xs flex items-center ${
-                        activeStrategy.performance >= 60 ? 'text-trading-success' : 'text-trading-danger'
-                      }`}>
-                        {activeStrategy.performance >= 60 
-                          ? <ChevronUp size={14} /> 
-                          : <ChevronDown size={14} />}
-                        {Math.abs(activeStrategy.performance - 50)}% from baseline
-                      </div>
+                      {activeStrategy.performance !== null ? (
+                        <>
+                          <div className="text-2xl font-bold mb-1">{activeStrategy.performance}%</div>
+                          <div className={`text-xs flex items-center ${
+                            activeStrategy.performance >= 60 ? 'text-trading-success' : 'text-trading-danger'
+                          }`}>
+                            Performance data
+                          </div>
+                        </>
+                      ) : (
+                        <div className="text-lg font-medium text-gray-400">No data available</div>
+                      )}
                     </div>
                     
                     <div className="bg-black/20 p-4 rounded-lg">
                       <div className="text-sm text-gray-400 mb-1">Trading Volume</div>
-                      <div className="text-2xl font-bold mb-1">${activeStrategy.tradingVolume.toLocaleString()}</div>
-                      <div className="text-xs text-gray-400">Last 30 days</div>
+                      {activeStrategy.tradingVolume !== null ? (
+                        <>
+                          <div className="text-2xl font-bold mb-1">${activeStrategy.tradingVolume.toLocaleString()}</div>
+                          <div className="text-xs text-gray-400">Last 30 days</div>
+                        </>
+                      ) : (
+                        <div className="text-lg font-medium text-gray-400">No data available</div>
+                      )}
                     </div>
                     
                     <div className="bg-black/20 p-4 rounded-lg">

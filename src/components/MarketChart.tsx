@@ -2,38 +2,21 @@
 import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ChevronUp, ChevronDown } from "lucide-react";
+import { ChevronUp, ChevronDown, BarChart2 } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
+import { getTokenPriceHistory } from "@/utils/marketUtils";
 
 interface MarketChartProps {
   symbol: string;
   chain: "solana" | "binance";
 }
 
-const generateRandomData = (length: number, volatility: number) => {
-  const startPrice = Math.random() * 100 + 50;
-  let currentPrice = startPrice;
-  const data = [];
-  
-  for (let i = 0; i < length; i++) {
-    const change = (Math.random() - 0.5) * volatility;
-    currentPrice = Math.max(0.1, currentPrice + change);
-    
-    // Format date for proper display
-    const date = new Date(Date.now() - (length - i) * 60000);
-    const formattedTime = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    
-    data.push({
-      time: formattedTime,
-      price: currentPrice,
-      fullDate: date
-    });
-  }
-  
-  return data;
-};
+interface PriceDataPoint {
+  time: string;
+  price: number;
+  fullDate: Date;
+}
 
-// Custom tooltip component for the chart
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     return (
@@ -51,25 +34,52 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 
 const MarketChart = ({ symbol, chain }: MarketChartProps) => {
   const [timeframe, setTimeframe] = useState("1h");
-  const [chartData, setChartData] = useState<any[]>([]);
+  const [chartData, setChartData] = useState<PriceDataPoint[]>([]);
   const [priceChange, setPriceChange] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Generate random chart data based on timeframe
-    const dataPoints = timeframe === "1h" ? 60 : timeframe === "1d" ? 24 : 7;
-    const volatility = timeframe === "1h" ? 2 : timeframe === "1d" ? 5 : 10;
+    const fetchChartData = async () => {
+      setIsLoading(true);
+      setError(null);
+      
+      try {
+        // Get days parameter based on timeframe
+        const days = timeframe === "1h" ? 1/24 : timeframe === "1d" ? 1 : 7;
+        
+        // Get token symbol from the full symbol (e.g., SOL/USD -> SOL)
+        const tokenSymbol = symbol.split('/')[0];
+        
+        // Fetch real data
+        const priceHistory = await getTokenPriceHistory(tokenSymbol, days);
+        
+        if (priceHistory && priceHistory.length > 0) {
+          setChartData(priceHistory);
+          
+          // Calculate price change percentage
+          const startPrice = priceHistory[0].price;
+          const endPrice = priceHistory[priceHistory.length - 1].price;
+          const change = ((endPrice - startPrice) / startPrice) * 100;
+          setPriceChange(change);
+        } else {
+          // If no data is available, use empty array
+          setChartData([]);
+          setPriceChange(0);
+          setError("No price data available for this timeframe");
+        }
+      } catch (err) {
+        console.error("Error fetching chart data:", err);
+        setError("Failed to load chart data");
+        setChartData([]);
+        setPriceChange(0);
+      } finally {
+        setIsLoading(false);
+      }
+    };
     
-    const data = generateRandomData(dataPoints, volatility);
-    setChartData(data);
-    
-    // Calculate price change percentage
-    if (data.length > 1) {
-      const startPrice = data[0].price;
-      const endPrice = data[data.length - 1].price;
-      const change = ((endPrice - startPrice) / startPrice) * 100;
-      setPriceChange(change);
-    }
-  }, [timeframe]);
+    fetchChartData();
+  }, [symbol, timeframe, chain]);
 
   const currentPrice = chartData.length > 0 ? chartData[chartData.length - 1].price.toFixed(4) : "0.0000";
   const isPriceUp = priceChange >= 0;
@@ -79,6 +89,72 @@ const MarketChart = ({ symbol, chain }: MarketChartProps) => {
     ['rgba(239, 68, 68, 0.2)', 'rgba(239, 68, 68, 0)'];
   
   const strokeColor = isPriceUp ? '#10b981' : '#ef4444';
+
+  const renderContent = () => {
+    if (isLoading) {
+      return (
+        <div className="flex items-center justify-center h-48">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+        </div>
+      );
+    }
+    
+    if (error || chartData.length === 0) {
+      return (
+        <div className="flex flex-col items-center justify-center h-48 text-center">
+          <BarChart2 className="h-8 w-8 text-gray-400 mb-2" />
+          <p className="text-gray-400">
+            {error || "No chart data available"}
+          </p>
+          <p className="text-xs text-gray-500 mt-2">
+            Try changing the timeframe or check back later
+          </p>
+        </div>
+      );
+    }
+    
+    return (
+      <ResponsiveContainer width="100%" height="100%">
+        <AreaChart
+          data={chartData}
+          margin={{ top: 5, right: 5, left: 0, bottom: 5 }}
+        >
+          <defs>
+            <linearGradient id={`colorGradient-${symbol}`} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor={gradientColor[0]} stopOpacity={0.8} />
+              <stop offset="95%" stopColor={gradientColor[1]} stopOpacity={0} />
+            </linearGradient>
+          </defs>
+          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.1)" />
+          <XAxis 
+            dataKey="time" 
+            tick={{ fontSize: 10, fill: '#9ca3af' }} 
+            axisLine={{ stroke: 'rgba(255,255,255,0.1)' }}
+            tickLine={false}
+            minTickGap={20}
+          />
+          <YAxis 
+            domain={['auto', 'auto']}
+            tick={{ fontSize: 10, fill: '#9ca3af' }}
+            axisLine={false}
+            tickLine={false}
+            width={40}
+            tickFormatter={(value) => `$${value.toFixed(0)}`}
+          />
+          <Tooltip content={<CustomTooltip />} />
+          <Area 
+            type="monotone" 
+            dataKey="price" 
+            stroke={strokeColor} 
+            strokeWidth={2}
+            fillOpacity={1}
+            fill={`url(#colorGradient-${symbol})`} 
+            activeDot={{ r: 4, fill: strokeColor, stroke: 'white', strokeWidth: 1 }}
+          />
+        </AreaChart>
+      </ResponsiveContainer>
+    );
+  };
 
   return (
     <Card className="trading-card h-full">
@@ -91,53 +167,17 @@ const MarketChart = ({ symbol, chain }: MarketChartProps) => {
           </div>
           <div className="flex items-center">
             <span className="text-xl font-bold">${currentPrice}</span>
-            <div className={`ml-2 flex items-center ${isPriceUp ? 'text-trading-success' : 'text-trading-danger'}`}>
-              {isPriceUp ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-              <span className="text-sm font-medium">{Math.abs(priceChange).toFixed(2)}%</span>
-            </div>
+            {!isLoading && chartData.length > 0 && (
+              <div className={`ml-2 flex items-center ${isPriceUp ? 'text-trading-success' : 'text-trading-danger'}`}>
+                {isPriceUp ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                <span className="text-sm font-medium">{Math.abs(priceChange).toFixed(2)}%</span>
+              </div>
+            )}
           </div>
         </div>
         
         <div className="h-48 w-full">
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart
-              data={chartData}
-              margin={{ top: 5, right: 5, left: 0, bottom: 5 }}
-            >
-              <defs>
-                <linearGradient id={`colorGradient-${symbol}`} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor={gradientColor[0]} stopOpacity={0.8} />
-                  <stop offset="95%" stopColor={gradientColor[1]} stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.1)" />
-              <XAxis 
-                dataKey="time" 
-                tick={{ fontSize: 10, fill: '#9ca3af' }} 
-                axisLine={{ stroke: 'rgba(255,255,255,0.1)' }}
-                tickLine={false}
-                minTickGap={20}
-              />
-              <YAxis 
-                domain={['auto', 'auto']}
-                tick={{ fontSize: 10, fill: '#9ca3af' }}
-                axisLine={false}
-                tickLine={false}
-                width={40}
-                tickFormatter={(value) => `$${value.toFixed(0)}`}
-              />
-              <Tooltip content={<CustomTooltip />} />
-              <Area 
-                type="monotone" 
-                dataKey="price" 
-                stroke={strokeColor} 
-                strokeWidth={2}
-                fillOpacity={1}
-                fill={`url(#colorGradient-${symbol})`} 
-                activeDot={{ r: 4, fill: strokeColor, stroke: 'white', strokeWidth: 1 }}
-              />
-            </AreaChart>
-          </ResponsiveContainer>
+          {renderContent()}
         </div>
         
         <Tabs defaultValue="1h" className="mt-4">
