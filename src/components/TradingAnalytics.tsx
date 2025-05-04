@@ -21,7 +21,8 @@ import {
 import { calculateStrategyProfitability } from "@/utils/tradingUtils";
 import { Button } from "@/components/ui/button";
 import { Download, Filter, SlidersHorizontal, Share2 } from "lucide-react";
-import { useState } from "react";
+import { useState, useCallback } from "react";
+import TradePerformanceGrade from "@/components/TradePerformanceGrade";
 
 // Sample data for analytics
 const STRATEGY_DATA = [
@@ -43,7 +44,6 @@ const DAILY_PNL_DATA = [
 const ASSET_ALLOCATION = [
   { name: 'SOL', value: 35 },
   { name: 'SRUN', value: 25 },
-  { name: 'BNB', value: 20 },
   { name: 'FBOT', value: 15 },
   { name: 'Other', value: 5 },
 ];
@@ -58,11 +58,33 @@ const RISK_REWARD_DATA = [
   { name: 'Trade 7', risk: 1.9, reward: 7.2, amount: 280 },
 ];
 
+// Sample performance metrics for grading
+const PERFORMANCE_METRICS = {
+  winRate: 68.5,
+  profitFactor: 1.75,
+  averageReturn: 0.029,
+  maxDrawdown: 18.5,
+  tradeFrequency: 42,
+  successRate: 78,
+  sharpeRatio: 1.32
+};
+
 const TradingAnalytics = () => {
   const [timeframe, setTimeframe] = useState("1w");
+  const [activeTab, setActiveTab] = useState("performance");
   
   // Array of colors for charts
   const COLORS = ['#6366f1', '#8b5cf6', '#3b82f6', '#10b981', '#f97316'];
+  
+  // Handle timeframe change
+  const handleTimeframeChange = useCallback((newTimeframe: string) => {
+    setTimeframe(newTimeframe);
+  }, []);
+  
+  // Handle tab change
+  const handleTabChange = useCallback((newTab: string) => {
+    setActiveTab(newTab);
+  }, []);
   
   return (
     <div className="space-y-6">
@@ -110,7 +132,10 @@ const TradingAnalytics = () => {
         </Card>
       </div>
       
-      <Tabs defaultValue="performance" className="w-full">
+      {/* New Performance Grade Component */}
+      <TradePerformanceGrade metrics={PERFORMANCE_METRICS} />
+      
+      <Tabs defaultValue="performance" value={activeTab} onValueChange={handleTabChange} className="w-full">
         <TabsList className="bg-trading-darkAccent">
           <TabsTrigger value="performance">Performance</TabsTrigger>
           <TabsTrigger value="strategies">Strategies</TabsTrigger>
@@ -123,25 +148,25 @@ const TradingAnalytics = () => {
             <div className="flex border border-gray-700 rounded-lg overflow-hidden">
               <button 
                 className={`px-3 py-1 text-sm ${timeframe === '1d' ? 'bg-trading-highlight text-white' : 'bg-transparent text-gray-400'}`}
-                onClick={() => setTimeframe('1d')}
+                onClick={() => handleTimeframeChange('1d')}
               >
                 1D
               </button>
               <button 
                 className={`px-3 py-1 text-sm ${timeframe === '1w' ? 'bg-trading-highlight text-white' : 'bg-transparent text-gray-400'}`}
-                onClick={() => setTimeframe('1w')}
+                onClick={() => handleTimeframeChange('1w')}
               >
                 1W
               </button>
               <button 
                 className={`px-3 py-1 text-sm ${timeframe === '1m' ? 'bg-trading-highlight text-white' : 'bg-transparent text-gray-400'}`}
-                onClick={() => setTimeframe('1m')}
+                onClick={() => handleTimeframeChange('1m')}
               >
                 1M
               </button>
               <button 
                 className={`px-3 py-1 text-sm ${timeframe === 'all' ? 'bg-trading-highlight text-white' : 'bg-transparent text-gray-400'}`}
-                onClick={() => setTimeframe('all')}
+                onClick={() => handleTimeframeChange('all')}
               >
                 All
               </button>

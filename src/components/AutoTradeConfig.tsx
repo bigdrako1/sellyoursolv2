@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
@@ -17,6 +16,7 @@ import {
   ArrowUpRight
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { APP_CONFIG } from "@/config/appDefinition";
 
 const AutoTradeConfig = () => {
   const [activeTab, setActiveTab] = useState("frontrun");
@@ -27,7 +27,7 @@ const AutoTradeConfig = () => {
       maxGasPrice: 50,
       slippageTolerance: 2,
       autoAdjustGas: true,
-      targetChains: ["solana", "binance"]
+      targetChains: ["solana"]
     },
     marketRunner: {
       enabled: true,
@@ -45,7 +45,7 @@ const AutoTradeConfig = () => {
       delaySeconds: 5,
       maxWallets: 10,
       maxCopyAmount: 30,
-      targetChains: ["solana", "binance"]
+      targetChains: ["solana"]
     }
   });
 
@@ -171,20 +171,6 @@ const AutoTradeConfig = () => {
                       <div className="w-2 h-2 rounded-full bg-solana"></div>
                       Solana
                     </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      className={cn(
-                        "flex items-center gap-1",
-                        settings.frontRunning.targetChains.includes("binance") 
-                          ? "bg-binance/20 border-binance/50 text-white" 
-                          : "bg-transparent"
-                      )}
-                      onClick={() => toggleChain('frontRunning', 'binance')}
-                    >
-                      <div className="w-2 h-2 rounded-full bg-binance"></div>
-                      BSC
-                    </Button>
                   </div>
                 </div>
 
@@ -305,20 +291,6 @@ const AutoTradeConfig = () => {
                       <div className="w-2 h-2 rounded-full bg-solana"></div>
                       Solana
                     </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      className={cn(
-                        "flex items-center gap-1",
-                        settings.marketRunner.targetChains.includes("binance") 
-                          ? "bg-binance/20 border-binance/50 text-white" 
-                          : "bg-transparent"
-                      )}
-                      onClick={() => toggleChain('marketRunner', 'binance')}
-                    >
-                      <div className="w-2 h-2 rounded-full bg-binance"></div>
-                      BSC
-                    </Button>
                   </div>
                 </div>
               </div>
@@ -430,20 +402,6 @@ const AutoTradeConfig = () => {
                       <div className="w-2 h-2 rounded-full bg-solana"></div>
                       Solana
                     </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      className={cn(
-                        "flex items-center gap-1",
-                        settings.walletTracker.targetChains.includes("binance") 
-                          ? "bg-binance/20 border-binance/50 text-white" 
-                          : "bg-transparent"
-                      )}
-                      onClick={() => toggleChain('walletTracker', 'binance')}
-                    >
-                      <div className="w-2 h-2 rounded-full bg-binance"></div>
-                      BSC
-                    </Button>
                   </div>
                 </div>
               </div>
@@ -473,7 +431,7 @@ const AutoTradeConfig = () => {
 
   return (
     <Card className="trading-card">
-      <div className="p-4">
+      <div className="p-6">
         <div className="flex justify-between items-center mb-6">
           <div>
             <div className="flex items-center">

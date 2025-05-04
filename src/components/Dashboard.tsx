@@ -7,8 +7,20 @@ import SystemStatus from "@/components/SystemStatus";
 import TradeAlerts from "@/components/TradeAlerts";
 import MarketChart from "@/components/MarketChart";
 import TransactionHistory from "@/components/TransactionHistory";
+import TradePerformanceGrade from "@/components/TradePerformanceGrade";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
+
+// Sample performance metrics for grading
+const PERFORMANCE_METRICS = {
+  winRate: 68.5,
+  profitFactor: 1.75,
+  averageReturn: 0.029,
+  maxDrawdown: 18.5,
+  tradeFrequency: 42,
+  successRate: 78,
+  sharpeRatio: 1.32
+};
 
 interface DashboardProps {
   totalProfit: number;
@@ -32,8 +44,8 @@ const Dashboard = ({
   const { toast } = useToast();
   
   return (
-    <>
-      <div className="mb-6">
+    <div className="p-4">
+      <div className="mb-8">
         <Overview 
           totalProfit={totalProfit} 
           activeStrategies={activeStrategies} 
@@ -42,7 +54,7 @@ const Dashboard = ({
         />
       </div>
       
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
         <div className="lg:col-span-2">
           <PerformanceMetrics />
         </div>
@@ -71,18 +83,19 @@ const Dashboard = ({
         </div>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+      <div className="mb-8">
+        <TradePerformanceGrade metrics={PERFORMANCE_METRICS} />
+      </div>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         <SystemStatus latency={systemLatency} systemActive={systemActive} />
         <TradeAlerts />
       </div>
       
-      <Tabs defaultValue="solana" className="mb-6">
+      <Tabs defaultValue="solana" className="mb-8">
         <TabsList className="bg-trading-darkAccent w-full">
           <TabsTrigger value="solana" className="flex-1">
             <div className="w-3 h-3 rounded-full bg-solana mr-2"></div> Solana
-          </TabsTrigger>
-          <TabsTrigger value="binance" className="flex-1">
-            <div className="w-3 h-3 rounded-full bg-binance mr-2"></div> Binance Smart Chain
           </TabsTrigger>
         </TabsList>
         <TabsContent value="solana" className="mt-4">
@@ -91,16 +104,10 @@ const Dashboard = ({
             <MarketChart symbol="SRUN/SOL" chain="solana" />
           </div>
         </TabsContent>
-        <TabsContent value="binance" className="mt-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <MarketChart symbol="BNB/USD" chain="binance" />
-            <MarketChart symbol="FBOT/BNB" chain="binance" />
-          </div>
-        </TabsContent>
       </Tabs>
       
       <TransactionHistory />
-    </>
+    </div>
   );
 };
 
