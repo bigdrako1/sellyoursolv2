@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { BarChart, Activity, Wallet, Search } from "lucide-react";
 import ApiUsageMonitor from "@/components/ApiUsageMonitor";
 import LivePriceTracker from "@/components/LivePriceTracker";
+import { getMarketOverview } from "@/utils/marketUtils";
 
 interface TokenData {
   name: string;
@@ -48,26 +49,25 @@ const MarketAnalysis = () => {
     checkApiConnection();
   }, [toast]);
 
-  // Load mock data (in a real app, this would use heliusApiCall)
+  // Load real data using marketUtils
   useEffect(() => {
     const fetchMarketData = async () => {
       setIsLoading(true);
       try {
-        // In a real implementation, this would be:
-        // const data = await heliusApiCall<TokenData[]>('/tokens/market-data');
+        // Fetch real market data using the utility function
+        const marketData = await getMarketOverview("solana", 5);
         
-        // For demo, use mock data
-        setTimeout(() => {
-          const mockData: TokenData[] = [
-            { name: "Solana", symbol: "SOL", price: 142.54, change24h: 3.2, volume24h: 1250000000 },
-            { name: "Jupiter", symbol: "JUP", price: 1.23, change24h: -1.5, volume24h: 45000000 },
-            { name: "Bonk", symbol: "BONK", price: 0.00002345, change24h: 12.8, volume24h: 34000000 },
-            { name: "Raydium", symbol: "RAY", price: 1.67, change24h: 2.1, volume24h: 18000000 },
-            { name: "Marinade", symbol: "MNDE", price: 0.41, change24h: -0.8, volume24h: 5200000 },
-          ];
-          setTopTokens(mockData);
-          setIsLoading(false);
-        }, 1000);
+        // Transform the data into the format our component expects
+        const transformedData: TokenData[] = marketData.map(token => ({
+          name: token.name,
+          symbol: token.symbol,
+          price: token.price,
+          change24h: token.change24h,
+          volume24h: token.volume24h,
+        }));
+        
+        setTopTokens(transformedData);
+        setIsLoading(false);
       } catch (error) {
         console.error("Failed to fetch market data:", error);
         toast({
@@ -81,6 +81,24 @@ const MarketAnalysis = () => {
     
     fetchMarketData();
   }, [toast]);
+
+  // Measure API latency
+  useEffect(() => {
+    const measureLatency = async () => {
+      try {
+        const startTime = Date.now();
+        await heliusApiCall('/health-check');
+        const latency = Date.now() - startTime;
+        setSystemLatency(latency);
+      } catch (error) {
+        console.error("Latency measurement failed:", error);
+      }
+    };
+    
+    if (apiConnected) {
+      measureLatency();
+    }
+  }, [apiConnected]);
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -226,6 +244,10 @@ const MarketAnalysis = () => {
                   </span>
                 </div>
                 <div className="flex justify-between">
+                  <span className="text-sm text-muted-foreground">Latency</span>
+                  <span className="font-medium">{systemLatency ? `${systemLatency}ms` : 'Measuring...'}</span>
+                </div>
+                <div className="flex justify-between">
                   <span className="text-sm text-muted-foreground">Rate Limit</span>
                   <span className="font-medium">5 req/sec</span>
                 </div>
@@ -235,7 +257,7 @@ const MarketAnalysis = () => {
         </div>
       </main>
       
-      <Footer systemActive={false} systemLatency={systemLatency} />
+      <Footer systemActive={apiConnected} systemLatency={systemLatency} />
     </div>
   );
 };

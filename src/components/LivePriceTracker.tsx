@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/card";
 import { ArrowUp, ArrowDown } from "lucide-react";
 import { playSound, initAudio } from "@/utils/soundUtils";
 import { useToast } from "@/hooks/use-toast";
+import { heliusApiCall } from "@/utils/apiUtils";
 
 interface PriceData {
   symbol: string;
@@ -21,6 +22,7 @@ const LivePriceTracker = () => {
   const { toast } = useToast();
   const [audioInitialized, setAudioInitialized] = useState(false);
   const fetchTimerRef = useRef<number | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Initialize audio on component mount or user interaction
   useEffect(() => {
@@ -50,22 +52,53 @@ const LivePriceTracker = () => {
 
   useEffect(() => {
     const fetchInitialPrices = async () => {
-      // Simulate initial price load - In production, this would fetch from a real API
-      const initialPrices = [
-        { 
-          symbol: "SOL", 
-          price: 140 + Math.random() * 5,
-          change24h: -2.5 + Math.random() * 5
-        },
-        { 
-          symbol: "BNB", 
-          price: 580 + Math.random() * 10,
-          change24h: -2.5 + Math.random() * 5
+      setIsLoading(true);
+      try {
+        const response = await heliusApiCall<any>('/token-prices', 'GET');
+        
+        if (response && response.tokens) {
+          const solData = response.tokens.find((token: any) => 
+            token.symbol.toLowerCase() === "sol" || token.name.toLowerCase() === "solana");
+          
+          const bnbData = response.tokens.find((token: any) => 
+            token.symbol.toLowerCase() === "bnb" || token.name.toLowerCase() === "binance coin");
+          
+          const initialPrices: PriceData[] = [];
+          
+          if (solData) {
+            initialPrices.push({
+              symbol: "SOL",
+              price: parseFloat(solData.price) || 0,
+              change24h: parseFloat(solData.change24h) || 0
+            });
+          } else {
+            initialPrices.push({ symbol: "SOL", price: 0, change24h: 0 });
+          }
+          
+          if (bnbData) {
+            initialPrices.push({
+              symbol: "BNB",
+              price: parseFloat(bnbData.price) || 0,
+              change24h: parseFloat(bnbData.change24h) || 0
+            });
+          } else {
+            initialPrices.push({ symbol: "BNB", price: 0, change24h: 0 });
+          }
+          
+          setPrices(initialPrices);
         }
-      ];
-      
-      setPrices(initialPrices);
-      startPriceFetching();
+        setIsLoading(false);
+        startPriceFetching();
+      } catch (error) {
+        console.error("Failed to fetch initial prices:", error);
+        // Fallback to default values
+        setPrices([
+          { symbol: "SOL", price: 140, change24h: 0 },
+          { symbol: "BNB", price: 580, change24h: 0 }
+        ]);
+        setIsLoading(false);
+        startPriceFetching();
+      }
     };
 
     fetchInitialPrices();
@@ -80,41 +113,54 @@ const LivePriceTracker = () => {
   const startPriceFetching = () => {
     const updatePrices = async () => {
       try {
-        setPrices(currentPrices => {
-          return currentPrices.map(token => {
-            const lastPrice = token.price;
-            const newPrice = token.symbol === "SOL" 
-              ? 140 + Math.random() * 5 
-              : 580 + Math.random() * 10;
-            
-            // Only play sound on significant price changes (>1%) if audio is initialized
-            const significantChange = lastPrice && Math.abs((newPrice - lastPrice) / lastPrice) > 0.01;
-            const currentTime = Date.now();
-            const hasTimeElapsed = !token.priceChangeTimestamp || 
-              (currentTime - token.priceChangeTimestamp > 5000); // 5 seconds cooldown
-            
-            if (significantChange && audioInitialized && hasTimeElapsed) {
-              playSound(newPrice > lastPrice ? 'success' : 'alert');
+        const response = await heliusApiCall<any>('/token-prices', 'GET');
+        
+        if (response && response.tokens) {
+          setPrices(currentPrices => {
+            return currentPrices.map(token => {
+              const lastPrice = token.price;
               
-              // Show toast for very significant price changes (>2%)
-              if (Math.abs((newPrice - lastPrice) / lastPrice) > 0.02) {
-                toast({
-                  title: `${token.symbol} ${newPrice > lastPrice ? 'Rising' : 'Dropping'}`,
-                  description: `${newPrice > lastPrice ? '+' : '-'}${Math.abs((newPrice - lastPrice) / lastPrice * 100).toFixed(2)}% in the last update`,
-                  variant: newPrice > lastPrice ? "default" : "destructive",
-                });
+              // Find the matching token in the API response
+              const tokenData = response.tokens.find((t: any) => 
+                t.symbol.toLowerCase() === token.symbol.toLowerCase() ||
+                (token.symbol === "SOL" && t.name.toLowerCase() === "solana") ||
+                (token.symbol === "BNB" && t.name.toLowerCase() === "binance coin")
+              );
+              
+              if (!tokenData) return token;
+              
+              const newPrice = parseFloat(tokenData.price) || lastPrice;
+              const change24h = parseFloat(tokenData.change24h) || 0;
+              
+              // Only play sound on significant price changes (>1%) if audio is initialized
+              const significantChange = lastPrice && Math.abs((newPrice - lastPrice) / lastPrice) > 0.01;
+              const currentTime = Date.now();
+              const hasTimeElapsed = !token.priceChangeTimestamp || 
+                (currentTime - token.priceChangeTimestamp > 5000); // 5 seconds cooldown
+              
+              if (significantChange && audioInitialized && hasTimeElapsed) {
+                playSound(newPrice > lastPrice ? 'success' : 'alert');
+                
+                // Show toast for very significant price changes (>2%)
+                if (Math.abs((newPrice - lastPrice) / lastPrice) > 0.02) {
+                  toast({
+                    title: `${token.symbol} ${newPrice > lastPrice ? 'Rising' : 'Dropping'}`,
+                    description: `${newPrice > lastPrice ? '+' : '-'}${Math.abs((newPrice - lastPrice) / lastPrice * 100).toFixed(2)}% in the last update`,
+                    variant: newPrice > lastPrice ? "default" : "destructive",
+                  });
+                }
               }
-            }
-            
-            return {
-              ...token,
-              lastPrice,
-              price: newPrice,
-              change24h: -2.5 + Math.random() * 5,
-              priceChangeTimestamp: significantChange && hasTimeElapsed ? currentTime : token.priceChangeTimestamp
-            };
+              
+              return {
+                ...token,
+                lastPrice,
+                price: newPrice,
+                change24h: change24h,
+                priceChangeTimestamp: significantChange && hasTimeElapsed ? currentTime : token.priceChangeTimestamp
+              };
+            });
           });
-        });
+        }
         
         // Schedule next update with a slight randomization to make it feel more natural
         const nextUpdateDelay = 10000 + (Math.random() * 2000);
@@ -143,6 +189,18 @@ const LivePriceTracker = () => {
       ? 'animate-pulse border-trading-success/20' 
       : 'animate-pulse border-trading-danger/20';
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex gap-2">
+        <Card className="px-3 py-2 bg-trading-darkAccent border-white/5 opacity-50">
+          <div className="flex items-center gap-2">
+            <span className="font-medium text-sm">Loading...</span>
+          </div>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="flex gap-2">
