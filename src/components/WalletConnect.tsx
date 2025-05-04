@@ -1,12 +1,33 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Wallet, RotateCw, LogOut, ArrowUpRight, Copy } from "lucide-react";
-import { getWalletBalances, connectWallet, disconnectWallet, getConnectedWallet, formatWalletAddress } from "@/utils/walletUtils";
+import { getConnectedWallet, connectPhantomWallet, disconnectWallet } from "@/utils/phantomUtils";
 import { useToast } from "@/hooks/use-toast";
 import { useCurrencyStore } from "@/store/currencyStore";
 import { useAuth } from "@/contexts/AuthContext";
+
+// Add necessary wallet utility functions
+const formatWalletAddress = (address: string): string => {
+  if (!address) return '';
+  return `${address.slice(0, 4)}...${address.slice(-4)}`;
+};
+
+const getWalletBalances = async (address: string) => {
+  try {
+    // This is a placeholder - in a real app, you would fetch actual balances from Solana
+    return {
+      balance: 5.23, // Example SOL balance
+      totalUsdValue: 150.75 // Example USD value
+    };
+  } catch (error) {
+    console.error("Error fetching wallet balances:", error);
+    return {
+      balance: 0,
+      totalUsdValue: 0
+    };
+  }
+};
 
 interface WalletConnectProps {
   onConnect: (address: string) => void;
@@ -33,7 +54,7 @@ const WalletConnect = ({ onConnect, onDisconnect }: WalletConnectProps) => {
     setConnecting(true);
     
     try {
-      const result = await connectWallet("Phantom");
+      const result = await connectPhantomWallet();
       if (result.success) {
         onConnect(result.address);
         

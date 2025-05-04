@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -7,9 +6,10 @@ import {
   connectPhantomWallet,
   disconnectWallet,
   getConnectedWallet,
-  signWithPhantom
+  signWithPhantom,
+  detectPhantomWallet, 
+  verifyWalletSignature 
 } from '@/utils/phantomUtils';
-import { detectPhantomWallet, verifyWalletSignature } from '@/utils/phantomUtils';
 
 interface AuthContextType {
   user: User | null;

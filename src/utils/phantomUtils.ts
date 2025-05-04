@@ -37,6 +37,10 @@ export const connectPhantomWallet = async (): Promise<{ success: boolean; addres
     // Get the wallet address
     const address = publicKey.toString();
     
+    // Save wallet info to localStorage for persistence
+    localStorage.setItem('walletAddress', address);
+    localStorage.setItem('walletProvider', 'phantom');
+    
     return {
       success: true,
       address
@@ -56,6 +60,58 @@ export const connectPhantomWallet = async (): Promise<{ success: boolean; addres
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error connecting to wallet'
     };
+  }
+};
+
+/**
+ * Get connected wallet from localStorage
+ * @returns string | null - Connected wallet address or null if not connected
+ */
+export const getConnectedWallet = (): string | null => {
+  try {
+    const address = localStorage.getItem('walletAddress');
+    const provider = localStorage.getItem('walletProvider');
+    
+    // Only return the address if it exists and the provider is 'phantom'
+    if (address && provider === 'phantom') {
+      return address;
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('Error getting connected wallet:', error);
+    return null;
+  }
+};
+
+/**
+ * Disconnect wallet
+ * @returns Promise<boolean> - True if disconnected successfully
+ */
+export const disconnectWallet = async (): Promise<boolean> => {
+  try {
+    // Clear wallet info from localStorage
+    localStorage.removeItem('walletAddress');
+    localStorage.removeItem('walletProvider');
+    
+    // If Phantom is installed, try to disconnect
+    if ((window as any).phantom?.solana?.isPhantom) {
+      try {
+        // Some wallets provide a disconnect method
+        const provider = (window as any).phantom?.solana;
+        if (provider.disconnect && typeof provider.disconnect === 'function') {
+          await provider.disconnect();
+        }
+      } catch (error) {
+        console.error('Error disconnecting from Phantom wallet:', error);
+        // We still return true since we cleared localStorage
+      }
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Error disconnecting wallet:', error);
+    return false;
   }
 };
 
