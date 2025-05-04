@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowUpRight, Bell, BellOff, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { playSound } from "@/utils/soundUtils";
-import { heliusApiCall } from "@/utils/apiUtils";
+import { getRecentTokenActivity } from "@/services/tokenDataService";
 
 interface Token {
   name: string;
@@ -34,12 +34,12 @@ const TokenAlertMonitor: React.FC = () => {
       
       setLoading(true);
       try {
-        // Fetch real token data from Helius
-        const response = await heliusApiCall("getRecentTokenActivity", []);
+        // Fetch real token data using our new service
+        const tokenActivity = await getRecentTokenActivity();
         
-        if (response && Array.isArray(response)) {
+        if (tokenActivity && Array.isArray(tokenActivity) && tokenActivity.length > 0) {
           // Process token data
-          const tokenData: Token[] = response.map((token: any) => ({
+          const tokenData: Token[] = tokenActivity.map((token: any) => ({
             name: token.name || "Unknown Token",
             symbol: token.symbol || "???",
             address: token.address,
@@ -49,12 +49,12 @@ const TokenAlertMonitor: React.FC = () => {
             holders: token.holders || 0,
             qualityScore: token.qualityScore || 0,
             source: token.source || "Helius",
-            createdAt: new Date(token.timestamp || Date.now())
+            createdAt: new Date(token.createdAt || Date.now())
           }));
           
           setTokens(tokenData);
           
-          // Play sound notification for new tokens - fixed to use a valid sound type
+          // Play sound notification for new tokens
           if (tokenData.length > 0 && tokens.length > 0) {
             if (tokenData[0].address !== tokens[0].address) {
               playSound('alert');
@@ -62,11 +62,10 @@ const TokenAlertMonitor: React.FC = () => {
           }
         } else {
           // No tokens found or API error
-          setTokens([]);
+          console.log("No token data returned from API");
         }
       } catch (error) {
         console.error("Error fetching token alerts:", error);
-        setTokens([]);
       } finally {
         setLoading(false);
       }

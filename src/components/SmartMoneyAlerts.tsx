@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Bell, Wallet, ExternalLink, LineChart, ArrowUp } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { trackWalletActivities } from "@/services/tokenDataService";
+import { getTokenMetadata } from "@/services/tokenDataService";
 
 interface SmartMoneyAlert {
   id: string;
@@ -36,14 +38,74 @@ const SmartMoneyAlerts = () => {
   ];
 
   useEffect(() => {
-    // Load alerts from localStorage on component mount
-    const loadAlerts = () => {
+    // Load alerts from localStorage or fetch real wallet activities
+    const loadAlerts = async () => {
       try {
+        setLoading(true);
+        
+        // Try to get real wallet activities
+        const walletActivities = await trackWalletActivities(smartMoneyWallets);
+        
+        if (walletActivities && walletActivities.length > 0) {
+          // Process wallet activities into alerts
+          const newAlerts: SmartMoneyAlert[] = [];
+          
+          for (const activity of walletActivities) {
+            for (const tx of activity.transactions) {
+              // Check if transaction is a token transfer or swap
+              if (tx && tx.meta && tx.meta.postTokenBalances && tx.meta.postTokenBalances.length > 0) {
+                // Extract token information
+                for (const tokenBalance of tx.meta.postTokenBalances) {
+                  if (tokenBalance.owner === activity.walletAddress) {
+                    // This is a token owned by the smart money wallet
+                    try {
+                      const tokenAddress = tokenBalance.mint;
+                      const tokenInfo = await getTokenMetadata(tokenAddress);
+                      
+                      if (tokenInfo) {
+                        // Calculate transaction value
+                        const lamportsChange = (tx.meta.postBalances[0] || 0) - (tx.meta.preBalances[0] || 0);
+                        const transactionValue = Math.abs(lamportsChange) / 1000000000 * 150; // Rough SOL to USD conversion
+                        
+                        newAlerts.push({
+                          id: `${tx.transaction.signatures[0]}-${tokenAddress}`,
+                          tokenName: tokenInfo.name || 'Unknown Token',
+                          tokenSymbol: tokenInfo.symbol || '???',
+                          contractAddress: tokenAddress,
+                          price: tokenInfo.price || 0,
+                          priceChange: tokenInfo.priceChange24h || 0,
+                          liquidity: tokenInfo.liquidity || 0,
+                          volume: tokenInfo.volume24h || 0,
+                          timestamp: new Date(tx.blockTime * 1000).toISOString(),
+                          walletAddress: activity.walletAddress,
+                          transactionValue: transactionValue,
+                          source: "Smart Money Buying Now"
+                        });
+                      }
+                    } catch (error) {
+                      console.error('Error processing token transaction:', error);
+                    }
+                  }
+                }
+              }
+            }
+          }
+          
+          // If we got any real alerts, use them
+          if (newAlerts.length > 0) {
+            setAlerts(newAlerts);
+            localStorage.setItem("smart_money_alerts", JSON.stringify(newAlerts));
+            setLoading(false);
+            return;
+          }
+        }
+        
+        // If no real alerts were found, try to load from localStorage
         const storedAlerts = localStorage.getItem("smart_money_alerts");
         if (storedAlerts) {
           setAlerts(JSON.parse(storedAlerts));
         } else {
-          // Mock data for demo purposes
+          // Mock data for demo purposes if no real data is available
           const mockAlerts: SmartMoneyAlert[] = [
             {
               id: "alert-1",
@@ -100,46 +162,69 @@ const SmartMoneyAlerts = () => {
 
     loadAlerts();
     
-    // Set up periodic check for new alerts (in production, this would connect to a websocket)
-    const intervalId = setInterval(() => {
-      // Simulate receiving a new alert
-      const randomChance = Math.random();
-      if (randomChance > 0.85) { // 15% chance of new alert
-        const newAlert = generateNewAlert();
-        handleNewAlert(newAlert);
+    // Set up periodic check for new alerts
+    const intervalId = setInterval(async () => {
+      try {
+        // Check for new wallet activities
+        const walletActivities = await trackWalletActivities(smartMoneyWallets);
+        
+        if (walletActivities && walletActivities.length > 0) {
+          // Process the most recent transaction from each wallet
+          for (const activity of walletActivities) {
+            if (activity.transactions && activity.transactions.length > 0) {
+              const latestTx = activity.transactions[0];
+              
+              // Check if we already have this transaction in our alerts
+              const txId = latestTx.transaction?.signatures[0];
+              if (txId && !alerts.some(alert => alert.id.includes(txId))) {
+                // Process this as a new alert
+                if (latestTx.meta && latestTx.meta.postTokenBalances && latestTx.meta.postTokenBalances.length > 0) {
+                  // Extract token information
+                  for (const tokenBalance of latestTx.meta.postTokenBalances) {
+                    if (tokenBalance.owner === activity.walletAddress) {
+                      try {
+                        const tokenAddress = tokenBalance.mint;
+                        const tokenInfo = await getTokenMetadata(tokenAddress);
+                        
+                        if (tokenInfo) {
+                          // Calculate transaction value
+                          const lamportsChange = (latestTx.meta.postBalances[0] || 0) - (latestTx.meta.preBalances[0] || 0);
+                          const transactionValue = Math.abs(lamportsChange) / 1000000000 * 150; // Rough SOL to USD conversion
+                          
+                          const newAlert: SmartMoneyAlert = {
+                            id: `${txId}-${tokenAddress}`,
+                            tokenName: tokenInfo.name || 'Unknown Token',
+                            tokenSymbol: tokenInfo.symbol || '???',
+                            contractAddress: tokenAddress,
+                            price: tokenInfo.price || 0,
+                            priceChange: tokenInfo.priceChange24h || 0,
+                            liquidity: tokenInfo.liquidity || 0,
+                            volume: tokenInfo.volume24h || 0,
+                            timestamp: new Date(latestTx.blockTime * 1000).toISOString(),
+                            walletAddress: activity.walletAddress,
+                            transactionValue: transactionValue,
+                            source: "Smart Money Buying Now"
+                          };
+                          
+                          handleNewAlert(newAlert);
+                        }
+                      } catch (error) {
+                        console.error('Error processing new token transaction:', error);
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Error checking for new smart money activity:", error);
       }
     }, 60000); // Check every minute
     
     return () => clearInterval(intervalId);
-  }, []);
-  
-  // Generate a mock new alert (in production, this would come from API/websocket)
-  const generateNewAlert = (): SmartMoneyAlert => {
-    const tokens = [
-      { name: "Daisy", symbol: "DAISY", address: "daiskPLEbNUvVq1k8bCrdo7r9SuCDNYJyXnj1FJP8", price: 0.00074, change: -3.1, liquidity: 450000, volume: 23000000 },
-      { name: "Samoyedcoin", symbol: "SAMO", address: "7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU", price: 0.0234, change: 8.7, liquidity: 780000, volume: 19000000 },
-      { name: "Jito", symbol: "JTO", address: "jtojtomepa8beP8AuQc6eXt5FriJwfnGz1Y6law3uE", price: 3.75, change: 1.2, liquidity: 920000, volume: 8900000 },
-    ];
-    
-    const randomWallet = smartMoneyWallets[Math.floor(Math.random() * smartMoneyWallets.length)];
-    const randomToken = tokens[Math.floor(Math.random() * tokens.length)];
-    const txValue = Math.floor(Math.random() * 20000) + 5000;
-    
-    return {
-      id: `alert-${Date.now()}`,
-      tokenName: randomToken.name,
-      tokenSymbol: randomToken.symbol,
-      contractAddress: randomToken.address,
-      price: randomToken.price,
-      priceChange: randomToken.change,
-      liquidity: randomToken.liquidity,
-      volume: randomToken.volume,
-      timestamp: new Date().toISOString(),
-      walletAddress: randomWallet,
-      transactionValue: txValue,
-      source: Math.random() > 0.5 ? "Smart Money Buying Now" : "Smart Money Accumulating"
-    };
-  };
+  }, [alerts, smartMoneyWallets]);
   
   // Handle new incoming alert
   const handleNewAlert = (newAlert: SmartMoneyAlert) => {
@@ -154,7 +239,7 @@ const SmartMoneyAlerts = () => {
     // Show toast notification
     toast({
       title: `Smart Money Alert: ${newAlert.tokenSymbol}`,
-      description: `${newAlert.source} - $${newAlert.transactionValue.toLocaleString()}`,
+      description: `${newAlert.source} - $${newAlert.transactionValue?.toLocaleString()}`,
       variant: "default"
     });
   };

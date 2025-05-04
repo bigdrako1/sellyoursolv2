@@ -3,12 +3,12 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
+import { testHeliusConnection } from './services/tokenDataService';
 
 // Helius API configuration
 const HELIUS_API_KEY = 'a18d2c93-d9fa-4db2-8419-707a4f1782f7';
 const SOLANA_RPC_URL = `https://mainnet.helius-rpc.com/?api-key=${HELIUS_API_KEY}`;
 const SECURE_RPC_URL = 'https://christye-baw30v-fast-mainnet.helius-rpc.com';
-const WEBHOOK_URL = 'https://api.helius-rpc.com/v0/webhook';
 
 // Initialize global services for token monitoring
 const initTokenMonitoring = async () => {
@@ -16,8 +16,9 @@ const initTokenMonitoring = async () => {
     console.log('Initializing token monitoring services...');
     console.log(`Connecting to Solana RPC at ${SOLANA_RPC_URL}`);
     
-    // In real implementation, this would initialize a Solana connection
-    // const connection = new Connection(SOLANA_RPC_URL);
+    // Test Helius connection
+    const isConnected = await testHeliusConnection();
+    console.log(`Helius connection test: ${isConnected ? 'Success' : 'Failed'}`);
     
     // Check for stored API key
     const storedApiKey = localStorage.getItem('helius_api_key');
@@ -140,11 +141,6 @@ const initializeSmartMoneyTracking = () => {
     localStorage.setItem('smart_money_alerts', JSON.stringify([]));
   }
   
-  // In real implementation, this would set up:
-  // 1. Periodic checking of these wallets for new transactions
-  // 2. Webhook subscriptions for these wallet addresses
-  // 3. Detection of significant buy patterns
-  
   console.log('Smart Money tracking initialized with default wallets');
 };
 
@@ -171,11 +167,6 @@ const initializeTelegramMonitoring = () => {
   if (!localStorage.getItem('telegram_messages')) {
     localStorage.setItem('telegram_messages', JSON.stringify([]));
   }
-  
-  // In a real implementation, this would:
-  // 1. Create Telethon client connections to monitor these channels
-  // 2. Set up token address extraction from messages
-  // 3. Handle "Smart Money Buying" alerts to prevent duplicates
   
   console.log('Telegram channel monitoring initialized');
 };
