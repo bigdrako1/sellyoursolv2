@@ -60,8 +60,10 @@ const MarketAnalysis = () => {
     const fetchTrendingTokens = async () => {
       setIsLoading(true);
       try {
+        console.log("Fetching trending tokens...");
         // Use the getTrendingTokens function to get trending tokens from all Solana DEXs
-        const trendingTokens = await getTrendingTokens(5);
+        const trendingTokens = await getTrendingTokens(10);
+        console.log("Fetched trending tokens:", trendingTokens);
         setTopTokens(trendingTokens);
       } catch (error) {
         console.error("Failed to fetch trending tokens:", error);
@@ -76,6 +78,13 @@ const MarketAnalysis = () => {
     };
     
     fetchTrendingTokens();
+    
+    // Set up refresh interval
+    const intervalId = setInterval(() => {
+      fetchTrendingTokens();
+    }, 300000); // Refresh every 5 minutes
+    
+    return () => clearInterval(intervalId);
   }, [toast]);
 
   return (
@@ -113,7 +122,12 @@ const MarketAnalysis = () => {
               <TabsContent value="overview">
                 <Card>
                   <CardHeader>
-                    <CardTitle>Trending Solana Tokens</CardTitle>
+                    <CardTitle className="flex items-center">
+                      <span className="text-purple-400 mr-2">Trending Solana Tokens</span>
+                      <span className="bg-purple-500/20 text-xs rounded-full px-2 py-0.5 text-purple-300">
+                        Live Data
+                      </span>
+                    </CardTitle>
                   </CardHeader>
                   <CardContent>
                     {isLoading ? (
@@ -137,16 +151,16 @@ const MarketAnalysis = () => {
                     ) : (
                       <div className="space-y-4">
                         {topTokens.length > 0 ? (
-                          topTokens.map((token) => (
-                            <div key={token.symbol} className="flex items-center justify-between border-b border-gray-700 pb-3">
+                          topTokens.map((token, index) => (
+                            <div key={`${token.symbol}-${index}`} className="flex items-center justify-between border-b border-gray-700 pb-3">
                               <div className="flex items-center gap-2">
-                                <div className="bg-gray-800 h-10 w-10 rounded-full flex items-center justify-center font-bold">
+                                <div className={`bg-gradient-to-br from-purple-500/30 to-blue-500/30 h-10 w-10 rounded-full flex items-center justify-center font-bold border border-purple-500/20`}>
                                   {token.symbol.slice(0, 1)}
                                 </div>
                                 <div>
                                   <div className="font-medium">{token.name}</div>
                                   <div className="text-sm text-gray-400">
-                                    {token.symbol} {token.source && <span className="text-xs">• {token.source}</span>}
+                                    {token.symbol} {token.source && <span className="text-xs text-purple-300">• {token.source}</span>}
                                   </div>
                                 </div>
                               </div>
@@ -222,7 +236,7 @@ const MarketAnalysis = () => {
               <CardContent className="space-y-2">
                 <div className="flex justify-between">
                   <span className="text-sm text-muted-foreground">Provider</span>
-                  <span className="font-medium">Helius</span>
+                  <span className="font-medium text-purple-400">Helius</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-sm text-muted-foreground">Status</span>

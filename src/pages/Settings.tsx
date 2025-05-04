@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -520,6 +519,7 @@ const Settings = () => {
                       placeholder="Generate your personal API key"
                       className="bg-trading-dark border-trading-highlight/30"
                     />
+                    <p className="text-xs text-gray-400">Used for authenticating with your account when using external integrations</p>
                     <div className="flex justify-end mt-2">
                       <Button 
                         onClick={() => {
@@ -540,13 +540,16 @@ const Settings = () => {
                   <div className="space-y-2 pt-2">
                     <Label>Connected services</Label>
                     <div className="flex flex-wrap gap-2 mt-2">
-                      <div className="px-3 py-1 rounded-full bg-trading-highlight/20 border border-trading-highlight/30 text-sm">
+                      <div className="px-3 py-1 rounded-full bg-blue-500/20 border border-blue-500/30 text-sm text-blue-300 flex items-center gap-1">
+                        <span className="w-2 h-2 rounded-full bg-blue-400"></span>
                         Solana RPC
                       </div>
-                      <div className="px-3 py-1 rounded-full bg-trading-highlight/20 border border-trading-highlight/30 text-sm">
+                      <div className="px-3 py-1 rounded-full bg-purple-500/20 border border-purple-500/30 text-sm text-purple-300 flex items-center gap-1">
+                        <span className="w-2 h-2 rounded-full bg-purple-400"></span>
                         Helius API
                       </div>
-                      <div className="px-3 py-1 rounded-full bg-trading-highlight/20 border border-trading-highlight/30 text-sm">
+                      <div className="px-3 py-1 rounded-full bg-orange-500/20 border border-orange-500/30 text-sm text-orange-300 flex items-center gap-1">
+                        <span className="w-2 h-2 rounded-full bg-orange-400"></span>
                         Webhooks
                       </div>
                     </div>
