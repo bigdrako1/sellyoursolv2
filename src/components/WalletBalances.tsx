@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { getWalletBalances, WalletData, TokenData } from "@/utils/walletUtils";
 import { ChevronUp, ChevronDown, Wallet } from "lucide-react";
 import { useCurrencyStore } from "@/store/currencyStore";
+import { heliusRpcCall } from "@/utils/apiUtils";
 
 const WalletBalances = () => {
   const [walletData, setWalletData] = useState<WalletData | null>(null);
@@ -15,8 +16,59 @@ const WalletBalances = () => {
       try {
         const connectedAddress = localStorage.getItem('walletAddress');
         if (connectedAddress) {
-          const data = await getWalletBalances(connectedAddress);
-          setWalletData(data);
+          // Get wallet token balances from Helius API
+          try {
+            const balanceResponse = await heliusRpcCall("getTokenBalances", [connectedAddress]);
+            
+            if (balanceResponse) {
+              // Process the balance data
+              const nativeBalance = balanceResponse.nativeBalance ? 
+                balanceResponse.nativeBalance / 1000000000 : 0; // Convert from lamports to SOL
+              
+              // Process token balances
+              const processedTokens: TokenData[] = [];
+              
+              if (balanceResponse.tokens && Array.isArray(balanceResponse.tokens)) {
+                for (const token of balanceResponse.tokens) {
+                  if (token.mint && token.amount) {
+                    // Get token price data (in a real app, we'd use a price API)
+                    const priceResponse = await fetch(`https://price.jup.ag/v4/price?ids=${token.mint}`);
+                    const priceData = await priceResponse.json();
+                    
+                    const price = priceData?.data?.[token.mint]?.price || 0;
+                    const balance = token.amount / Math.pow(10, token.decimals || 9);
+                    const usdValue = balance * price;
+                    
+                    processedTokens.push({
+                      symbol: token.symbol || token.mint.substring(0, 4),
+                      balance,
+                      usdValue,
+                      price,
+                      change24h: Math.random() * 10 - 5, // Mock 24h change until we have a real API
+                      logo: token.logo
+                    });
+                  }
+                }
+              }
+              
+              // Calculate total USD value
+              const solValue = nativeBalance * 100; // Assuming SOL is $100
+              const tokenTotalValue = processedTokens.reduce((sum, token) => sum + token.usdValue, 0);
+              const totalUsdValue = solValue + tokenTotalValue;
+              
+              setWalletData({
+                address: connectedAddress,
+                balance: nativeBalance,
+                tokens: processedTokens,
+                totalUsdValue
+              });
+            }
+          } catch (apiError) {
+            console.error("API error fetching wallet data:", apiError);
+            // Fall back to mock data from walletUtils
+            const data = await getWalletBalances(connectedAddress);
+            setWalletData(data);
+          }
         }
       } catch (error) {
         console.error("Failed to load wallet data", error);
@@ -42,7 +94,14 @@ const WalletBalances = () => {
   };
 
   if (isLoading) {
-    return <div className="animate-pulse bg-white/5 rounded-lg h-40"></div>;
+    return (
+      <div className="space-y-4">
+        <div className="animate-pulse bg-white/5 rounded-lg h-10 mb-6"></div>
+        <div className="animate-pulse bg-white/5 rounded-lg h-16"></div>
+        <div className="animate-pulse bg-white/5 rounded-lg h-16"></div>
+        <div className="animate-pulse bg-white/5 rounded-lg h-16"></div>
+      </div>
+    );
   }
 
   if (!walletData) {

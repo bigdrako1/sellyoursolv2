@@ -1,7 +1,6 @@
 
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import WalletConnect from "@/components/WalletConnect";
 import CurrencySelector from "@/components/CurrencySelector";
 import { useState } from "react";
 import { Menu, X } from "lucide-react";
@@ -51,16 +50,6 @@ const Header = ({ walletAddress = "" }: HeaderProps) => {
           <div className="flex items-center space-x-4">
             <CurrencySelector />
             
-            <div className="hidden md:block">
-              {walletAddress ? (
-                <span className="text-sm">{walletAddress}</span>
-              ) : (
-                <WalletConnect 
-                  onConnect={(address) => console.log("Wallet connected:", address)} 
-                />
-              )}
-            </div>
-            
             {/* Mobile menu button */}
             <Button 
               variant="ghost" 
@@ -90,17 +79,6 @@ const Header = ({ walletAddress = "" }: HeaderProps) => {
                 </Link>
               ))}
             </nav>
-            
-            <div className="mt-4">
-              {!walletAddress && (
-                <WalletConnect 
-                  onConnect={(address) => {
-                    console.log("Wallet connected:", address);
-                    setMobileMenuOpen(false);
-                  }} 
-                />
-              )}
-            </div>
           </div>
         </div>
       )}

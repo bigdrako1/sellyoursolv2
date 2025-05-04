@@ -10,6 +10,8 @@ import TransactionHistory from "@/components/TransactionHistory";
 import TradePerformanceGrade from "@/components/TradePerformanceGrade";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
+import { Link } from "react-router-dom";
+import { Settings } from "lucide-react";
 
 // Sample performance metrics for grading
 const PERFORMANCE_METRICS = {
@@ -44,7 +46,7 @@ const Dashboard = ({
   const { toast } = useToast();
   
   return (
-    <div className="p-4">
+    <div className="py-6 px-4">
       <div className="mb-8">
         <Overview 
           totalProfit={totalProfit} 
@@ -59,8 +61,13 @@ const Dashboard = ({
           <PerformanceMetrics />
         </div>
         
-        <div>
-          <h3 className="font-bold text-lg mb-4">Active Strategies</h3>
+        <div className="bg-trading-darkAccent/30 p-4 rounded-lg">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="font-bold text-lg">Active Strategies</h3>
+            <Link to="/settings" className="p-2 rounded-full hover:bg-white/10">
+              <Settings size={18} className="text-trading-highlight" />
+            </Link>
+          </div>
           <div className="space-y-4">
             <StrategyConfig 
               title="Front Running AI" 
