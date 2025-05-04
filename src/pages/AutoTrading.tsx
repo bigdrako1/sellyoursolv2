@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { testHeliusConnection } from "@/utils/apiUtils";
+import APP_CONFIG, { getActiveApiConfig } from "@/config/appDefinition";
 
 const AutoTrading = () => {
   const [apiConnected, setApiConnected] = useState(true); // Default to true to prevent immediate warning
@@ -17,8 +18,10 @@ const AutoTrading = () => {
   const [systemLatency, setSystemLatency] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState("config");
   const { toast } = useToast();
+  const apiConfig = getActiveApiConfig();
+  const environment = apiConfig === APP_CONFIG.api.development ? 'Development' : 'Production';
 
-  // Check API connection on mount
+  // Check API connection on mount and periodically
   useEffect(() => {
     const checkApiConnection = async () => {
       try {
@@ -31,13 +34,13 @@ const AutoTrading = () => {
           if (connected) {
             toast({
               title: "API Connection Restored",
-              description: "Successfully connected to trading API.",
+              description: `Successfully connected to trading API (${environment}).`,
               variant: "default",
             });
           } else {
             toast({
               title: "API Connection Lost",
-              description: "Connection to trading API has been lost. Some features may be limited.",
+              description: `Connection to trading API (${environment}) has been lost. Some features may be limited.`,
               variant: "destructive",
             });
           }
@@ -45,7 +48,7 @@ const AutoTrading = () => {
           // Only show disconnection toast on first load
           toast({
             title: "API Connection Failed",
-            description: "Could not connect to trading API. Auto-trading features may be limited.",
+            description: `Could not connect to trading API (${environment}). Auto-trading features may be limited.`,
             variant: "destructive",
           });
         }
@@ -60,7 +63,7 @@ const AutoTrading = () => {
           // Only show toast when going from connected to disconnected
           toast({
             title: "API Connection Lost",
-            description: "Connection to trading API has been lost. Some features may be limited.",
+            description: `Connection to trading API (${environment}) has been lost. Some features may be limited.`,
             variant: "destructive",
           });
         }
@@ -76,7 +79,7 @@ const AutoTrading = () => {
     const intervalId = setInterval(checkApiConnection, 60000); // Check every minute
     
     return () => clearInterval(intervalId);
-  }, [toast, apiConnected, apiConnectionChecked]);
+  }, [toast, apiConnected, apiConnectionChecked, environment]);
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -116,7 +119,7 @@ const AutoTrading = () => {
           <div className="space-y-6">
             <Card className="card-with-border">
               <CardHeader>
-                <CardTitle>Trading Status</CardTitle>
+                <CardTitle>Trading Status <span className="text-xs font-normal text-gray-400">({environment})</span></CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">

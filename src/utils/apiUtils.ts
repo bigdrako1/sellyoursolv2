@@ -1,6 +1,8 @@
+
 // API utility functions for interacting with Solana blockchain and external services
 import { PublicKey } from '@solana/web3.js';
 import { waitForRateLimit, setRateLimitTier, RateLimitTier } from './rateLimit';
+import { getActiveApiConfig } from '@/config/appDefinition';
 
 // Constants
 const DEFAULT_PUBLIC_KEY = new PublicKey('11111111111111111111111111111111');
@@ -35,6 +37,7 @@ const CACHE_TTL = 900000; // 15 minutes in milliseconds
 let lastConnectionStatus = true; // Assume connected initially
 let connectionAttempts = 0;
 const MAX_CONNECTION_ATTEMPTS = 3;
+const CONNECTION_RETRY_INTERVAL = 10000; // 10 seconds between connection checks
 
 // Configure the initial rate limit tier (can be updated in settings)
 setRateLimitTier('heliusRpc', RateLimitTier.FREE);
@@ -64,6 +67,13 @@ const setCachedResponse = (key: string, data: any) => {
 };
 
 /**
+ * Get the current API configuration based on environment
+ */
+const getApiConfig = () => {
+  return getActiveApiConfig();
+};
+
+/**
  * Fetches the metadata for a given token mint address
  * @param mintAddress Token mint address
  * @returns Token metadata or null if not found
@@ -77,6 +87,8 @@ export const getTokenMetadata = async (mintAddress: string): Promise<TokenMetada
     if (cachedData) {
       return cachedData;
     }
+    
+    const apiConfig = getApiConfig();
     
     // If not cached, attempt to fetch from API
     const response = await heliusApiCall(`tokens/metadata?mints=${mintAddress}`);
@@ -121,12 +133,14 @@ export const getTokenMetadata = async (mintAddress: string): Promise<TokenMetada
  */
 export const testHeliusConnection = async (): Promise<boolean> => {
   try {
+    const apiConfig = getApiConfig();
     // Use a simple and less resource-intensive endpoint for connection test
-    const endpoint = 'https://api.helius.xyz/v0/address-lookup?address=vines1vzrYbzLMRdu58ou5XTby4qAqVRLmqo36NKPTg&api-key=a18d2c93-d9fa-4db2-8419-707a4f1782f7';
+    const sampleAddress = "vines1vzrYbzLMRdu58ou5XTby4qAqVRLmqo36NKPTg";
+    const endpoint = `${apiConfig.baseUrl}/address-lookup?address=${sampleAddress}&api-key=${apiConfig.apiKey}`;
     
     // Implement retry logic
     let attempts = 0;
-    const maxAttempts = 2; // Try up to 2 times
+    const maxAttempts = 3; // Try up to 3 times
     
     while (attempts < maxAttempts) {
       try {
@@ -134,7 +148,7 @@ export const testHeliusConnection = async (): Promise<boolean> => {
           method: 'GET',
           headers: { 'Accept': 'application/json' },
           // Add a timeout to prevent hanging requests
-          signal: AbortSignal.timeout(5000) // 5 second timeout
+          signal: AbortSignal.timeout(8000) // 8 second timeout
         });
         
         if (response.ok) {
@@ -149,7 +163,7 @@ export const testHeliusConnection = async (): Promise<boolean> => {
         
         if (attempts < maxAttempts) {
           // Wait before retry
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          await new Promise(resolve => setTimeout(resolve, 2000));
         }
       } catch (innerError) {
         attempts++;
@@ -157,7 +171,7 @@ export const testHeliusConnection = async (): Promise<boolean> => {
         
         if (attempts < maxAttempts) {
           // Wait before retry
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          await new Promise(resolve => setTimeout(resolve, 2000));
         }
       }
     }
@@ -193,8 +207,9 @@ export const testHeliusConnection = async (): Promise<boolean> => {
  */
 export const heliusApiCall = async (endpoint: string, params?: any): Promise<any> => {
   try {
-    const baseUrl = 'https://api.helius.xyz/v0';
-    const apiKey = 'a18d2c93-d9fa-4db2-8419-707a4f1782f7';
+    const apiConfig = getApiConfig();
+    const baseUrl = apiConfig.baseUrl;
+    const apiKey = apiConfig.apiKey;
     
     // Construct URL based on whether params are provided
     let url = `${baseUrl}/${endpoint}`;
@@ -211,7 +226,7 @@ export const heliusApiCall = async (endpoint: string, params?: any): Promise<any
     
     // Set timeout for the request
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
     
     const response = await fetch(url, {
       signal: controller.signal
@@ -239,7 +254,8 @@ export const heliusApiCall = async (endpoint: string, params?: any): Promise<any
  */
 export const heliusRpcCall = async (method: string, params: any[]): Promise<any> => {
   try {
-    const rpcUrl = 'https://mainnet.helius-rpc.com/?api-key=a18d2c93-d9fa-4db2-8419-707a4f1782f7';
+    const apiConfig = getApiConfig();
+    const rpcUrl = apiConfig.rpcUrl + `/?api-key=${apiConfig.apiKey}`;
     
     const response = await fetch(rpcUrl, {
       method: 'POST',
@@ -466,16 +482,18 @@ export const updateHeliusRateLimitTier = (tier: RateLimitTier) => {
  */
 export const getApiUsageStats = (): ApiUsageItem[] => {
   // In a production implementation, this would fetch actual API usage
-  // Using fixed values to avoid showing "random" mock data that keeps changing
+  const apiConfig = getApiConfig();
+  const environment = apiConfig === getActiveApiConfig().development ? 'Development' : 'Production';
+  
   const heliusRpcStats = {
-    name: 'Helius RPC',
+    name: `Helius RPC (${environment})`,
     requests: 45,
     limit: 500,
     percentage: 9,
   };
   
   const heliusApiStats = {
-    name: 'Helius API',
+    name: `Helius API (${environment})`,
     requests: 112,
     limit: 1000,
     percentage: 11,
@@ -561,3 +579,12 @@ setInterval(() => {
     }
   }
 }, 3600000); // Clean every hour
+
+// Periodically check connection status to ensure consistent state
+setInterval(async () => {
+  try {
+    await testHeliusConnection();
+  } catch (error) {
+    console.error("Periodic connection check failed:", error);
+  }
+}, CONNECTION_RETRY_INTERVAL);

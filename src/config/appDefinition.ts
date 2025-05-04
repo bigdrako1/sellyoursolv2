@@ -32,10 +32,25 @@ export const APP_CONFIG = {
   // API Configuration
   api: {
     provider: "Helius",
-    baseUrl: "https://api.helius.xyz/v1",
-    rpcUrl: "https://mainnet.helius-rpc.com",
-    wsUrl: "wss://mainnet.helius-rpc.com",
-    defaultApiKey: "a18d2c93-d9fa-4db2-8419-707a4f1782f7",
+    // Production endpoints
+    production: {
+      baseUrl: "https://api.helius.xyz/v1",
+      rpcUrl: "https://mainnet.helius-rpc.com",
+      wsUrl: "wss://mainnet.helius-rpc.com",
+      apiKey: "a18d2c93-d9fa-4db2-8419-707a4f1782f7",
+    },
+    // Development endpoints
+    development: {
+      baseUrl: "https://api-devnet.helius-rpc.com/v0",
+      rpcUrl: "https://devnet.helius-rpc.com",
+      wsUrl: "wss://devnet.helius-rpc.com",
+      secureRpcUrl: "https://dominga-id818f-fast-devnet.helius-rpc.com",
+      stakedRpcUrl: "https://staked.helius-rpc.com",
+      apiKey: "e4a78345-f927-4ed9-b33e-2ca970b1063e",
+    },
+    // Set this to 'development' to use the development API, or 'production' for the production API
+    environment: "development",
+    defaultApiKey: "e4a78345-f927-4ed9-b33e-2ca970b1063e",
     personalApiKeyDescription: "Your personal API key is used for authentication with Helius API services and to increase rate limits above the default tier. It ensures your requests are prioritized and allows access to premium features."
   },
   
@@ -62,15 +77,18 @@ export const APP_CONFIG = {
   connectedServices: {
     solanaRpc: {
       name: "Solana RPC",
-      description: "Direct connection to the Solana blockchain for real-time transaction data"
+      description: "Direct connection to the Solana blockchain for real-time transaction data",
+      colorCode: "text-green-500" // Added color code
     },
     heliusApi: {
       name: "Helius API",
-      description: "Enhanced blockchain data, token metadata, and advanced analytics"
+      description: "Enhanced blockchain data, token metadata, and advanced analytics",
+      colorCode: "text-blue-500" // Added color code
     },
     webhooks: {
       name: "Webhooks",
-      description: "Real-time event notifications for blockchain activity"
+      description: "Real-time event notifications for blockchain activity",
+      colorCode: "text-purple-500" // Added color code
     }
   }
 };
@@ -110,6 +128,14 @@ export const formatCurrency = (
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
   })}`;
+};
+
+/**
+ * Gets the current active API configuration based on environment
+ */
+export const getActiveApiConfig = () => {
+  const env = APP_CONFIG.api.environment;
+  return env === 'development' ? APP_CONFIG.api.development : APP_CONFIG.api.production;
 };
 
 /**
