@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowUpRight, Bell, BellOff, Loader2, TrendingUp, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { playSound } from "@/utils/soundUtils";
-import { getRecentTokenActivity, getTrendingTokens, getPumpFunTokens, TokenInfo } from "@/services/tokenDataService";
+import { getRecentTokenActivity, getTrendingTokens, getPumpFunTokens, TokenInfo, tokenInfoToToken } from "@/services/tokenDataService";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/AuthContext";
 

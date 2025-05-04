@@ -1,4 +1,3 @@
-
 import { TradingPositionData, HeliusTokenData, TokenInfo, SmartMoneyAlert, WalletActivity } from '@/types/database.types';
 import { waitForRateLimit } from '@/utils/rateLimit';
 
@@ -30,10 +29,13 @@ export interface Token {
   source: string;
   createdAt: Date;
   change24h?: number;
-  trendingScore?: number;
+  trendingScore?: string[];
   trendingSources?: string[];
   isPumpFun?: boolean;
 }
+
+// Export TokenInfo interface from database.types.ts
+export { TokenInfo };
 
 /**
  * Helper function to convert TokenInfo to Token interface
@@ -214,9 +216,43 @@ export const getPumpFunTokens = async (): Promise<TokenInfo[]> => {
  * Track wallet activities for specified addresses
  */
 export const trackWalletActivities = async (walletAddresses: string[]): Promise<WalletActivity[]> => {
-  // This would typically set up tracking for wallet addresses
-  // For now, return a mock empty array
-  return [];
+  // For demonstration purposes, return mock data that includes buy/sell activities
+  try {
+    await waitForRateLimit('heliusApi');
+    
+    // This would typically fetch real data from an API
+    if (walletAddresses.length === 0) return [];
+    
+    return [
+      {
+        id: '1',
+        walletAddress: walletAddresses[0],
+        tokenAddress: 'So11111111111111111111111111111111111111112',
+        tokenName: 'Solana',
+        tokenSymbol: 'SOL',
+        activityType: 'buy',
+        amount: 5.2,
+        value: 720,
+        timestamp: new Date().toISOString(),
+        transactionHash: '4ETf86tK5DZ5MnJFUQRTmhSQ9pD6bXEWQe8hEycdYc9ZtG9hrZ7GJkiL1QvJ9DNLZDSKbKMkxJCwTfLTZ9kgfFMt'
+      },
+      {
+        id: '2',
+        walletAddress: walletAddresses[0],
+        tokenAddress: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
+        tokenName: 'USD Coin',
+        tokenSymbol: 'USDC',
+        activityType: 'sell',
+        amount: 1000,
+        value: 1000,
+        timestamp: new Date(Date.now() - 3600000).toISOString(),
+        transactionHash: '5hbxDr8iqxrZi7pPWh4kKNzwAjXnLShxPzZHqQwKKM3aLYxTgxNgJ3H4Pj9ydJnNEmdUZLKd1rCmvYXAQ6bhAf9q'
+      }
+    ];
+  } catch (error) {
+    console.error("Error tracking wallet activities:", error);
+    return [];
+  }
 };
 
 /**

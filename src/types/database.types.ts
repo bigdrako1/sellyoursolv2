@@ -159,7 +159,7 @@ export interface WalletActivity {
   tokenAddress?: string;
   tokenName?: string;
   tokenSymbol?: string;
-  activityType: 'send' | 'receive' | 'swap' | 'mint' | 'burn' | 'create';
+  activityType: 'send' | 'receive' | 'swap' | 'mint' | 'burn' | 'create' | 'buy' | 'sell';
   amount?: number;
   value?: number;
   timestamp: string;
