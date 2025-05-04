@@ -53,7 +53,12 @@ const Portfolio: React.FC = () => {
           <h1 className="text-3xl font-bold mb-6">Portfolio</h1>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            <PortfolioOverview walletAddress={walletAddress} />
+            <PortfolioOverview walletData={walletData || {
+              totalValue: 0,
+              change24h: 0,
+              changePercentage: 0,
+              allocation: []
+            }} />
             <PortfolioPerformance />
           </div>
           
