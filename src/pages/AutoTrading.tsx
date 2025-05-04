@@ -12,6 +12,7 @@ import WalletMonitor from "@/components/WalletMonitor";
 import TradeAlerts from "@/components/TradeAlerts";
 import HeliusSetup from "@/components/HeliusSetup";
 import AutoTradeSimple from "@/components/AutoTradeSimple";
+import StrategyManager from "@/components/StrategyManager";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Shield, TrendingUp, Bell } from "lucide-react";
