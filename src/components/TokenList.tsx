@@ -23,40 +23,45 @@ const TokenList = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [favorites, setFavorites] = useState<string[]>([]);
   const { currency, currencySymbol } = useCurrencyStore();
-  const [tokenData, setTokenData] = useState<TokenData[]>([]);
+  
+  // Load favorites from localStorage
+  useEffect(() => {
+    const savedFavorites = localStorage.getItem("token_favorites");
+    if (savedFavorites) {
+      try {
+        setFavorites(JSON.parse(savedFavorites));
+      } catch (e) {
+        console.error("Error loading favorites:", e);
+      }
+    }
+  }, []);
+
+  // Save favorites to localStorage
+  const saveFavorites = (updatedFavorites: string[]) => {
+    localStorage.setItem("token_favorites", JSON.stringify(updatedFavorites));
+  };
   
   // Fetch real token data
   const { data: fetchedTokens, isLoading } = useQuery({
-    queryKey: ['tokenMarketData'],
-    queryFn: () => getMarketOverview(10),
-    refetchInterval: 60000 // Refetch every minute
+    queryKey: ['tokenMarketData', currency],
+    queryFn: () => getMarketOverview(20),
+    refetchInterval: 30000 // Refetch every 30 seconds
   });
   
-  // Process fetched token data
-  useEffect(() => {
-    if (fetchedTokens && fetchedTokens.length > 0) {
-      const processedTokens = fetchedTokens.map((token, index) => ({
-        ...token,
-        id: index, // Add an id for React key purposes
-        chain: "solana", // All tokens are on Solana
-        marketCap: token.price * (1000000 + Math.random() * 5000000) // Estimate market cap if not provided
-      }));
-      setTokenData(processedTokens);
-    }
-  }, [fetchedTokens]);
-  
   const toggleFavorite = (symbol: string) => {
-    if (favorites.includes(symbol)) {
-      setFavorites(favorites.filter(fav => fav !== symbol));
-    } else {
-      setFavorites([...favorites, symbol]);
-    }
+    const updatedFavorites = favorites.includes(symbol) 
+      ? favorites.filter(fav => fav !== symbol)
+      : [...favorites, symbol];
+    
+    setFavorites(updatedFavorites);
+    saveFavorites(updatedFavorites);
   };
   
-  const filteredTokens = tokenData.filter(token => 
-    token.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    token.symbol.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredTokens = fetchedTokens ? 
+    fetchedTokens.filter(token => 
+      token.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+      token.symbol.toLowerCase().includes(searchTerm.toLowerCase())
+    ) : [];
 
   // Convert USD values to the selected currency
   const convertToCurrency = (value: number): number => {

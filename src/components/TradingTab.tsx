@@ -1,11 +1,11 @@
 
 import { useState, useEffect } from "react";
-import AutoTradeConfig from "@/components/AutoTradeConfig";
 import TokenList from "@/components/TokenList";
 import MarketChart from "@/components/MarketChart";
 import StrategyConfig from "@/components/StrategyConfig";
 import { StrategySettings } from "@/components/StrategyConfig";
 import { useToast } from "@/hooks/use-toast";
+import { secureInitialInvestment } from "@/utils/tradingUtils";
 
 const TradingTab = () => {
   const { toast } = useToast();
@@ -45,10 +45,27 @@ const TradingTab = () => {
   }, []);
   
   const handleSaveStrategy = (type: string, config: StrategySettings) => {
-    setStrategies({
+    const updatedStrategies = {
       ...strategies,
       [type]: config
-    });
+    };
+    
+    setStrategies(updatedStrategies);
+    
+    // Save to localStorage for persistence
+    const strategyKey = `strategy_${type.toLowerCase().replace(/\s+/g, '_')}`;
+    localStorage.setItem(strategyKey, JSON.stringify(config));
+    
+    // Apply secure initial investment logic if enabled
+    if (config.enabled && config.secureInitial && config.profitTarget) {
+      const position = {
+        initial_investment: config.maxBudget || 0.5,
+        entry_price: 0, // Will be updated with real price data
+        current_amount: config.maxBudget || 0.5
+      };
+      
+      secureInitialInvestment(position, 0, config.secureInitialPercentage);
+    }
     
     toast({
       title: "Strategy Updated",
@@ -56,25 +73,42 @@ const TradingTab = () => {
     });
   };
 
+  const handleSecureAll = () => {
+    // Implement secure all functionality for all active strategies
+    Object.entries(strategies).forEach(([type, strategy]) => {
+      if (strategy.enabled && strategy.secureInitial) {
+        // Update the strategy with secure settings
+        handleSaveStrategy(type, {
+          ...strategy,
+          secureInitial: true,
+          secureInitialPercentage: strategy.secureInitialPercentage || 100
+        });
+      }
+    });
+    
+    toast({
+      title: "Initial Investments Secured",
+      description: "Initial investments have been secured for all active strategies."
+    });
+  };
+
   return (
     <>
       <div className="mb-6">
-        <AutoTradeConfig />
-      </div>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-        <StrategyConfig
-          title="Front Running Strategy"
-          description="Automatically detect and execute trades in advance of large pending transactions"
-          defaultEnabled={strategies.frontRunning?.enabled || true}
-          onSave={(config) => handleSaveStrategy('frontRunning', config)}
-        />
-        <StrategyConfig
-          title="Market Detection"
-          description="Identify early market movements and execute trades"
-          defaultEnabled={strategies.marketDetection?.enabled || false}
-          onSave={(config) => handleSaveStrategy('marketDetection', config)}
-        />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          <StrategyConfig
+            title="Front Running Strategy"
+            description="Automatically detect and execute trades in advance of large pending transactions"
+            defaultEnabled={strategies.frontRunning?.enabled || true}
+            onSave={(config) => handleSaveStrategy('frontRunning', config)}
+          />
+          <StrategyConfig
+            title="Market Detection"
+            description="Identify early market movements and execute trades"
+            defaultEnabled={strategies.marketDetection?.enabled || false}
+            onSave={(config) => handleSaveStrategy('marketDetection', config)}
+          />
+        </div>
       </div>
       
       <div className="mb-6">

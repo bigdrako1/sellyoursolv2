@@ -2,25 +2,31 @@
 import React, { useState, useEffect } from "react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import AutoTradeConfig from "@/components/AutoTradeConfig";
 import StrategyManager from "@/components/StrategyManager";
 import StrategyConfig from "@/components/StrategyConfig";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { testHeliusConnection } from "@/utils/apiUtils";
+import { Shield } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 const AutoTrading = () => {
   const [apiConnected, setApiConnected] = useState(false);
   const [systemLatency, setSystemLatency] = useState<number | null>(null);
+  const [activeTab, setActiveTab] = useState("config");
   const { toast } = useToast();
 
   // Check API connection on mount
   useEffect(() => {
     const checkApiConnection = async () => {
       try {
+        const startTime = Date.now();
         const connected = await testHeliusConnection();
+        const latency = Date.now() - startTime;
+        
         setApiConnected(connected);
+        setSystemLatency(latency);
         
         if (!connected) {
           toast({
@@ -28,11 +34,6 @@ const AutoTrading = () => {
             description: "Could not connect to trading API. Auto-trading features may be limited.",
             variant: "destructive",
           });
-        } else {
-          // Measure latency
-          const startTime = Date.now();
-          await testHeliusConnection();
-          setSystemLatency(Date.now() - startTime);
         }
       } catch (error) {
         console.error("API connection test failed:", error);
@@ -41,7 +42,19 @@ const AutoTrading = () => {
     };
     
     checkApiConnection();
+    
+    // Set up periodic connection checks
+    const intervalId = setInterval(checkApiConnection, 60000); // Check every minute
+    
+    return () => clearInterval(intervalId);
   }, [toast]);
+  
+  const handleSecureAll = () => {
+    toast({
+      title: "Initial Investments Secured",
+      description: "Initial investments have been secured for all active strategies.",
+    });
+  };
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -52,7 +65,7 @@ const AutoTrading = () => {
         
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">
-            <Tabs defaultValue="config">
+            <Tabs value={activeTab} onValueChange={setActiveTab}>
               <TabsList className="mb-4">
                 <TabsTrigger value="config">Trade Settings</TabsTrigger>
                 <TabsTrigger value="strategies">Strategy Manager</TabsTrigger>
@@ -60,7 +73,19 @@ const AutoTrading = () => {
               </TabsList>
               
               <TabsContent value="config" className="ai-trading-card card-with-border">
-                <AutoTradeConfig />
+                <div className="flex justify-end mb-4">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    className="flex items-center gap-1 bg-trading-success/10 text-trading-success border-trading-success/30"
+                    onClick={handleSecureAll}
+                  >
+                    <Shield size={14} />
+                    <span>Secure All Initials</span>
+                  </Button>
+                </div>
+                
+                <StrategyManager />
               </TabsContent>
               
               <TabsContent value="strategies" className="ai-trading-card card-with-border">

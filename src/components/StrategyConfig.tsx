@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
@@ -42,6 +42,22 @@ const StrategyConfig = ({
     secureInitialPercentage: 100,
     profitTarget: 25
   });
+  
+  // Load saved settings on mount
+  useEffect(() => {
+    if (title) {
+      const strategyKey = `strategy_${title.toLowerCase().replace(/\s+/g, '_')}`;
+      const savedSettings = localStorage.getItem(strategyKey);
+      
+      if (savedSettings) {
+        try {
+          setSettings(JSON.parse(savedSettings));
+        } catch (e) {
+          console.error(`Error loading settings for ${title}:`, e);
+        }
+      }
+    }
+  }, [title]);
 
   const handleSave = () => {
     setIsEditing(false);
@@ -58,15 +74,6 @@ const StrategyConfig = ({
     });
     
     if (onSave) onSave(settings);
-  };
-
-  // Function to secure initial investment when profit target is hit
-  const secureInitialInvestment = () => {
-    if (settings.secureInitial && settings.profitTarget && settings.profitTarget >= 25) {
-      // In a real app, this would connect to trade execution logic
-      return true;
-    }
-    return false;
   };
 
   // Calculate potential return based on risk level and other settings
