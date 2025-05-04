@@ -121,7 +121,7 @@ const Index = () => {
   
   const toggleSystemActive = () => {
     if (!walletAddress) {
-      playSound('error');
+      playSound('alert'); // Changed from 'error' to 'alert'
       toast({
         title: "Wallet Required",
         description: "Please connect a wallet before activating the system.",

@@ -23,6 +23,7 @@ const MarketAnalysis = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [apiConnected, setApiConnected] = useState(false);
   const [topTokens, setTopTokens] = useState<TokenData[]>([]);
+  const [systemLatency, setSystemLatency] = useState<number | null>(30); // Default latency value
   const { toast } = useToast();
 
   // Check API connection on mount
@@ -234,7 +235,7 @@ const MarketAnalysis = () => {
         </div>
       </main>
       
-      <Footer />
+      <Footer systemActive={false} systemLatency={systemLatency} />
     </div>
   );
 };

@@ -5,6 +5,7 @@
 
 // Create audio context and cache sound files
 let audioContext: AudioContext | null = null;
+let isMuted: boolean = false;
 
 // Initialize audio on user interaction
 export const initAudio = () => {
@@ -14,12 +15,18 @@ export const initAudio = () => {
   return audioContext;
 };
 
+// Toggle mute status
+export const toggleMute = (mute: boolean) => {
+  isMuted = mute;
+  return isMuted;
+};
+
 // Play sound effects based on type
 export const playSound = (type: 'success' | 'alert' | 'notification' | 'transaction') => {
   try {
-    // Don't attempt to play sounds if audio context not initialized
-    if (!audioContext) {
-      console.log("Audio context not initialized, sound will not play");
+    // Don't attempt to play sounds if audio context not initialized or if muted
+    if (!audioContext || isMuted) {
+      console.log("Audio will not play: " + (isMuted ? "Sound is muted" : "Audio context not initialized"));
       return;
     }
     
