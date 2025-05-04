@@ -6,7 +6,8 @@ import { useToast } from '@/hooks/use-toast';
 import { 
   connectWallet,
   disconnectWallet,
-  getConnectedWallet
+  getConnectedWallet,
+  signMessage
 } from '@/utils/walletUtils';
 
 interface AuthContextType {
@@ -68,24 +69,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setWalletAddress(result.address);
       }
       
-      // Generate a unique identifier for the wallet that is email-compatible
-      const sanitizedWalletAddress = walletAddress?.replace(/[^a-zA-Z0-9]/g, '').slice(0, 8);
-      const email = `user_${sanitizedWalletAddress}@solana-wallet.app`;
+      // Generate a timestamp for the message
+      const timestamp = new Date().getTime();
       
-      // Try sign in first
-      let { error } = await supabase.auth.signInWithPassword({ 
-        email, 
-        password: "wallet-auth-placeholder" 
+      // Create a unique message for the user to sign with their wallet
+      const message = `Authenticate to Trading Bot: ${timestamp}`;
+      
+      // Have the user sign the message with their wallet
+      const signResult = await signMessage(message, walletAddress);
+      
+      if (!signResult || signResult.error) {
+        throw new Error(signResult?.error || "Failed to sign message with wallet");
+      }
+      
+      // Use the wallet address as the identifier for authentication
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: `${walletAddress.toLowerCase()}@phantom.wallet`,
+        password: `wallet-auth-${walletAddress.slice(0, 8)}`
       });
       
-      // If user doesn't exist, sign up
       if (error && error.message.includes("Invalid login credentials")) {
+        // If user doesn't exist, sign them up
         const { error: signUpError } = await supabase.auth.signUp({
-          email,
-          password: "wallet-auth-placeholder",
+          email: `${walletAddress.toLowerCase()}@phantom.wallet`,
+          password: `wallet-auth-${walletAddress.slice(0, 8)}`,
           options: {
             data: {
-              wallet_address: walletAddress
+              wallet_address: walletAddress,
+              wallet_type: "phantom",
+              auth_method: "wallet_signature",
+              signature: signResult.signature
             }
           }
         });
@@ -93,9 +106,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (signUpError) throw signUpError;
         
         // After signup, attempt login again
-        const { error: retryError } = await supabase.auth.signInWithPassword({ 
-          email, 
-          password: "wallet-auth-placeholder" 
+        const { error: retryError } = await supabase.auth.signInWithPassword({
+          email: `${walletAddress.toLowerCase()}@phantom.wallet`,
+          password: `wallet-auth-${walletAddress.slice(0, 8)}`
         });
         
         if (retryError) throw retryError;

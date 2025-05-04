@@ -33,7 +33,7 @@ const WelcomeScreen = ({ onConnect, onDisconnect }: WelcomeScreenProps) => {
           <Link to="/auth">
             <Button className="bg-trading-highlight hover:bg-trading-highlight/80">
               <LogIn className="h-4 w-4 mr-2" />
-              Login / Create Account
+              Complete Authentication
             </Button>
           </Link>
         </div>
