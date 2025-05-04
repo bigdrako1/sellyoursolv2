@@ -25,7 +25,7 @@ const Auth = () => {
     if (walletAddress && !isAuthenticated) {
       toast({
         title: "Wallet Connected",
-        description: "Please complete authentication to access the platform",
+        description: "Please complete wallet authentication to access the platform",
       });
     }
   }, [walletAddress, isAuthenticated, toast]);
@@ -88,8 +88,17 @@ const Auth = () => {
                   </>
                 ) : (
                   <>
-                    <Key className="h-4 w-4 mr-2" />
-                    {walletAddress ? "Complete Authentication" : "Connect Wallet"}
+                    {walletAddress ? (
+                      <>
+                        <Key className="h-4 w-4 mr-2" />
+                        Sign Message to Authenticate
+                      </>
+                    ) : (
+                      <>
+                        <Wallet className="h-4 w-4 mr-2" />
+                        Connect Phantom Wallet
+                      </>
+                    )}
                   </>
                 )}
               </Button>
@@ -98,7 +107,7 @@ const Auth = () => {
           
           <CardFooter className="flex flex-col space-y-2 pt-0">
             <p className="text-xs text-center text-gray-400 mt-4">
-              By continuing, you agree to {APP_CONFIG.name}'s Terms of Service and Privacy Policy.
+              By connecting your wallet, you agree to {APP_CONFIG.name}'s Terms of Service and Privacy Policy.
             </p>
           </CardFooter>
         </Card>

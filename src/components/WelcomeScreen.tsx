@@ -27,13 +27,13 @@ const WelcomeScreen = ({ onConnect, onDisconnect }: WelcomeScreenProps) => {
         <WalletConnect onConnect={onConnect} onDisconnect={onDisconnect} />
       </div>
       
-      {/* Only show login button if wallet is connected but user is not authenticated */}
+      {/* Only show authentication button if wallet is connected but user is not authenticated */}
       {walletAddress && !isAuthenticated && (
         <div className="mt-6">
           <Link to="/auth">
             <Button className="bg-trading-highlight hover:bg-trading-highlight/80">
               <LogIn className="h-4 w-4 mr-2" />
-              Complete Authentication
+              Complete Wallet Authentication
             </Button>
           </Link>
         </div>

@@ -30,31 +30,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const { toast } = useToast();
 
   useEffect(() => {
-    // Set up auth state listener FIRST
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-      }
-    );
-    
     // Check for connected wallet on mount
     const savedWallet = getConnectedWallet();
     if (savedWallet) {
       setWalletAddress(savedWallet);
     }
     
-    // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
-
-    return () => {
-      subscription.unsubscribe();
-    };
+    // Load user data from localStorage if available
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      try {
+        setUser(JSON.parse(storedUser));
+        setIsAuthenticated(true);
+      } catch (e) {
+        console.error("Failed to parse stored user data:", e);
+        localStorage.removeItem('user');
+      }
+    }
+    
+    setLoading(false);
   }, []);
+
+  // Store authenticated state in a local variable to avoid localStorage access on every render
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
 
   const signIn = async () => {
     try {
@@ -82,39 +80,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error(signResult?.error || "Failed to sign message with wallet");
       }
       
-      // Use the wallet address as the identifier for authentication
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: `${walletAddress.toLowerCase()}@phantom.wallet`,
-        password: `wallet-auth-${walletAddress.slice(0, 8)}`
-      });
+      // Create a simple user object with the wallet data
+      const userData = {
+        id: walletAddress,
+        wallet_address: walletAddress,
+        auth_method: "wallet_signature",
+        signature: signResult.signature,
+        timestamp: timestamp,
+      };
       
-      if (error && error.message.includes("Invalid login credentials")) {
-        // If user doesn't exist, sign them up
-        const { error: signUpError } = await supabase.auth.signUp({
-          email: `${walletAddress.toLowerCase()}@phantom.wallet`,
-          password: `wallet-auth-${walletAddress.slice(0, 8)}`,
-          options: {
-            data: {
-              wallet_address: walletAddress,
-              wallet_type: "phantom",
-              auth_method: "wallet_signature",
-              signature: signResult.signature
-            }
-          }
-        });
-        
-        if (signUpError) throw signUpError;
-        
-        // After signup, attempt login again
-        const { error: retryError } = await supabase.auth.signInWithPassword({
-          email: `${walletAddress.toLowerCase()}@phantom.wallet`,
-          password: `wallet-auth-${walletAddress.slice(0, 8)}`
-        });
-        
-        if (retryError) throw retryError;
-      } else if (error) {
-        throw error;
-      }
+      // Store user data in localStorage
+      localStorage.setItem('user', JSON.stringify(userData));
+      
+      // Set the user state
+      setUser(userData as any);
+      setIsAuthenticated(true);
       
       toast({
         title: "Wallet Connected",
@@ -142,9 +122,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       setWalletAddress(null);
       
-      // Sign out from Supabase
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
+      // Clear user data from localStorage
+      localStorage.removeItem('user');
+      
+      // Reset state
+      setUser(null);
+      setSession(null);
+      setIsAuthenticated(false);
       
       toast({
         title: "Signed Out",
@@ -169,7 +153,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       loading,
       signIn,
       signOut,
-      isAuthenticated: !!user,
+      isAuthenticated,
       walletAddress,
     }}>
       {children}
