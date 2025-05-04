@@ -13,9 +13,11 @@ import TradeAlerts from "@/components/TradeAlerts";
 import HeliusSetup from "@/components/HeliusSetup";
 import AutoTradeSimple from "@/components/AutoTradeSimple";
 import StrategyManager from "@/components/StrategyManager";
+import SmartMoneyAlerts from "@/components/SmartMoneyAlerts";
+import TelegramChannelMonitor from "@/components/TelegramChannelMonitor";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Shield, TrendingUp, Bell } from "lucide-react";
+import { Shield, TrendingUp, Bell, Wallet, MessageSquare } from "lucide-react";
 
 const AutoTrading = () => {
   const [apiConnected, setApiConnected] = useState(true); // Default to true to prevent immediate warning
@@ -126,6 +128,8 @@ const AutoTrading = () => {
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="configuration">Configuration</TabsTrigger>
             <TabsTrigger value="strategies">Strategies</TabsTrigger>
+            <TabsTrigger value="smart-money">Smart Money</TabsTrigger>
+            <TabsTrigger value="telegram">Telegram</TabsTrigger>
           </TabsList>
           
           <TabsContent value="overview" className="space-y-6">
@@ -254,6 +258,127 @@ const AutoTrading = () => {
           
           <TabsContent value="strategies">
             <StrategyManager />
+          </TabsContent>
+          
+          <TabsContent value="smart-money" className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2">
+                <SmartMoneyAlerts />
+              </div>
+              
+              <div className="space-y-6">
+                <Card className="card-with-border">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Wallet className="h-5 w-5 text-blue-400" />
+                      Smart Money Wallets
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <p className="text-sm text-gray-400">
+                      Smart Money wallets are addresses of known profitable traders on Solana.
+                      The system tracks their activities to provide early signals.
+                    </p>
+                    
+                    <div className="space-y-3">
+                      <div className="bg-black/20 p-3 rounded-lg border border-white/5">
+                        <div className="text-xs text-gray-400 mb-1">Wallet Address</div>
+                        <div className="font-mono text-sm">3FTHyP7TLcqd6C969eGHQ2QfnpRFmfqbKA2MnzTcf3j9</div>
+                        <div className="mt-1 flex justify-between text-xs">
+                          <span className="text-green-400">Success Rate: 88%</span>
+                          <span>ROI: +324%</span>
+                        </div>
+                      </div>
+                      
+                      <div className="bg-black/20 p-3 rounded-lg border border-white/5">
+                        <div className="text-xs text-gray-400 mb-1">Wallet Address</div>
+                        <div className="font-mono text-sm">6Dkr4HJLo9XavxrJpsMcky2rKzKJP3wgpuP9mJbYekbV</div>
+                        <div className="mt-1 flex justify-between text-xs">
+                          <span className="text-green-400">Success Rate: 76%</span>
+                          <span>ROI: +215%</span>
+                        </div>
+                      </div>
+                      
+                      <div className="bg-black/20 p-3 rounded-lg border border-white/5">
+                        <div className="text-xs text-gray-400 mb-1">Wallet Address</div>
+                        <div className="font-mono text-sm">9AYmFnSdDDYEa5EaZJU8yCQmxpGwhEbgKU7SdeQDiEsZ</div>
+                        <div className="mt-1 flex justify-between text-xs">
+                          <span className="text-green-400">Success Rate: 92%</span>
+                          <span>ROI: +471%</span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="pt-2">
+                      <Button variant="outline" className="w-full bg-black/20 border-white/10">
+                        <Bell className="h-4 w-4 mr-2" />
+                        Add Custom Wallet
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                <TradeAlerts />
+              </div>
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="telegram" className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2">
+                <TelegramChannelMonitor />
+              </div>
+              
+              <div className="space-y-6">
+                <Card className="card-with-border">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <MessageSquare className="h-5 w-5 text-blue-400" />
+                      Channel Instructions
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <p className="text-sm text-gray-400">
+                      The system monitors specified Telegram channels for messages containing Solana token contract addresses,
+                      extracts these addresses, and fetches token data from various APIs.
+                    </p>
+                    
+                    <div className="bg-black/20 p-3 rounded-lg border border-white/5">
+                      <h4 className="text-sm font-medium mb-1">Telegram Authentication</h4>
+                      <p className="text-xs text-gray-400">
+                        Uses Telethon's TelegramClient with user session authentication
+                        to access channel data without requiring bot privileges.
+                      </p>
+                    </div>
+                    
+                    <div className="bg-black/20 p-3 rounded-lg border border-white/5">
+                      <h4 className="text-sm font-medium mb-1">Token Detection</h4>
+                      <p className="text-xs text-gray-400">
+                        Automatically extracts Solana contract addresses using regex pattern matching
+                        from messages in monitored channels.
+                      </p>
+                    </div>
+                    
+                    <div className="bg-black/20 p-3 rounded-lg border border-white/5">
+                      <h4 className="text-sm font-medium mb-1">Smart Detection</h4>
+                      <p className="text-xs text-gray-400">
+                        Special handling for "Smart Money Buying" alerts to prevent duplicate
+                        processing of the same token from multiple alerts.
+                      </p>
+                    </div>
+                    
+                    <div className="pt-2">
+                      <Button variant="outline" className="w-full bg-black/20 border-white/10">
+                        <Bell className="h-4 w-4 mr-2" />
+                        Setup Telegram Authentication
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                <TradeAlerts />
+              </div>
+            </div>
           </TabsContent>
         </Tabs>
       </main>

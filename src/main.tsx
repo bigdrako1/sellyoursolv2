@@ -40,6 +40,14 @@ const initTokenMonitoring = async () => {
     console.log('Setting up watchlist price monitoring...');
     setupWatchlistMonitoring();
     
+    // Initialize smart money tracking
+    console.log('Initializing smart money tracking...');
+    initializeSmartMoneyTracking();
+    
+    // Initialize Telegram channel monitoring
+    console.log('Initializing Telegram channel monitoring...');
+    initializeTelegramMonitoring();
+    
     console.log('Token monitoring initialization complete');
   } catch (error) {
     console.error('Failed to initialize token monitoring:', error);
@@ -109,6 +117,67 @@ const setupWatchlistMonitoring = () => {
   setTimeout(() => {
     console.log('Periodic watchlist price check triggered');
   }, demoInterval);
+};
+
+// Initialize Smart Money tracking system
+const initializeSmartMoneyTracking = () => {
+  console.log('Setting up Smart Money wallet tracking');
+  
+  // Define smart money wallets to track
+  const smartMoneyWallets = [
+    "3FTHyP7TLcqd6C969eGHQ2QfnpRFmfqbKA2MnzTcf3j9",
+    "6Dkr4HJLo9XavxrJpsMcky2rKzKJP3wgpuP9mJbYekbV",
+    "9AYmFnSdDDYEa5EaZJU8yCQmxpGwhEbgKU7SdeQDiEsZ"
+  ];
+  
+  // Store smart money wallets if not already set
+  if (!localStorage.getItem('smart_money_wallets')) {
+    localStorage.setItem('smart_money_wallets', JSON.stringify(smartMoneyWallets));
+  }
+  
+  // Create or ensure smart money alerts storage
+  if (!localStorage.getItem('smart_money_alerts')) {
+    localStorage.setItem('smart_money_alerts', JSON.stringify([]));
+  }
+  
+  // In real implementation, this would set up:
+  // 1. Periodic checking of these wallets for new transactions
+  // 2. Webhook subscriptions for these wallet addresses
+  // 3. Detection of significant buy patterns
+  
+  console.log('Smart Money tracking initialized with default wallets');
+};
+
+// Initialize Telegram channel monitoring system
+const initializeTelegramMonitoring = () => {
+  console.log('Setting up Telegram channel monitoring');
+  
+  // Check if channels already configured
+  if (!localStorage.getItem('telegram_channels')) {
+    // Define default channels to monitor
+    const defaultChannels = [
+      { id: "channel-1", name: "CYRILXBT GAMBLING", channelId: "-1002022554106", enabled: true, lastChecked: new Date().toISOString(), messageCount: 0 },
+      { id: "channel-2", name: "MAGIC1000x BOT", channelId: "7583670120", enabled: true, lastChecked: new Date().toISOString(), messageCount: 0 },
+      { id: "channel-3", name: "GMGN ALERT BOT 1", channelId: "6917338381", enabled: true, lastChecked: new Date().toISOString(), messageCount: 0 },
+      { id: "channel-4", name: "SMART MONEY BUYS", channelId: "7438902115", enabled: true, lastChecked: new Date().toISOString(), messageCount: 0 },
+      { id: "channel-5", name: "MEME1000X", channelId: "-1002333406905", enabled: true, lastChecked: new Date().toISOString(), messageCount: 0 },
+      { id: "channel-6", name: "SOLANA ACTIVITY TRACKER", channelId: "-1002270988204", enabled: true, lastChecked: new Date().toISOString(), messageCount: 0 },
+    ];
+    
+    localStorage.setItem('telegram_channels', JSON.stringify(defaultChannels));
+  }
+  
+  // Initialize message storage if not present
+  if (!localStorage.getItem('telegram_messages')) {
+    localStorage.setItem('telegram_messages', JSON.stringify([]));
+  }
+  
+  // In a real implementation, this would:
+  // 1. Create Telethon client connections to monitor these channels
+  // 2. Set up token address extraction from messages
+  // 3. Handle "Smart Money Buying" alerts to prevent duplicates
+  
+  console.log('Telegram channel monitoring initialized');
 };
 
 // Initialize any global services or configurations
