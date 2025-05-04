@@ -1,5 +1,5 @@
 
-import React from "react"; // Add this import
+import React from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -12,25 +12,35 @@ import MarketAnalysis from "./pages/MarketAnalysis";
 import Settings from "./pages/Settings";
 import AutoTrading from "./pages/AutoTrading";
 
-const queryClient = new QueryClient();
+// Create a new QueryClient instance
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/market-analysis" element={<MarketAnalysis />} />
-          <Route path="/auto-trading" element={<AutoTrading />} />
-          <Route path="/portfolio" element={<Portfolio />} />
-          <Route path="/settings" element={<Settings />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
+const App: React.FC = () => (
+  <React.StrictMode>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/market-analysis" element={<MarketAnalysis />} />
+            <Route path="/auto-trading" element={<AutoTrading />} />
+            <Route path="/portfolio" element={<Portfolio />} />
+            <Route path="/settings" element={<Settings />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
+  </React.StrictMode>
 );
 
 export default App;
