@@ -1,4 +1,4 @@
-import { TradingPositionData, HeliusTokenData, TokenInfo, SmartMoneyAlert, WalletActivity } from '@/types/database.types';
+import { TradingPositionData, HeliusTokenData, WalletActivity } from '@/types/database.types';
 import { waitForRateLimit } from '@/utils/rateLimit';
 
 // Cache for token data to reduce API calls
@@ -13,6 +13,44 @@ export const isPumpFunToken = (tokenAddress: string): boolean => {
   return tokenAddress.toLowerCase().endsWith('pump') || 
          tokenAddress.toLowerCase().endsWith('boop');
 };
+
+/**
+ * Interface for token metadata from external APIs
+ */
+export interface TokenInfo {
+  metadata: {
+    name: string;
+    symbol: string;
+    decimals: number;
+    image?: string;
+    address: string;
+    verified?: boolean;
+  };
+  price: {
+    current: number;
+    change24h?: number;
+    change1h?: number;
+  };
+  liquidity: {
+    usd: number;
+    sol?: number;
+  };
+  holders: {
+    count: number;
+    top?: Array<{address: string; amount: number; percentage: number}>;
+  };
+  volume24h?: number;
+  marketCap?: number;
+  created?: string;
+  isVerified?: boolean;
+  isTrending?: boolean;
+  isPumpFunToken?: boolean;
+  quality?: {
+    score: number;
+    label: string;
+    risk: number;
+  };
+}
 
 /**
  * Convert TokenInfo to a simplified Token interface for UI
@@ -34,9 +72,6 @@ export interface Token {
   isPumpFun?: boolean;
 }
 
-// Export TokenInfo interface from database.types.ts
-export { TokenInfo };
-
 /**
  * Helper function to convert TokenInfo to Token interface
  */
@@ -53,7 +88,7 @@ export const tokenInfoToToken = (tokenInfo: TokenInfo): Token => {
     source: tokenInfo.isPumpFunToken ? "Pump.fun" : "DEX",
     createdAt: tokenInfo.created ? new Date(tokenInfo.created) : new Date(),
     change24h: tokenInfo.price.change24h,
-    trendingScore: tokenInfo.isTrending ? 3 : undefined,
+    trendingScore: tokenInfo.isTrending ? ["trending"] : undefined,
     isPumpFun: tokenInfo.isPumpFunToken
   };
 };

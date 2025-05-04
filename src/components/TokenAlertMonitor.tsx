@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,45 +6,9 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowUpRight, Bell, BellOff, Loader2, TrendingUp, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { playSound } from "@/utils/soundUtils";
-import { getRecentTokenActivity, getTrendingTokens, getPumpFunTokens, TokenInfo, tokenInfoToToken } from "@/services/tokenDataService";
+import { getRecentTokenActivity, getTrendingTokens, getPumpFunTokens, TokenInfo, tokenInfoToToken, Token } from "@/services/tokenDataService";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/AuthContext";
-
-interface Token {
-  name: string;
-  symbol: string;
-  address: string;
-  price: number;
-  marketCap: number;
-  liquidity: number;
-  holders: number;
-  qualityScore: number;
-  source: string;
-  createdAt: Date;
-  change24h?: number;
-  trendingScore?: number;
-  trendingSources?: string[];
-  isPumpFun?: boolean;
-}
-
-// Function to convert TokenInfo to Token interface
-const tokenInfoToToken = (tokenInfo: TokenInfo): Token => {
-  return {
-    name: tokenInfo.metadata.name,
-    symbol: tokenInfo.metadata.symbol,
-    address: tokenInfo.metadata.address,
-    price: tokenInfo.price.current || 0,
-    marketCap: tokenInfo.marketCap || 0,
-    liquidity: tokenInfo.liquidity.usd || 0,
-    holders: tokenInfo.holders.count || 0,
-    qualityScore: tokenInfo.quality?.score || 50,
-    source: tokenInfo.isPumpFunToken ? "Pump.fun" : "DEX",
-    createdAt: tokenInfo.created ? new Date(tokenInfo.created) : new Date(),
-    change24h: tokenInfo.price.change24h,
-    trendingScore: tokenInfo.isTrending ? 3 : undefined,
-    isPumpFun: tokenInfo.isPumpFunToken
-  };
-};
 
 const TokenAlertMonitor: React.FC = () => {
   const [tokens, setTokens] = useState<Token[]>([]);
@@ -173,9 +136,12 @@ const TokenAlertMonitor: React.FC = () => {
     return <Badge className="bg-orange-500">Medium Quality</Badge>;
   };
 
-  const getTrendingBadge = (score: number = 1) => {
-    if (score >= 3) return <Badge className="bg-purple-500 flex items-center gap-1"><TrendingUp className="h-3 w-3" /> Hot</Badge>;
-    if (score >= 2) return <Badge className="bg-blue-500 flex items-center gap-1"><TrendingUp className="h-3 w-3" /> Trending</Badge>;
+  const getTrendingBadge = (score: number | string[] = 1) => {
+    // Handle both number and string[] types for trendingScore
+    const scoreValue = Array.isArray(score) ? score.length : score;
+    
+    if (scoreValue >= 3) return <Badge className="bg-purple-500 flex items-center gap-1"><TrendingUp className="h-3 w-3" /> Hot</Badge>;
+    if (scoreValue >= 2) return <Badge className="bg-blue-500 flex items-center gap-1"><TrendingUp className="h-3 w-3" /> Trending</Badge>;
     return <Badge className="bg-gray-500 flex items-center gap-1"><TrendingUp className="h-3 w-3" /> Active</Badge>;
   };
 
