@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { executeFrontRunTrade } from "@/utils/tradingUtils";
+import { useCurrencyStore } from "@/store/currencyStore";
 
 // Define the transaction type
 interface Transaction {
@@ -17,7 +17,6 @@ interface Transaction {
   timestamp: string;
   status: "completed" | "pending" | "failed";
   profit: number;
-  chain: "solana" | "binance";
 }
 
 const formatTime = (timestamp: string) => {
@@ -33,28 +32,25 @@ const formatDate = (timestamp: string) => {
 const TransactionHistory = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [filter, setFilter] = useState("all");
+  const { currency, currencySymbol } = useCurrencyStore();
   
-  // Initialize with empty transactions and fetch on mount
+  // Initialize with transactions on mount
   useEffect(() => {
-    // In a real app, this would fetch from an API
-    // For now, we'll simulate a few transactions
-    const strategies = ["Front Running", "Market Runner", "Smart Tracking"];
-    const tokens = ["SOL", "SRUN", "BNB", "FBOT", "TDX", "AUTO"];
+    const strategies = ["Front Running", "Market Detection", "Smart Tracking"];
+    const tokens = ["SOL", "SRUN", "JUP", "TDX", "AUTO"];
     const actions = ["Buy", "Sell"];
-    const chains: ("solana" | "binance")[] = ["solana", "binance"];
     
     const mockTransactions: Transaction[] = [];
     const now = new Date();
     
-    // Generate just 5 transactions
+    // Generate 5 transactions
     for (let i = 0; i < 5; i++) {
       const hours = Math.floor(Math.random() * 48);
       const timestamp = new Date(now.getTime() - hours * 60 * 60 * 1000).toISOString();
       const strategy = strategies[Math.floor(Math.random() * strategies.length)];
-      const chain = chains[Math.floor(Math.random() * chains.length)];
       const token = tokens[Math.floor(Math.random() * tokens.length)];
       const action = actions[Math.floor(Math.random() * actions.length)];
-      const amount = parseFloat((Math.random() * (token === "SOL" || token === "BNB" ? 1 : 10)).toFixed(3));
+      const amount = parseFloat((Math.random() * (token === "SOL" ? 1 : 10)).toFixed(3));
       const value = parseFloat((amount * (Math.random() * 100 + 10)).toFixed(2));
       const status: "completed" | "pending" | "failed" = Math.random() > 0.8 
         ? "pending" 
@@ -73,8 +69,7 @@ const TransactionHistory = () => {
         value,
         timestamp,
         status,
-        profit,
-        chain
+        profit
       });
     }
     
@@ -83,13 +78,25 @@ const TransactionHistory = () => {
       new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
     ));
   }, []);
+
+  // Convert USD values to the selected currency
+  const convertToCurrency = (value: number): number => {
+    const rates = {
+      USD: 1,
+      EUR: 0.92,
+      GBP: 0.79,
+      JPY: 150.56
+    };
+    
+    return value * (rates[currency as keyof typeof rates] || 1);
+  };
   
   const filteredTransactions = filter === "all" 
     ? transactions 
     : transactions.filter(tx => 
         filter === "completed" ? tx.status === "completed" : 
-        filter === "solana" ? tx.chain === "solana" : 
-        filter === "binance" ? tx.chain === "binance" : true
+        filter === "pending" ? tx.status === "pending" : 
+        filter === "failed" ? tx.status === "failed" : true
       );
   
   return (
@@ -101,8 +108,8 @@ const TransactionHistory = () => {
             <TabsList className="bg-black/20">
               <TabsTrigger value="all" onClick={() => setFilter("all")}>All</TabsTrigger>
               <TabsTrigger value="completed" onClick={() => setFilter("completed")}>Completed</TabsTrigger>
-              <TabsTrigger value="solana" onClick={() => setFilter("solana")}>Solana</TabsTrigger>
-              <TabsTrigger value="binance" onClick={() => setFilter("binance")}>BSC</TabsTrigger>
+              <TabsTrigger value="pending" onClick={() => setFilter("pending")}>Pending</TabsTrigger>
+              <TabsTrigger value="failed" onClick={() => setFilter("failed")}>Failed</TabsTrigger>
             </TabsList>
           </Tabs>
         </div>
@@ -130,21 +137,16 @@ const TransactionHistory = () => {
                       <div className="text-xs text-gray-400">{formatDate(tx.timestamp)}</div>
                     </TableCell>
                     <TableCell>{tx.strategy}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
-                        <div className={`w-2 h-2 rounded-full ${tx.chain === 'solana' ? 'bg-solana' : 'bg-binance'}`}></div>
-                        <span>{tx.token}</span>
-                      </div>
-                    </TableCell>
+                    <TableCell>{tx.token}</TableCell>
                     <TableCell>
                       <Badge variant="outline" className={`${tx.action === "Buy" ? 'bg-blue-500/20 text-blue-400' : 'bg-purple-500/20 text-purple-400'}`}>
                         {tx.action}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">{tx.amount}</TableCell>
-                    <TableCell className="text-right">${tx.value.toFixed(2)}</TableCell>
+                    <TableCell className="text-right">{currencySymbol}{convertToCurrency(tx.value).toFixed(2)}</TableCell>
                     <TableCell className={`text-right ${tx.profit > 0 ? 'text-trading-success' : tx.profit < 0 ? 'text-trading-danger' : 'text-gray-400'}`}>
-                      {tx.profit > 0 ? '+' : ''}{tx.profit !== 0 ? `$${tx.profit.toFixed(2)}` : '-'}
+                      {tx.profit > 0 ? '+' : ''}{tx.profit !== 0 ? `${currencySymbol}${convertToCurrency(Math.abs(tx.profit)).toFixed(2)}` : '-'}
                     </TableCell>
                     <TableCell>
                       <Badge className={`

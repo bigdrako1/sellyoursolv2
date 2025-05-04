@@ -2,9 +2,10 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Wallet, RotateCw, LogOut, ArrowUpRight } from "lucide-react";
-import { getWalletBalances } from "@/utils/walletUtils";
-import { useToast } from "@/components/ui/use-toast";
+import { Wallet, RotateCw, LogOut, ArrowUpRight, Copy } from "lucide-react";
+import { getWalletBalances, connectWallet, disconnectWallet, getConnectedWallet } from "@/utils/walletUtils";
+import { useToast } from "@/hooks/use-toast";
+import { useCurrencyStore } from "@/store/currencyStore";
 
 interface WalletConnectProps {
   onConnect: (address: string) => void;
@@ -14,74 +15,89 @@ interface WalletConnectProps {
 const WalletConnect = ({ onConnect, onDisconnect }: WalletConnectProps) => {
   const [connecting, setConnecting] = useState(false);
   const [disconnecting, setDisconnecting] = useState(false);
-  const [walletAddress, setWalletAddress] = useState("");
+  const [walletAddress, setWalletAddress] = useState<string | null>(null);
   const [walletBalances, setWalletBalances] = useState<any>(null);
   const [showBalances, setShowBalances] = useState(false);
   const { toast } = useToast();
+  const { currency, currencySymbol } = useCurrencyStore();
+
+  // Check for connected wallet on mount
+  useEffect(() => {
+    const savedWallet = getConnectedWallet();
+    if (savedWallet) {
+      setWalletAddress(savedWallet);
+      onConnect(savedWallet);
+      fetchWalletBalances(savedWallet);
+    }
+  }, []);
 
   const handleConnect = async () => {
     setConnecting(true);
     
     try {
-      // Simulating wallet connection
-      setTimeout(() => {
-        const mockAddress = "8xH5f...3Zdy7";
-        setWalletAddress(mockAddress);
-        onConnect(mockAddress);
-        setConnecting(false);
+      const result = await connectWallet("Phantom");
+      if (result.success) {
+        setWalletAddress(result.address);
+        onConnect(result.address);
         
         toast({
           title: "Wallet Connected",
-          description: "Successfully connected to wallet address: " + mockAddress,
+          description: "Successfully connected to wallet address: " + result.address,
           variant: "default",
         });
         
         // Fetch wallet balances after connection
-        fetchWalletBalances(mockAddress);
-      }, 1500);
+        fetchWalletBalances(result.address);
+      } else {
+        throw new Error(result.error || "Failed to connect");
+      }
     } catch (error) {
-      setConnecting(false);
       toast({
         title: "Connection Failed",
         description: "Failed to connect wallet. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setConnecting(false);
     }
   };
   
-  const handleDisconnect = () => {
+  const handleDisconnect = async () => {
     setDisconnecting(true);
     
     try {
-      // Simulating wallet disconnection
-      setTimeout(() => {
-        setWalletAddress("");
+      const success = await disconnectWallet();
+      
+      if (success) {
+        setWalletAddress(null);
         setWalletBalances(null);
         setShowBalances(false);
         if (onDisconnect) onDisconnect();
-        setDisconnecting(false);
         
         toast({
           title: "Wallet Disconnected",
           description: "Your wallet has been disconnected successfully.",
           variant: "default",
         });
-      }, 800);
+      } else {
+        throw new Error("Failed to disconnect");
+      }
     } catch (error) {
-      setDisconnecting(false);
       toast({
         title: "Disconnection Failed",
         description: "Failed to disconnect wallet. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setDisconnecting(false);
     }
   };
   
   const fetchWalletBalances = async (address: string) => {
     try {
-      // Fetch balances from both chains
-      const solanaBalances = await getWalletBalances(address, "solana");
-      setWalletBalances(solanaBalances);
+      // Fetch balances from Solana
+      const balances = await getWalletBalances(address);
+      setWalletBalances(balances);
     } catch (error) {
       console.error("Error fetching wallet balances:", error);
       toast({
@@ -96,6 +112,29 @@ const WalletConnect = ({ onConnect, onDisconnect }: WalletConnectProps) => {
     setShowBalances(!showBalances);
   };
 
+  const copyAddress = () => {
+    if (walletAddress) {
+      navigator.clipboard.writeText(walletAddress);
+      toast({
+        title: "Address Copied",
+        description: "Wallet address copied to clipboard",
+        variant: "default",
+      });
+    }
+  };
+
+  // Convert SOL value to selected currency
+  const convertToCurrency = (value: number): number => {
+    const rates = {
+      USD: 1,
+      EUR: 0.92,
+      GBP: 0.79,
+      JPY: 150.56
+    };
+    
+    return value * (rates[currency as keyof typeof rates] || 1);
+  };
+
   return (
     <Card className="trading-card">
       <div className="flex flex-col md:flex-row justify-between items-center p-3 gap-4">
@@ -105,7 +144,16 @@ const WalletConnect = ({ onConnect, onDisconnect }: WalletConnectProps) => {
             {walletAddress ? (
               <div className="flex flex-col">
                 <span className="text-sm text-gray-400">Connected Wallet</span>
-                <span className="font-medium">{walletAddress}</span>
+                <div className="flex items-center gap-1">
+                  <span className="font-medium">{walletAddress}</span>
+                  <button 
+                    onClick={copyAddress}
+                    className="text-trading-highlight hover:text-trading-highlight/80"
+                    aria-label="Copy wallet address"
+                  >
+                    <Copy className="h-3.5 w-3.5" />
+                  </button>
+                </div>
                 {walletBalances && (
                   <button 
                     onClick={toggleBalances} 
@@ -126,8 +174,10 @@ const WalletConnect = ({ onConnect, onDisconnect }: WalletConnectProps) => {
             {showBalances && walletBalances && (
               <div className="text-right mr-2">
                 <div className="text-xs text-gray-400">Balance</div>
-                <div className="font-medium">{walletBalances.nativeBalance.toFixed(4)} SOL</div>
-                <div className="text-xs text-trading-highlight">${walletBalances.totalUsdValue.toFixed(2)}</div>
+                <div className="font-medium">{walletBalances.balance.toFixed(4)} SOL</div>
+                <div className="text-xs text-trading-highlight">
+                  {currencySymbol}{convertToCurrency(walletBalances.totalUsdValue).toFixed(2)}
+                </div>
               </div>
             )}
             <Button 

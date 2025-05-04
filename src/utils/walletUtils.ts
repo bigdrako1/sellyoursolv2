@@ -1,5 +1,22 @@
 
 // Wallet connection and management utilities
+import { toast } from "@/components/ui/use-toast";
+
+export interface WalletData {
+  address: string;
+  balance: number;
+  tokens: TokenData[];
+  totalUsdValue: number;
+}
+
+export interface TokenData {
+  symbol: string;
+  balance: number;
+  usdValue: number;
+  price?: number;
+  change24h?: number;
+  logo?: string;
+}
 
 /**
  * Connects to a wallet provider
@@ -7,100 +24,153 @@
  * @returns Connection result with wallet address
  */
 export const connectWallet = async (provider: string): Promise<any> => {
-  // This is a mock implementation - in a real app, this would connect to actual wallet providers
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      // Mock successful connection
-      resolve({
-        success: true,
-        address: `${Math.random().toString(16).substring(2, 10)}...${Math.random().toString(16).substring(2, 6)}`,
-        provider
-      });
-    }, 1500);
-  });
+  try {
+    // This is a mock implementation - in a real app, this would connect to actual wallet providers
+    const address = `${Math.random().toString(16).substring(2, 10)}...${Math.random().toString(16).substring(2, 6)}`;
+    
+    // Store the wallet in localStorage for persistence
+    localStorage.setItem('walletAddress', address);
+    localStorage.setItem('walletProvider', provider);
+    
+    return {
+      success: true,
+      address,
+      provider
+    };
+  } catch (error) {
+    console.error("Error connecting wallet:", error);
+    return {
+      success: false,
+      error: "Failed to connect wallet"
+    };
+  }
+};
+
+/**
+ * Disconnects the currently connected wallet
+ * @returns Success status
+ */
+export const disconnectWallet = async (): Promise<boolean> => {
+  try {
+    // Clear the wallet from localStorage
+    localStorage.removeItem('walletAddress');
+    localStorage.removeItem('walletProvider');
+    
+    return true;
+  } catch (error) {
+    console.error("Error disconnecting wallet:", error);
+    return false;
+  }
+};
+
+/**
+ * Checks if a wallet is currently connected
+ * @returns Connected wallet address or null
+ */
+export const getConnectedWallet = (): string | null => {
+  return localStorage.getItem('walletAddress');
 };
 
 /**
  * Fetches wallet balance information
  * @param address Wallet address
- * @param chain Blockchain to query
  * @returns Wallet balances for different tokens
  */
-export const getWalletBalances = async (address: string, chain: "solana" | "binance"): Promise<any> => {
-  // Mock implementation - would call blockchain RPC endpoints in a real app
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const balances = {
-        address,
-        chain,
-        nativeBalance: chain === "solana" 
-          ? Math.random() * 10 // SOL
-          : Math.random() * 5, // BNB
-        tokens: [
-          {
-            symbol: chain === "solana" ? "SRUN" : "FBOT",
-            balance: Math.random() * 1000,
-            usdValue: Math.random() * 2000
-          },
-          {
-            symbol: chain === "solana" ? "AUTO" : "BNX",
-            balance: Math.random() * 5000,
-            usdValue: Math.random() * 1000
-          },
-          {
-            symbol: "TDX",
-            balance: Math.random() * 10000,
-            usdValue: Math.random() * 500
-          }
-        ],
-        totalUsdValue: Math.random() * 5000
-      };
-      
-      resolve(balances);
-    }, 1000);
-  });
+export const getWalletBalances = async (address: string): Promise<WalletData> => {
+  try {
+    // Mock implementation - would call blockchain RPC endpoints in a real app
+    const nativeBalance = Math.random() * 10; // SOL
+    
+    const tokens = [
+      {
+        symbol: "SRUN",
+        balance: Math.random() * 1000,
+        usdValue: Math.random() * 2000,
+        price: Math.random() * 5,
+        change24h: (Math.random() * 20) - 10
+      },
+      {
+        symbol: "AUTO",
+        balance: Math.random() * 5000,
+        usdValue: Math.random() * 1000,
+        price: Math.random() * 0.5,
+        change24h: (Math.random() * 20) - 10
+      },
+      {
+        symbol: "TDX",
+        balance: Math.random() * 10000,
+        usdValue: Math.random() * 500,
+        price: Math.random() * 0.1,
+        change24h: (Math.random() * 20) - 10
+      }
+    ];
+    
+    const totalUsdValue = tokens.reduce((sum, token) => sum + token.usdValue, 0) + (nativeBalance * 100); // Assuming SOL is $100
+    
+    return {
+      address,
+      balance: nativeBalance,
+      tokens,
+      totalUsdValue
+    };
+  } catch (error) {
+    console.error("Error fetching wallet balances:", error);
+    toast({
+      title: "Failed to fetch balances",
+      description: "Could not retrieve wallet data. Please try again later.",
+      variant: "destructive"
+    });
+    
+    return {
+      address,
+      balance: 0,
+      tokens: [],
+      totalUsdValue: 0
+    };
+  }
 };
 
 /**
  * Signs and sends a transaction to the blockchain
  * @param transaction Transaction details
- * @param chain Blockchain to execute on
  * @returns Transaction result
  */
-export const sendTransaction = async (transaction: any, chain: "solana" | "binance"): Promise<any> => {
+export const sendTransaction = async (transaction: any): Promise<any> => {
   // Mock implementation - would interact with wallet and blockchain in a real app
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const success = Math.random() > 0.1; // 90% success rate
-      const txHash = `0x${Math.random().toString(16).substr(2, 64)}`;
-      
-      resolve({
-        success,
-        txHash,
-        error: success ? null : "Transaction failed: insufficient funds",
-        blockNumber: Math.floor(Math.random() * 1000000) + 15000000,
-        timestamp: new Date().toISOString(),
-        gasUsed: Math.random() * (chain === "solana" ? 0.0001 : 0.01)
-      });
-    }, Math.floor(Math.random() * 2000) + 500); // Simulate network latency
-  });
+  try {
+    const success = Math.random() > 0.1; // 90% success rate
+    const txHash = `${Math.random().toString(16).substr(2, 64)}`;
+    
+    if (!success) {
+      throw new Error("Transaction failed: insufficient funds");
+    }
+    
+    return {
+      success,
+      txHash,
+      blockNumber: Math.floor(Math.random() * 1000000) + 15000000,
+      timestamp: new Date().toISOString(),
+      gasUsed: Math.random() * 0.0001
+    };
+  } catch (error) {
+    console.error("Transaction error:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error"
+    };
+  }
 };
 
 /**
  * Checks if a wallet address is valid
  * @param address Wallet address to validate
- * @param chain Blockchain to validate for
  * @returns Whether the address is valid
  */
-export const isValidWalletAddress = (address: string, chain: "solana" | "binance"): boolean => {
+export const isValidWalletAddress = (address: string): boolean => {
   if (!address) return false;
   
-  // Very basic validation - real implementation would be more thorough
-  if (chain === "solana") {
-    return address.length === 44 && address.startsWith("S");
-  } else {
-    return address.length === 42 && address.startsWith("0x");
-  }
+  // Basic validation for Solana addresses
+  return address.length === 44 || address.startsWith("S");
 };
 
 /**
@@ -126,14 +196,18 @@ export const formatWalletAddress = (address: string, length = 4): string => {
  */
 export const signMessage = async (message: string, walletAddress: string): Promise<any> => {
   // Mock implementation - would use actual wallet signature in a real app
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve({
-        message,
-        signer: walletAddress,
-        signature: `0x${Math.random().toString(16).substr(2, 130)}`,
-        timestamp: new Date().toISOString()
-      });
-    }, 800);
-  });
+  try {
+    return {
+      message,
+      signer: walletAddress,
+      signature: `${Math.random().toString(16).substr(2, 130)}`,
+      timestamp: new Date().toISOString()
+    };
+  } catch (error) {
+    console.error("Signature error:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to sign message"
+    };
+  }
 };

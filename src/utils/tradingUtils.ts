@@ -41,28 +41,26 @@ export const identifyPotentialRunners = (marketData: any[], timeframe: string): 
  * Simulates executing a front-running trade
  * @param tokenSymbol Symbol of the token to trade
  * @param amount Amount to trade
- * @param chain Blockchain to execute on
  * @returns Transaction details
  */
 export const executeFrontRunTrade = (
   tokenSymbol: string, 
-  amount: number, 
-  chain: "solana" | "binance"
+  amount: number
 ): any => {
   // In a real implementation, this would interact with the blockchain
   const isSuccessful = Math.random() > 0.1; // 90% success rate
-  const gasFee = chain === "solana" ? 0.00001 * Math.random() : 0.001 * Math.random();
+  const gasFee = 0.00001 * Math.random(); // Solana gas fee
   const executionTime = Math.floor(Math.random() * 2000) + 500; // 500-2500ms
   
   return {
     tokenSymbol,
     amount,
-    chain,
+    chain: "solana",
     success: isSuccessful,
     executionTime, // in milliseconds
     gasFee,
     timestamp: new Date().toISOString(),
-    txHash: `0x${Math.random().toString(16).substr(2, 40)}`
+    txHash: `${Math.random().toString(16).substr(2, 40)}`
   };
 };
 

@@ -4,19 +4,21 @@ import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { ChevronUp, ChevronDown, Search, Star } from "lucide-react";
+import { useCurrencyStore } from "@/store/currencyStore";
 
 // Sample token data
 const tokens = [
   { id: 1, name: "SolRunner", symbol: "SRUN", chain: "solana", price: 2.45, change24h: 12.3, volume24h: 1250000, marketCap: 24500000 },
-  { id: 2, name: "BinanceX", symbol: "BNX", chain: "binance", price: 0.0458, change24h: -3.2, volume24h: 890000, marketCap: 5800000 },
   { id: 3, name: "AutoTrade", symbol: "AUTO", chain: "solana", price: 0.782, change24h: 5.4, volume24h: 650000, marketCap: 7900000 },
-  { id: 4, name: "FrontBot", symbol: "FBOT", chain: "binance", price: 1.21, change24h: -0.8, volume24h: 420000, marketCap: 12400000 },
   { id: 5, name: "TradeX", symbol: "TDX", chain: "solana", price: 0.0034, change24h: 28.7, volume24h: 1760000, marketCap: 980000 },
+  { id: 6, name: "Solana", symbol: "SOL", chain: "solana", price: 142.50, change24h: 3.2, volume24h: 8760000, marketCap: 59800000 },
+  { id: 7, name: "Jupiter", symbol: "JUP", chain: "solana", price: 0.79, change24h: -2.1, volume24h: 3260000, marketCap: 8700000 },
 ];
 
 const TokenList = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [favorites, setFavorites] = useState<number[]>([]);
+  const { currency, currencySymbol } = useCurrencyStore();
   
   const toggleFavorite = (id: number) => {
     if (favorites.includes(id)) {
@@ -30,6 +32,18 @@ const TokenList = () => {
     token.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
     token.symbol.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  // Convert USD values to the selected currency
+  const convertToCurrency = (value: number): number => {
+    const rates = {
+      USD: 1,
+      EUR: 0.92,
+      GBP: 0.79,
+      JPY: 150.56
+    };
+    
+    return value * (rates[currency as keyof typeof rates] || 1);
+  };
   
   return (
     <Card className="trading-card">
@@ -53,8 +67,7 @@ const TokenList = () => {
               <TableRow className="border-white/5">
                 <TableHead className="text-gray-400">Favorite</TableHead>
                 <TableHead className="text-gray-400">Token</TableHead>
-                <TableHead className="text-gray-400">Chain</TableHead>
-                <TableHead className="text-gray-400 text-right">Price</TableHead>
+                <TableHead className="text-gray-400 text-right">Price ({currency})</TableHead>
                 <TableHead className="text-gray-400 text-right">24h Change</TableHead>
                 <TableHead className="text-gray-400 text-right">24h Volume</TableHead>
                 <TableHead className="text-gray-400 text-right">Market Cap</TableHead>
@@ -72,21 +85,15 @@ const TokenList = () => {
                     {token.symbol}
                     <div className="text-xs text-gray-400">{token.name}</div>
                   </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-1">
-                      <div className={`w-2 h-2 rounded-full ${token.chain === 'solana' ? 'bg-solana' : 'bg-binance'}`}></div>
-                      <span className="text-xs capitalize">{token.chain}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-right">${token.price.toFixed(4)}</TableCell>
+                  <TableCell className="text-right">{currencySymbol}{convertToCurrency(token.price).toFixed(4)}</TableCell>
                   <TableCell className={`text-right ${token.change24h >= 0 ? 'text-trading-success' : 'text-trading-danger'}`}>
                     <div className="flex items-center justify-end gap-1">
                       {token.change24h >= 0 ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                       {Math.abs(token.change24h)}%
                     </div>
                   </TableCell>
-                  <TableCell className="text-right">${(token.volume24h / 1000000).toFixed(2)}M</TableCell>
-                  <TableCell className="text-right">${(token.marketCap / 1000000).toFixed(2)}M</TableCell>
+                  <TableCell className="text-right">{currencySymbol}{(convertToCurrency(token.volume24h) / 1000000).toFixed(2)}M</TableCell>
+                  <TableCell className="text-right">{currencySymbol}{(convertToCurrency(token.marketCap) / 1000000).toFixed(2)}M</TableCell>
                 </TableRow>
               ))}
             </TableBody>

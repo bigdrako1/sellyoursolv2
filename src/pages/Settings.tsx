@@ -1,4 +1,5 @@
-import { useState } from "react";
+
+import { useState, useEffect } from "react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -9,7 +10,15 @@ import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Slider } from "@/components/ui/slider";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { useCurrencyStore } from "@/store/currencyStore";
 import { 
   Bell, 
   Volume2, 
@@ -19,14 +28,15 @@ import {
   AlertCircle, 
   Undo2,
   Save,
-  CheckCircle2,
   UserRound,
   Key,
-  Lock
+  Lock,
+  CircleDollarSign
 } from "lucide-react";
+import { getConnectedWallet } from "@/utils/walletUtils";
 
 const Settings = () => {
-  const [walletAddress, setWalletAddress] = useState("DWTA6...h9Ro");
+  const [walletAddress, setWalletAddress] = useState<string | null>(null);
   const [systemActive, setSystemActive] = useState(true);
   const [systemLatency, setSystemLatency] = useState(25);
   
@@ -37,10 +47,18 @@ const Settings = () => {
   const [darkMode, setDarkMode] = useState(true);
   const [riskLevel, setRiskLevel] = useState([50]);
   const [apiKey, setApiKey] = useState("••••••••••••••••");
-  const [secret, setSecret] = useState("••••••••••••••••••••••••••");
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
   
   const { toast } = useToast();
+  const { currency, setCurrency } = useCurrencyStore();
+  
+  // Check for connected wallet on mount
+  useEffect(() => {
+    const savedWallet = getConnectedWallet();
+    if (savedWallet) {
+      setWalletAddress(savedWallet);
+    }
+  }, []);
   
   const handleSaveSettings = () => {
     toast({
@@ -55,6 +73,7 @@ const Settings = () => {
     setAutoTradeEnabled(false);
     setDarkMode(true);
     setRiskLevel([50]);
+    setCurrency("USD");
     
     toast({
       title: "Settings reset",
@@ -64,7 +83,7 @@ const Settings = () => {
   
   return (
     <div className="min-h-screen flex flex-col bg-trading-dark text-white">
-      <Header walletAddress={walletAddress} />
+      <Header walletAddress={walletAddress || ""} />
       
       <main className="flex-grow container mx-auto px-4 pb-10">
         <div className="py-6">
@@ -137,6 +156,21 @@ const Settings = () => {
                         checked={darkMode} 
                         onCheckedChange={setDarkMode}
                       />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="currency">Display Currency</Label>
+                      <Select value={currency} onValueChange={setCurrency}>
+                        <SelectTrigger className="bg-trading-dark border-trading-highlight/30">
+                          <SelectValue placeholder="Select currency" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-trading-dark border-trading-highlight/30">
+                          <SelectItem value="USD">USD ($)</SelectItem>
+                          <SelectItem value="EUR">EUR (€)</SelectItem>
+                          <SelectItem value="GBP">GBP (£)</SelectItem>
+                          <SelectItem value="JPY">JPY (¥)</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                   </CardContent>
                 </Card>
@@ -256,9 +290,9 @@ const Settings = () => {
                     <div className="flex gap-2">
                       <Input 
                         id="walletAddress" 
-                        value={walletAddress}
-                        onChange={(e) => setWalletAddress(e.target.value)}
+                        value={walletAddress || ""}
                         className="bg-trading-dark border-trading-highlight/30"
+                        disabled
                       />
                       <Button variant="outline" className="shrink-0">
                         Connect
@@ -278,12 +312,12 @@ const Settings = () => {
                     API Configuration
                   </CardTitle>
                   <CardDescription>
-                    Manage your API keys for connected exchanges
+                    Manage your API keys for trading operations
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="apiKey">API Key</Label>
+                    <Label htmlFor="apiKey">Solana API Key</Label>
                     <Input 
                       id="apiKey" 
                       value={apiKey}
@@ -292,28 +326,14 @@ const Settings = () => {
                     />
                   </div>
                   
-                  <div className="space-y-2">
-                    <Label htmlFor="apiSecret">API Secret</Label>
-                    <Input 
-                      id="apiSecret" 
-                      value={secret}
-                      onChange={(e) => setSecret(e.target.value)}
-                      type="password"
-                      className="bg-trading-dark border-trading-highlight/30"
-                    />
-                  </div>
-                  
                   <div className="space-y-2 pt-2">
-                    <Label>Connected exchanges</Label>
+                    <Label>Connected services</Label>
                     <div className="flex flex-wrap gap-2 mt-2">
                       <div className="px-3 py-1 rounded-full bg-trading-highlight/20 border border-trading-highlight/30 text-sm">
-                        Binance
+                        Solana RPC
                       </div>
                       <div className="px-3 py-1 rounded-full bg-trading-highlight/20 border border-trading-highlight/30 text-sm">
-                        Solana DEX
-                      </div>
-                      <div className="px-3 py-1 rounded-full bg-gray-700 border border-gray-600 text-sm text-gray-400">
-                        FTX (Disconnected)
+                        Helius API
                       </div>
                     </div>
                   </div>
