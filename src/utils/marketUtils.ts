@@ -451,28 +451,23 @@ const getSymbolFromMint = (mintAddress: string): string => {
 };
 
 /**
- * Format currency amount based on currency and amount
- * @param amount Amount to format
- * @param currency Currency code (USD, EUR, etc)
+ * Formats a currency value with the specified currency symbol
+ * @param amount The amount to format
+ * @param currency The currency code (default: USD)
  * @returns Formatted currency string
  */
-export const formatCurrency = (amount: number, currency: string) => {
-  const currencySymbols: Record<string, string> = {
-    USD: '$',
-    EUR: '€',
-    GBP: '£',
-    JPY: '¥',
-    KES: 'KSh'
-  };
+export const formatCurrency = (amount: number, currency = 'USD'): string => {
+  const formatter = new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 6
+  });
 
-  const symbol = currencySymbols[currency] || '$';
-  
-  if (currency === 'JPY') {
-    return `${symbol}${amount.toFixed(0)}`;
+  // Handle small values with more precision
+  if (amount < 0.01 && amount > 0) {
+    return formatter.format(amount);
   }
   
-  return `${symbol}${amount.toLocaleString(undefined, {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  })}`;
+  return formatter.format(amount);
 };

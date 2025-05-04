@@ -2,13 +2,14 @@
 import React, { useState, useEffect } from "react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import AutoTradeSimple from "@/components/AutoTradeSimple";
-import TokenAlertMonitor from "@/components/TokenAlertMonitor";
-import TradeAlerts from "@/components/TradeAlerts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { testHeliusConnection } from "@/utils/apiUtils";
 import APP_CONFIG, { getActiveApiConfig } from "@/config/appDefinition";
+import TradingStrategy from "@/components/TradingStrategy";
+import TokenMonitor from "@/components/TokenMonitor";
+import WalletMonitor from "@/components/WalletMonitor";
+import TradeAlerts from "@/components/TradeAlerts";
 
 const AutoTrading = () => {
   const [apiConnected, setApiConnected] = useState(true); // Default to true to prevent immediate warning
@@ -86,8 +87,10 @@ const AutoTrading = () => {
         <h1 className="text-2xl font-bold mb-6">Automated Trading</h1>
         
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2">
-            <AutoTradeSimple />
+          <div className="lg:col-span-2 space-y-6">
+            <TradingStrategy />
+            
+            <TokenMonitor />
           </div>
           
           <div className="space-y-6">
@@ -128,7 +131,7 @@ const AutoTrading = () => {
               </CardContent>
             </Card>
             
-            <TokenAlertMonitor />
+            <WalletMonitor />
             <TradeAlerts />
           </div>
         </div>
