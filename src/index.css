@@ -154,16 +154,16 @@
   }
   
   .trading-gradient-text {
-    @apply bg-clip-text text-transparent bg-blue-purple-gradient;
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-blue-500 to-purple-500;
   }
   
   .trading-card {
-    @apply bg-trading-darkAccent border border-white/5 rounded-lg p-4 hover:border-trading-highlight/50 transition-all duration-300;
-    @apply dark:bg-trading-darkAccent dark:border-white/5;
+    @apply bg-trading-darkAccent border border-white/10 rounded-lg p-4 hover:border-trading-highlight/50 transition-all duration-300;
+    @apply dark:bg-trading-darkAccent dark:border-white/10;
   }
   
   .trading-button {
-    @apply px-4 py-2 rounded-md bg-blue-purple-gradient text-white font-medium hover:opacity-90 transition-all;
+    @apply px-4 py-2 rounded-md bg-gradient-to-r from-blue-500 to-purple-500 text-white font-medium hover:opacity-90 transition-all;
   }
   
   .status-active {
@@ -207,5 +207,15 @@
   /* Button hover enhancements */
   .hover-scale {
     @apply transition-transform duration-200 ease-in-out hover:scale-105;
+  }
+
+  /* Fix for missing borders */
+  .card-with-border {
+    @apply border border-white/10 rounded-lg;
+  }
+  
+  /* Modal and popup styling improvements */
+  .modal-content {
+    @apply bg-trading-darkAccent border border-white/10 rounded-lg shadow-lg;
   }
 }

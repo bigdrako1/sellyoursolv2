@@ -146,6 +146,9 @@ export default {
     plugin(function({ addVariant }) {
       // Add dark variant
       addVariant('dark', ['.dark &', '.dark&']);
+      
+      // Add border utility variant
+      addVariant('with-border', '&.with-border');
     }),
   ],
 } satisfies Config;

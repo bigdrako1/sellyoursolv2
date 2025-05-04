@@ -4,7 +4,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider } from "@/hooks/use-theme";
 import { AuthProvider } from "@/contexts/AuthContext";
 import Index from "./pages/Index";
@@ -27,6 +27,19 @@ const queryClient = new QueryClient({
   },
 });
 
+// Protected route wrapper component
+const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+  // Check if user is authenticated from local storage
+  const isAuthenticated = localStorage.getItem('supabase.auth.token') !== null;
+  
+  if (!isAuthenticated) {
+    // Redirect to login page if not authenticated
+    return <Navigate to="/auth" replace />;
+  }
+  
+  return <>{children}</>;
+};
+
 const App: React.FC = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider>
@@ -37,10 +50,26 @@ const App: React.FC = () => (
           <BrowserRouter>
             <Routes>
               <Route path="/" element={<Index />} />
-              <Route path="/market-analysis" element={<MarketAnalysis />} />
-              <Route path="/auto-trading" element={<AutoTrading />} />
-              <Route path="/portfolio" element={<Portfolio />} />
-              <Route path="/settings" element={<Settings />} />
+              <Route path="/market-analysis" element={
+                <ProtectedRoute>
+                  <MarketAnalysis />
+                </ProtectedRoute>
+              } />
+              <Route path="/auto-trading" element={
+                <ProtectedRoute>
+                  <AutoTrading />
+                </ProtectedRoute>
+              } />
+              <Route path="/portfolio" element={
+                <ProtectedRoute>
+                  <Portfolio />
+                </ProtectedRoute>
+              } />
+              <Route path="/settings" element={
+                <ProtectedRoute>
+                  <Settings />
+                </ProtectedRoute>
+              } />
               <Route path="/auth" element={<Auth />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
