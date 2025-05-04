@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
@@ -21,74 +21,10 @@ interface Token {
   createdAt: Date;
 }
 
-const mockTokens: Token[] = [
-  {
-    name: "SolRunner",
-    symbol: "SRUN",
-    address: "8iJ5VD4rivW8yBrJS5jiMG9YMxMJbPBu8QyqDNUYQP7G",
-    price: 0.00034,
-    marketCap: 250000,
-    liquidity: 75000,
-    holders: 120,
-    qualityScore: 82,
-    source: "Helius API",
-    createdAt: new Date(new Date().getTime() - 45 * 60000)
-  },
-  {
-    name: "MemeToken",
-    symbol: "MEME",
-    address: "6bTT8Dxs6D3zsiKVpVSfEecRMzHBzFxJcCiGxZpBZ3Sm",
-    price: 0.00012,
-    marketCap: 120000,
-    liquidity: 30000,
-    holders: 85,
-    qualityScore: 65,
-    source: "Smart Money Alert",
-    createdAt: new Date(new Date().getTime() - 90 * 60000)
-  }
-];
-
 const TokenAlertMonitor: React.FC = () => {
   const [tokens, setTokens] = useState<Token[]>([]);
   const [alertsEnabled, setAlertsEnabled] = useState(true);
   const { toast } = useToast();
-
-  useEffect(() => {
-    // In a real implementation, this would connect to a websocket or polling mechanism
-    // to fetch new token alerts from Helius or other APIs
-    setTokens(mockTokens);
-    
-    // Simulate getting a new token alert
-    const timer = setTimeout(() => {
-      if (alertsEnabled) {
-        const newToken = {
-          name: "AutoDegen",
-          symbol: "AUTO",
-          address: "3rTDyiQMDxBKrVu8EyHyfBbhQ5gHkVyMFbVWXuu5mPx1",
-          price: 0.00056,
-          marketCap: 320000,
-          liquidity: 95000,
-          holders: 145,
-          qualityScore: 78,
-          source: "Birdeye API",
-          createdAt: new Date()
-        };
-        
-        setTokens(prev => [newToken, ...prev]);
-        
-        // Play sound for the alert
-        playSound('alert');
-        
-        toast({
-          title: "New Token Detected",
-          description: `${newToken.name} (${newToken.symbol}) has been launched`,
-          variant: "default",
-        });
-      }
-    }, 10000);
-    
-    return () => clearTimeout(timer);
-  }, [alertsEnabled, toast]);
 
   const toggleAlerts = () => {
     setAlertsEnabled(!alertsEnabled);

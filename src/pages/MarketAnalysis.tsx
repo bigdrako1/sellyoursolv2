@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -23,7 +24,7 @@ const MarketAnalysis = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [apiConnected, setApiConnected] = useState(false);
   const [topTokens, setTopTokens] = useState<TokenData[]>([]);
-  const [systemLatency, setSystemLatency] = useState<number | null>(30); // Default latency value
+  const [systemLatency, setSystemLatency] = useState<number | null>(null);
   const { toast } = useToast();
 
   // Check API connection on mount
@@ -167,28 +168,34 @@ const MarketAnalysis = () => {
                       </div>
                     ) : (
                       <div className="space-y-4">
-                        {topTokens.map((token) => (
-                          <div key={token.symbol} className="flex items-center justify-between border-b border-gray-700 pb-3">
-                            <div className="flex items-center gap-2">
-                              <div className="bg-gray-800 h-10 w-10 rounded-full flex items-center justify-center font-bold">
-                                {token.symbol.slice(0, 1)}
+                        {topTokens.length > 0 ? (
+                          topTokens.map((token) => (
+                            <div key={token.symbol} className="flex items-center justify-between border-b border-gray-700 pb-3">
+                              <div className="flex items-center gap-2">
+                                <div className="bg-gray-800 h-10 w-10 rounded-full flex items-center justify-center font-bold">
+                                  {token.symbol.slice(0, 1)}
+                                </div>
+                                <div>
+                                  <div className="font-medium">{token.name}</div>
+                                  <div className="text-sm text-gray-400">{token.symbol}</div>
+                                </div>
                               </div>
-                              <div>
-                                <div className="font-medium">{token.name}</div>
-                                <div className="text-sm text-gray-400">{token.symbol}</div>
+                              <div className="text-right">
+                                <div>${token.price.toLocaleString(undefined, { 
+                                  minimumFractionDigits: token.price < 0.01 ? 8 : 2,
+                                  maximumFractionDigits: token.price < 0.01 ? 8 : 2
+                                })}</div>
+                                <div className={`text-sm ${token.change24h >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                                  {token.change24h >= 0 ? '+' : ''}{token.change24h.toFixed(2)}%
+                                </div>
                               </div>
                             </div>
-                            <div className="text-right">
-                              <div>${token.price.toLocaleString(undefined, { 
-                                minimumFractionDigits: token.price < 0.01 ? 8 : 2,
-                                maximumFractionDigits: token.price < 0.01 ? 8 : 2
-                              })}</div>
-                              <div className={`text-sm ${token.change24h >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                                {token.change24h >= 0 ? '+' : ''}{token.change24h.toFixed(2)}%
-                              </div>
-                            </div>
+                          ))
+                        ) : (
+                          <div className="text-center py-6 text-gray-400">
+                            No token data available
                           </div>
-                        ))}
+                        )}
                       </div>
                     )}
                   </CardContent>
@@ -201,10 +208,11 @@ const MarketAnalysis = () => {
                     <CardTitle>Recent Market Activity</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-muted-foreground">
-                      Market activity data from Helius API will be displayed here.
-                      This panel shows recent transactions, volume spikes, and other on-chain metrics from the Solana blockchain.
-                    </p>
+                    <div className="flex flex-col items-center justify-center py-8 text-gray-400">
+                      <Activity className="h-12 w-12 mb-3 opacity-30" />
+                      <p>Market activity data will be displayed here</p>
+                      <p className="text-sm mt-1">Connect to Helius API to view on-chain metrics</p>
+                    </div>
                   </CardContent>
                 </Card>
               </TabsContent>
@@ -223,10 +231,11 @@ const MarketAnalysis = () => {
                         placeholder="Search for a token..."
                       />
                     </div>
-                    <p className="text-muted-foreground">
-                      Search and explore detailed token information from the Solana ecosystem using the Helius API.
-                      Enter a token symbol or address to view charts, stats and on-chain data.
-                    </p>
+                    <div className="flex flex-col items-center justify-center py-8 text-gray-400">
+                      <Wallet className="h-12 w-12 mb-3 opacity-30" />
+                      <p>Enter a token address to search</p>
+                      <p className="text-sm mt-1">Token data will be loaded from connected APIs</p>
+                    </div>
                   </CardContent>
                 </Card>
               </TabsContent>
