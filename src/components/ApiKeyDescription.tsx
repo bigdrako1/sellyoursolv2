@@ -1,7 +1,7 @@
 
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { InfoCircle } from "lucide-react";
+import { Info } from "lucide-react";
 import APP_CONFIG from "@/config/appDefinition";
 
 const ApiKeyDescription: React.FC = () => {
@@ -9,7 +9,7 @@ const ApiKeyDescription: React.FC = () => {
     <Card className="card-with-border">
       <CardHeader>
         <CardTitle className="flex items-center">
-          <InfoCircle className="mr-2 h-5 w-5" />
+          <Info className="mr-2 h-5 w-5" />
           Personal API Key
         </CardTitle>
       </CardHeader>

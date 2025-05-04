@@ -38,6 +38,7 @@ export const APP_CONFIG = {
       rpcUrl: "https://mainnet.helius-rpc.com",
       wsUrl: "wss://mainnet.helius-rpc.com",
       apiKey: "a18d2c93-d9fa-4db2-8419-707a4f1782f7",
+      environment: "production",
     },
     // Development endpoints
     development: {
@@ -47,6 +48,7 @@ export const APP_CONFIG = {
       secureRpcUrl: "https://dominga-id818f-fast-devnet.helius-rpc.com",
       stakedRpcUrl: "https://staked.helius-rpc.com",
       apiKey: "e4a78345-f927-4ed9-b33e-2ca970b1063e",
+      environment: "development",
     },
     // Set this to 'development' to use the development API, or 'production' for the production API
     environment: "development",

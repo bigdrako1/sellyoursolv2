@@ -2,12 +2,10 @@
 import React, { useState, useEffect } from "react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import StrategyManager from "@/components/StrategyManager";
-import StrategyConfig from "@/components/StrategyConfig";
-import TradeAlerts from "@/components/TradeAlerts";
+import AutoTradeSimple from "@/components/AutoTradeSimple";
 import TokenAlertMonitor from "@/components/TokenAlertMonitor";
+import TradeAlerts from "@/components/TradeAlerts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { testHeliusConnection } from "@/utils/apiUtils";
 import APP_CONFIG, { getActiveApiConfig } from "@/config/appDefinition";
@@ -16,10 +14,9 @@ const AutoTrading = () => {
   const [apiConnected, setApiConnected] = useState(true); // Default to true to prevent immediate warning
   const [apiConnectionChecked, setApiConnectionChecked] = useState(false);
   const [systemLatency, setSystemLatency] = useState<number | null>(null);
-  const [activeTab, setActiveTab] = useState("config");
   const { toast } = useToast();
   const apiConfig = getActiveApiConfig();
-  const environment = apiConfig === APP_CONFIG.api.development ? 'Development' : 'Production';
+  const environment = apiConfig.environment || 'development';
 
   // Check API connection on mount and periodically
   useEffect(() => {
@@ -90,30 +87,7 @@ const AutoTrading = () => {
         
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">
-            <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <div className="flex justify-between items-center mb-4">
-                <TabsList>
-                  <TabsTrigger value="config">Trade Settings</TabsTrigger>
-                  <TabsTrigger value="strategies">Strategy Manager</TabsTrigger>
-                  <TabsTrigger value="create">Create Strategy</TabsTrigger>
-                </TabsList>
-              </div>
-              
-              <TabsContent value="config" className="ai-trading-card card-with-border">
-                <StrategyManager />
-              </TabsContent>
-              
-              <TabsContent value="strategies" className="ai-trading-card card-with-border">
-                <StrategyManager />
-              </TabsContent>
-              
-              <TabsContent value="create" className="ai-trading-card card-with-border">
-                <StrategyConfig 
-                  title="Create Trading Strategy"
-                  description="Configure parameters for a new automated trading strategy"
-                />
-              </TabsContent>
-            </Tabs>
+            <AutoTradeSimple />
           </div>
           
           <div className="space-y-6">
@@ -137,13 +111,13 @@ const AutoTrading = () => {
                   </div>
                   
                   <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">Active Strategies</span>
-                    <span className="font-medium">-</span>
+                    <span className="text-sm text-muted-foreground">Active Positions</span>
+                    <span className="font-medium">0</span>
                   </div>
                   
                   <div className="flex justify-between">
                     <span className="text-sm text-muted-foreground">Today's Trades</span>
-                    <span className="font-medium">-</span>
+                    <span className="font-medium">0</span>
                   </div>
                   
                   <div className="flex justify-between">
