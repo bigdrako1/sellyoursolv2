@@ -40,16 +40,12 @@ const Auth = () => {
           <CardHeader className="text-center">
             <CardTitle className="text-3xl font-bold trading-gradient-text">SellYourSOL™ v2</CardTitle>
             <CardDescription className="text-gray-400">
-              Connect your Solana wallet to continue
+              Connect your Solana wallet to access the platform
             </CardDescription>
           </CardHeader>
           
           <CardContent className="pt-6">
-            <div className="mb-6">
-              <p className="text-center text-sm text-gray-300 mb-8">
-                Authentication is only available through Solana wallet connection. Please connect your wallet to access the trading platform.
-              </p>
-              
+            <div className="mb-6">              
               <Button
                 onClick={handleWalletConnect}
                 className="w-full trading-button"

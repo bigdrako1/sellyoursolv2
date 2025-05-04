@@ -2,225 +2,134 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
+ 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
-
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
-
-    --radius: 0.5rem;
-
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
-    
-    /* Trading platform light theme colors */
-    --trading-dark: 240 10% 95%;
-    --trading-darkAccent: 240 10% 90%;
-    --trading-success: 142 70% 45%;
-    --trading-danger: 0 84% 60%;
-    --trading-warning: 38 95% 50%;
-    --trading-highlight: 226 75% 56%;
-  }
-
-  .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-
+    --background: 240 10% 3.9%;
+    --foreground: 0 0% 98%;
+ 
+    --card: 240 10% 3.9%;
+    --card-foreground: 0 0% 98%;
+ 
+    --popover: 240 10% 3.9%;
+    --popover-foreground: 0 0% 98%;
+ 
+    --primary: 0 0% 98%;
+    --primary-foreground: 240 5.9% 10%;
+ 
+    --secondary: 240 3.7% 15.9%;
+    --secondary-foreground: 0 0% 98%;
+ 
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 240 5% 64.9%;
+ 
+    --accent: 240 3.7% 15.9%;
+    --accent-foreground: 0 0% 98%;
+ 
     --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
-    
-    /* Trading platform dark theme colors - updated to be even darker */
-    --trading-dark: 220 50% 6%;
-    --trading-darkAccent: 220 40% 10%;
-    --trading-success: 142 70% 45%;
-    --trading-danger: 0 84% 60%;
-    --trading-warning: 38 95% 50%;
-    --trading-highlight: 226 75% 56%;
+    --destructive-foreground: 0 0% 98%;
+ 
+    --border: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
+    --ring: 240 4.9% 83.9%;
+ 
+    --radius: 0.5rem;
   }
 }
-
+ 
 @layer base {
   * {
     @apply border-border;
   }
-
   body {
     @apply bg-background text-foreground;
-  }
-
-  body.dark {
-    @apply bg-trading-dark text-white;
-  }
-
-  /* Custom styling for scrollbars */
-  ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
-  }
-  
-  .dark ::-webkit-scrollbar-track {
-    background: #121621;
-  }
-  
-  .dark ::-webkit-scrollbar-thumb {
-    background: #2d3748;
-    border-radius: 3px;
-  }
-  
-  .dark ::-webkit-scrollbar-thumb:hover {
-    background: #4f46e5;
-  }
-  
-  ::-webkit-scrollbar-track {
-    background: #e5e7eb;
-  }
-  
-  ::-webkit-scrollbar-thumb {
-    background: #9ca3af;
-    border-radius: 3px;
-  }
-  
-  ::-webkit-scrollbar-thumb:hover {
-    background: #6366f1;
+    font-feature-settings: "rlig" 1, "calt" 1;
   }
 }
 
 @layer components {
-  .glass-panel {
-    @apply bg-black/30 backdrop-blur-md border border-white/10 rounded-lg;
-    @apply dark:bg-black/30 dark:border-white/10;
-  }
-  
-  .trading-gradient-text {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-blue-500 to-purple-500;
+  .ai-trading-card {
+    @apply bg-trading-darkAccent border-trading-highlight/20 rounded-md shadow-lg;
   }
   
   .trading-card {
-    @apply bg-trading-darkAccent border border-white/10 rounded-lg p-4 hover:border-trading-highlight/50 transition-all duration-300;
-    @apply dark:bg-trading-darkAccent dark:border-white/10;
+    @apply bg-trading-darkAccent rounded-md shadow-md;
+  }
+  
+  .card-with-border {
+    @apply border border-trading-highlight/20;
   }
   
   .trading-button {
-    @apply px-4 py-2 rounded-md bg-gradient-to-r from-blue-500 to-purple-500 text-white font-medium hover:opacity-90 transition-all;
+    @apply bg-trading-highlight hover:bg-trading-highlight/80 text-white transition-colors;
   }
   
-  .status-active {
-    @apply text-trading-success flex items-center gap-1;
-  }
-  
-  .status-inactive {
-    @apply text-trading-danger flex items-center gap-1;
-  }
-  
-  .status-pending {
-    @apply text-trading-warning flex items-center gap-1;
+  .trading-gradient-text {
+    @apply bg-gradient-to-r from-trading-highlight to-trading-secondary bg-clip-text text-transparent;
   }
 
-  /* PNL Card Background Pattern */
-  .bg-pattern {
-    background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
-  }
-  
-  /* UI Transition animations */
-  .fade-in {
-    animation: fadeIn 0.3s ease forwards;
-  }
-  
-  @keyframes fadeIn {
-    from {
-      opacity: 0;
-      transform: translateY(10px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-  
-  /* Responsive container classes */
-  .content-container {
-    @apply container mx-auto px-4 sm:px-6 lg:px-8;
-  }
-  
-  /* Button hover enhancements */
   .hover-scale {
-    @apply transition-transform duration-200 ease-in-out hover:scale-105;
+    @apply transition-transform hover:scale-[1.02];
   }
+}
 
-  /* Fix for missing borders */
-  .card-with-border {
-    @apply border border-white/10 rounded-lg;
-  }
-  
-  /* Modal and popup styling improvements */
-  .modal-content {
-    @apply bg-trading-darkAccent border border-white/10 rounded-lg shadow-lg;
-  }
-  
-  /* Add proper border styling for AI trading component */
-  .ai-trading-card {
-    @apply border border-white/10 rounded-lg bg-trading-darkAccent p-4;
-  }
+:root {
+  --trading-dark: #0c0c10;
+  --trading-darkAccent: #141419;
+  --trading-darkerAccent: #0a0a0e;
+  --trading-highlight: #8B5CF6;
+  --trading-secondary: #7E69AB;
+  --trading-danger: #EF4444;
+  --trading-success: #10B981;
+  --trading-warning: #FBBF24;
+}
+
+.dark {
+  color-scheme: dark;
+}
+
+body {
+  background-color: var(--trading-dark);
+  color: #f2f2f2;
+  font-family: 'Inter', sans-serif;
+  min-height: 100vh;
+}
+
+.bg-trading-dark {
+  background-color: var(--trading-dark);
+}
+
+.bg-trading-darkAccent {
+  background-color: var(--trading-darkAccent);
+}
+
+.bg-trading-darkerAccent {
+  background-color: var(--trading-darkerAccent);
+}
+
+.bg-trading-highlight {
+  background-color: var(--trading-highlight);
+}
+
+.text-trading-highlight {
+  color: var(--trading-highlight);
+}
+
+.border-trading-highlight {
+  border-color: var(--trading-highlight);
+}
+
+.text-trading-danger {
+  color: var(--trading-danger);
+}
+
+.border-trading-danger {
+  border-color: var(--trading-danger);
+}
+
+/* Update sound controls to only activate for alerts */
+.alert-only-sound {
+  opacity: 0;
+  position: absolute;
+  pointer-events: none;
 }
