@@ -14,6 +14,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { useToast } from "@/hooks/use-toast";
 import { playSound } from "@/utils/soundUtils";
 import { heliusRpcCall } from "@/utils/apiUtils";
+import { parseHeliusWalletBalance } from "@/utils/heliusTypes";
 
 const Index = () => {
   const [walletAddress, setWalletAddress] = useState("");
@@ -55,9 +56,11 @@ const Index = () => {
           
           // Set initial profit based on portfolio value (simplified)
           const walletData = await heliusRpcCall("getTokenBalances", [walletAddress]);
-          if (walletData && walletData.nativeBalance) {
+          const parsedWalletData = parseHeliusWalletBalance(walletData);
+          
+          if (parsedWalletData && parsedWalletData.nativeBalance) {
             // Simple profit calculation based on SOL balance
-            const solBalance = walletData.nativeBalance / 1000000000; // lamports to SOL
+            const solBalance = parsedWalletData.nativeBalance / 1000000000; // lamports to SOL
             setTotalProfit(parseFloat((solBalance * 0.15).toFixed(2))); // Assume 15% profit
           }
           

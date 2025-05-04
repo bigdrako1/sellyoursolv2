@@ -4,6 +4,7 @@ import { getWalletBalances, WalletData, TokenData } from "@/utils/walletUtils";
 import { ChevronUp, ChevronDown, Wallet } from "lucide-react";
 import { useCurrencyStore } from "@/store/currencyStore";
 import { heliusRpcCall } from "@/utils/apiUtils";
+import { parseHeliusWalletBalance, HeliusWalletBalance } from "@/utils/heliusTypes";
 
 const WalletBalances = () => {
   const [walletData, setWalletData] = useState<WalletData | null>(null);
@@ -19,17 +20,18 @@ const WalletBalances = () => {
           // Get wallet token balances from Helius API
           try {
             const balanceResponse = await heliusRpcCall("getTokenBalances", [connectedAddress]);
+            const parsedBalanceResponse = parseHeliusWalletBalance(balanceResponse);
             
-            if (balanceResponse) {
+            if (parsedBalanceResponse) {
               // Process the balance data
-              const nativeBalance = balanceResponse.nativeBalance ? 
-                balanceResponse.nativeBalance / 1000000000 : 0; // Convert from lamports to SOL
+              const nativeBalance = parsedBalanceResponse.nativeBalance ? 
+                parsedBalanceResponse.nativeBalance / 1000000000 : 0; // Convert from lamports to SOL
               
               // Process token balances
               const processedTokens: TokenData[] = [];
               
-              if (balanceResponse.tokens && Array.isArray(balanceResponse.tokens)) {
-                for (const token of balanceResponse.tokens) {
+              if (parsedBalanceResponse.tokens && Array.isArray(parsedBalanceResponse.tokens)) {
+                for (const token of parsedBalanceResponse.tokens) {
                   if (token.mint && token.amount) {
                     // Get token price data (in a real app, we'd use a price API)
                     const priceResponse = await fetch(`https://price.jup.ag/v4/price?ids=${token.mint}`);
@@ -62,6 +64,9 @@ const WalletBalances = () => {
                 tokens: processedTokens,
                 totalUsdValue
               });
+            } else {
+              console.error("Invalid response format from Helius API");
+              throw new Error("Invalid response format");
             }
           } catch (apiError) {
             console.error("API error fetching wallet data:", apiError);
