@@ -31,9 +31,13 @@ import {
   UserRound,
   Key,
   Lock,
-  CircleDollarSign
+  CircleDollarSign,
+  Loader2
 } from "lucide-react";
 import { getConnectedWallet, connectWallet, disconnectWallet } from "@/utils/walletUtils";
+import { useAuth } from "@/contexts/AuthContext";
+import { getUserSettings, updateUserSettings } from "@/services/settingsService";
+import { UserSettings } from "@/types/database.types";
 
 const Settings = () => {
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
@@ -41,6 +45,8 @@ const Settings = () => {
   const [systemLatency, setSystemLatency] = useState(25);
   const [connecting, setConnecting] = useState(false);
   const [disconnecting, setDisconnecting] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   
   // Settings state
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
@@ -56,20 +62,83 @@ const Settings = () => {
   
   const { toast } = useToast();
   const { currency, setCurrency } = useCurrencyStore();
+  const { user, isAuthenticated } = useAuth();
   
-  // Check for connected wallet on mount
+  // Load settings from Supabase
   useEffect(() => {
+    const loadSettings = async () => {
+      if (user) {
+        setIsLoading(true);
+        try {
+          const settings = await getUserSettings(user.id);
+          if (settings) {
+            setNotificationsEnabled(settings.notifications_enabled);
+            setSoundEnabled(settings.sound_enabled);
+            setAutoTradeEnabled(settings.auto_trade_enabled);
+            setDarkMode(settings.dark_mode);
+            setRiskLevel([settings.risk_level]);
+            setCurrency(settings.currency);
+            setSystemActive(settings.system_active);
+            setSystemLatency(settings.system_latency);
+            setApiKey(settings.api_key || "");
+            setHeliusApiKey(settings.helius_api_key || "a18d2c93-d9fa-4db2-8419-707a4f1782f7");
+          }
+        } catch (error) {
+          console.error("Error loading settings:", error);
+          toast({
+            title: "Failed to load settings",
+            description: "Your settings could not be loaded. Using defaults.",
+            variant: "destructive",
+          });
+        } finally {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    loadSettings();
+    
+    // Check for connected wallet on mount
     const savedWallet = getConnectedWallet();
     if (savedWallet) {
       setWalletAddress(savedWallet);
     }
-  }, []);
+  }, [user, setCurrency, toast]);
   
-  const handleSaveSettings = () => {
-    toast({
-      title: "Settings saved",
-      description: "Your preferences have been updated successfully.",
-    });
+  const handleSaveSettings = async () => {
+    if (!user) return;
+    
+    setIsSaving(true);
+    try {
+      const updatedSettings = {
+        notifications_enabled: notificationsEnabled,
+        sound_enabled: soundEnabled,
+        auto_trade_enabled: autoTradeEnabled,
+        dark_mode: darkMode,
+        risk_level: riskLevel[0],
+        currency,
+        system_active: systemActive,
+        system_latency: systemLatency,
+        api_key: apiKey,
+        helius_api_key: heliusApiKey
+      };
+      
+      await updateUserSettings(updatedSettings, user.id);
+      
+      toast({
+        title: "Settings saved",
+        description: "Your preferences have been updated successfully.",
+      });
+    } catch (error) {
+      console.error("Error saving settings:", error);
+      toast({
+        title: "Failed to save settings",
+        description: "Your settings could not be saved. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
   
   const handleResetSettings = () => {
@@ -130,7 +199,6 @@ const Settings = () => {
 
   const handleSetup2FA = () => {
     if (!twoFactorEnabled) {
-      // This would typically generate and show a QR code
       toast({
         title: "2FA Setup Initiated",
         description: "Scan the QR code with your authenticator app to set up 2FA.",
@@ -141,13 +209,11 @@ const Settings = () => {
         description: "Two-factor authentication has been disabled.",
       });
     }
-    // Toggle the state after showing the toast
     setTwoFactorEnabled(!twoFactorEnabled);
   };
 
   const handleVerify2FA = () => {
     setTfaVerifying(true);
-    // Simulate verification
     setTimeout(() => {
       if (tfaCode.length === 6) {
         toast({
@@ -166,6 +232,21 @@ const Settings = () => {
       setTfaCode("");
     }, 1000);
   };
+  
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex flex-col bg-trading-dark text-white">
+        <Header walletAddress={walletAddress || ""} />
+        <main className="flex-grow container mx-auto px-4 pb-10 flex justify-center items-center">
+          <div className="flex flex-col items-center">
+            <Loader2 className="w-8 h-8 animate-spin text-trading-highlight" />
+            <p className="mt-4 text-gray-400">Loading settings...</p>
+          </div>
+        </main>
+        <Footer systemActive={systemActive} systemLatency={systemLatency} />
+      </div>
+    );
+  }
   
   return (
     <div className="min-h-screen flex flex-col bg-trading-dark text-white">
@@ -585,6 +666,7 @@ const Settings = () => {
               variant="outline" 
               className="border-trading-highlight/30 hover:bg-trading-highlight/10" 
               onClick={handleResetSettings}
+              disabled={isSaving}
             >
               <Undo2 className="w-4 h-4 mr-2" /> Reset to defaults
             </Button>
@@ -592,8 +674,17 @@ const Settings = () => {
             <Button 
               onClick={handleSaveSettings}
               className="bg-trading-highlight hover:bg-trading-highlight/80"
+              disabled={isSaving}
             >
-              <Save className="w-4 h-4 mr-2" /> Save settings
+              {isSaving ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Saving...
+                </>
+              ) : (
+                <>
+                  <Save className="w-4 h-4 mr-2" /> Save settings
+                </>
+              )}
             </Button>
           </div>
         </div>

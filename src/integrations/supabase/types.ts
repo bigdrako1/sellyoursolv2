@@ -9,7 +9,152 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      profiles: {
+        Row: {
+          created_at: string | null
+          id: string
+          updated_at: string | null
+          username: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id: string
+          updated_at?: string | null
+          username?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          updated_at?: string | null
+          username?: string | null
+        }
+        Relationships: []
+      }
+      transactions: {
+        Row: {
+          amount: number
+          id: string
+          notes: string | null
+          price_at_transaction: number | null
+          status: string
+          timestamp: string | null
+          token_symbol: string
+          transaction_hash: string | null
+          transaction_type: string
+          user_id: string
+          wallet_id: string
+        }
+        Insert: {
+          amount: number
+          id?: string
+          notes?: string | null
+          price_at_transaction?: number | null
+          status: string
+          timestamp?: string | null
+          token_symbol: string
+          transaction_hash?: string | null
+          transaction_type: string
+          user_id: string
+          wallet_id: string
+        }
+        Update: {
+          amount?: number
+          id?: string
+          notes?: string | null
+          price_at_transaction?: number | null
+          status?: string
+          timestamp?: string | null
+          token_symbol?: string
+          transaction_hash?: string | null
+          transaction_type?: string
+          user_id?: string
+          wallet_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transactions_wallet_id_fkey"
+            columns: ["wallet_id"]
+            isOneToOne: false
+            referencedRelation: "wallets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_settings: {
+        Row: {
+          api_key: string | null
+          auto_trade_enabled: boolean | null
+          currency: string | null
+          dark_mode: boolean | null
+          helius_api_key: string | null
+          id: string
+          notifications_enabled: boolean | null
+          risk_level: number | null
+          sound_enabled: boolean | null
+          system_active: boolean | null
+          system_latency: number | null
+          user_id: string
+        }
+        Insert: {
+          api_key?: string | null
+          auto_trade_enabled?: boolean | null
+          currency?: string | null
+          dark_mode?: boolean | null
+          helius_api_key?: string | null
+          id?: string
+          notifications_enabled?: boolean | null
+          risk_level?: number | null
+          sound_enabled?: boolean | null
+          system_active?: boolean | null
+          system_latency?: number | null
+          user_id: string
+        }
+        Update: {
+          api_key?: string | null
+          auto_trade_enabled?: boolean | null
+          currency?: string | null
+          dark_mode?: boolean | null
+          helius_api_key?: string | null
+          id?: string
+          notifications_enabled?: boolean | null
+          risk_level?: number | null
+          sound_enabled?: boolean | null
+          system_active?: boolean | null
+          system_latency?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      wallets: {
+        Row: {
+          address: string
+          created_at: string | null
+          id: string
+          is_primary: boolean | null
+          name: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          address: string
+          created_at?: string | null
+          id?: string
+          is_primary?: boolean | null
+          name?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          address?: string
+          created_at?: string | null
+          id?: string
+          is_primary?: boolean | null
+          name?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
