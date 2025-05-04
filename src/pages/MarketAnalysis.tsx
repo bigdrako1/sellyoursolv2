@@ -54,8 +54,8 @@ const MarketAnalysis = () => {
     const fetchMarketData = async () => {
       setIsLoading(true);
       try {
-        // Fetch real market data using the utility function
-        const marketData = await getMarketOverview("solana", 5);
+        // Fix: Only pass the limit parameter to getMarketOverview
+        const marketData = await getMarketOverview(5);
         
         // Transform the data into the format our component expects
         const transformedData: TokenData[] = marketData.map(token => ({
