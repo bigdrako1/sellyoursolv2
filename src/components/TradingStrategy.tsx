@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
@@ -11,8 +11,16 @@ import {
   TrendingUp,
   Wallet,
   Bot,
-  Save
+  Save,
+  InfoIcon,
+  AlertCircle
 } from "lucide-react";
+import { 
+  secureInitialInvestment, 
+  TradingPosition,
+  loadTradingPositions,
+  saveTradingPositions
+} from "@/utils/tradingUtils";
 
 interface TradingStrategyProps {
   onSettingsChange?: (settings: TradingSettings) => void;
@@ -40,12 +48,37 @@ const TradingStrategy: React.FC<TradingStrategyProps> = ({ onSettingsChange }) =
     takeProfit: 30,
     stopLoss: 10,
     secureInitial: true,
-    secureInitialThreshold: 20
+    secureInitialThreshold: 100 // Default to 100% profit (2X) for securing initial
   });
   
   const { toast } = useToast();
+
+  // Load saved settings on mount
+  useEffect(() => {
+    const savedSettings = localStorage.getItem('trading_settings');
+    if (savedSettings) {
+      try {
+        const parsedSettings = JSON.parse(savedSettings);
+        // Ensure secureInitialThreshold is set to 100 (2X) for auto-secure
+        parsedSettings.secureInitial = true;
+        parsedSettings.secureInitialThreshold = 100;
+        setSettings(parsedSettings);
+      } catch (error) {
+        console.error("Error loading saved trading settings:", error);
+      }
+    }
+  }, []);
   
   const handleToggle = (key: keyof TradingSettings) => {
+    // Don't allow disabling secureInitial as we want to always secure at 2X
+    if (key === 'secureInitial') {
+      toast({
+        title: "Auto-Securing Enabled",
+        description: "Initial investment is always secured at 2X (100% profit) automatically",
+      });
+      return;
+    }
+    
     const newSettings = {
       ...settings,
       [key]: !settings[key]
@@ -58,6 +91,11 @@ const TradingStrategy: React.FC<TradingStrategyProps> = ({ onSettingsChange }) =
   };
   
   const handleSliderChange = (key: keyof TradingSettings, value: number[]) => {
+    // Don't allow changing secureInitialThreshold as we want to fix it at 100% (2X)
+    if (key === 'secureInitialThreshold') {
+      return;
+    }
+    
     const newSettings = {
       ...settings,
       [key]: value[0]
@@ -70,11 +108,48 @@ const TradingStrategy: React.FC<TradingStrategyProps> = ({ onSettingsChange }) =
   };
   
   const handleSaveSettings = () => {
-    localStorage.setItem('trading_settings', JSON.stringify(settings));
+    // Ensure secureInitial is always true and threshold is 100% (2X)
+    const finalSettings = {
+      ...settings,
+      secureInitial: true,
+      secureInitialThreshold: 100
+    };
+    
+    localStorage.setItem('trading_settings', JSON.stringify(finalSettings));
+    
     toast({
       title: "Settings Saved",
       description: "Your trading settings have been saved successfully",
     });
+    
+    // Apply secure initial settings to any existing positions
+    applySecureInitialToPositions();
+  };
+  
+  // Apply secure initial settings to existing positions
+  const applySecureInitialToPositions = () => {
+    const positions = loadTradingPositions();
+    
+    if (positions.length === 0) {
+      return;
+    }
+    
+    let updated = false;
+    const updatedPositions = positions.map(position => {
+      if (position.status === 'active' && !position.securedInitial && position.currentPrice > position.entryPrice) {
+        updated = true;
+        return secureInitialInvestment(position, position.currentPrice);
+      }
+      return position;
+    });
+    
+    if (updated) {
+      saveTradingPositions(updatedPositions);
+      toast({
+        title: "Positions Updated",
+        description: "Secure initial settings applied to eligible positions",
+      });
+    }
   };
   
   return (
@@ -184,29 +259,22 @@ const TradingStrategy: React.FC<TradingStrategyProps> = ({ onSettingsChange }) =
                 </div>
                 <Switch
                   id="secureInitialToggle"
-                  checked={settings.secureInitial}
-                  onCheckedChange={() => handleToggle('secureInitial')}
+                  checked={true}
+                  disabled={true}
                 />
               </div>
               
-              {settings.secureInitial && (
-                <div className="space-y-2 pl-6 border-l-2 border-green-500/20">
-                  <Label htmlFor="secureThreshold">
-                    Secure at Profit %: {settings.secureInitialThreshold}%
-                  </Label>
-                  <Slider
-                    id="secureThreshold"
-                    min={10}
-                    max={100}
-                    step={5}
-                    value={[settings.secureInitialThreshold]}
-                    onValueChange={(value) => handleSliderChange('secureInitialThreshold', value)}
-                  />
-                  <p className="text-xs text-gray-400">
-                    System will automatically secure your initial investment when profit reaches {settings.secureInitialThreshold}%
+              <div className="space-y-2 pl-6 border-l-2 border-green-500/20">
+                <div className="flex items-center gap-2">
+                  <InfoIcon className="h-4 w-4 text-blue-400" />
+                  <p className="text-sm font-medium">Auto-securing at 2X (100% profit)</p>
+                </div>
+                <div className="bg-green-500/10 p-3 rounded-md border border-green-500/20">
+                  <p className="text-xs text-gray-300">
+                    Initial investment is automatically secured at 2X (100% profit), followed by additional scale-outs at 3X, 5X, and 10X to maximize returns while minimizing risk.
                   </p>
                 </div>
-              )}
+              </div>
             </div>
           </div>
           

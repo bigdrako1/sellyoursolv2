@@ -1,4 +1,3 @@
-
 // Trading utilities for autonomous trading platform
 import { getTokenPrices, heliusRpcCall, heliusApiCall } from './apiUtils';
 
@@ -232,64 +231,274 @@ export const calculateStrategyProfitability = (
 };
 
 /**
- * Secures initial investment by scaling out of a position
+ * Position management interface
+ */
+export interface TradingPosition {
+  contractAddress: string;
+  tokenName: string;
+  tokenSymbol: string;
+  entryPrice: number;
+  entryTime: string;
+  initialInvestment: number;
+  currentAmount: number;
+  currentPrice: number;
+  lastUpdateTime: string;
+  securedInitial: boolean;
+  scaleOutHistory: ScaleOutEvent[];
+  source: string;
+  status: 'active' | 'closed' | 'failed';
+  pnl: number;
+  roi: number;
+  notes: string;
+}
+
+/**
+ * Scale out event interface
+ */
+export interface ScaleOutEvent {
+  time: string;
+  price: number;
+  amount: number;
+  tokens: number;
+  reason: string;
+  percentOfPosition: number;
+}
+
+/**
+ * Create a new trading position
+ * @param contractAddress Token contract address
+ * @param tokenName Token name
+ * @param tokenSymbol Token symbol
+ * @param entryPrice Entry price
+ * @param initialInvestment Initial investment amount
+ * @param source Source of the signal
+ * @returns New trading position
+ */
+export const createTradingPosition = (
+  contractAddress: string,
+  tokenName: string,
+  tokenSymbol: string,
+  entryPrice: number,
+  initialInvestment: number,
+  source: string
+): TradingPosition => {
+  return {
+    contractAddress,
+    tokenName,
+    tokenSymbol,
+    entryPrice,
+    entryTime: new Date().toISOString(),
+    initialInvestment,
+    currentAmount: initialInvestment,
+    currentPrice: entryPrice,
+    lastUpdateTime: new Date().toISOString(),
+    securedInitial: false,
+    scaleOutHistory: [],
+    source,
+    status: 'active',
+    pnl: 0,
+    roi: 0,
+    notes: 'Position created'
+  };
+};
+
+/**
+ * Update a trading position with latest price data
+ * @param position Trading position to update
+ * @param currentPrice Current token price
+ * @returns Updated position with latest P&L and ROI data
+ */
+export const updateTradingPosition = (
+  position: TradingPosition,
+  currentPrice: number
+): TradingPosition => {
+  // Calculate tokens owned based on initial investment and entry price
+  const tokensOwned = position.initialInvestment / position.entryPrice;
+  
+  // Calculate current value excluding any sold tokens from scale-outs
+  const soldTokens = position.scaleOutHistory.reduce((total, event) => total + event.tokens, 0);
+  const remainingTokens = tokensOwned - soldTokens;
+  const currentValue = remainingTokens * currentPrice;
+  
+  // Calculate total value recovered from scale-outs
+  const recoveredValue = position.scaleOutHistory.reduce((total, event) => total + event.amount, 0);
+  
+  // Calculate PnL and ROI
+  const totalValue = currentValue + recoveredValue;
+  const pnl = totalValue - position.initialInvestment;
+  const roi = (pnl / position.initialInvestment) * 100;
+  
+  return {
+    ...position,
+    currentPrice,
+    currentAmount: currentValue,
+    lastUpdateTime: new Date().toISOString(),
+    pnl,
+    roi,
+  };
+};
+
+/**
+ * Secures initial investment by scaling out at 2X (100% profit)
+ * and implements automated scale-out strategy based on performance
  * @param position Trading position object
  * @param currentPrice Current token price
- * @param percentToSecure Percentage of initial investment to secure (default: 100%)
- * @returns Updated position object
+ * @returns Updated position object with scale-out events if applied
  */
 export const secureInitialInvestment = (
-  position: any,
-  currentPrice: number,
-  percentToSecure: number = 100
-): any => {
-  if (!position || !position.initial_investment) {
-    console.log("Invalid position object or missing initial investment");
+  position: TradingPosition,
+  currentPrice: number
+): TradingPosition => {
+  if (!position || currentPrice <= 0) {
+    console.log("Invalid position or price data");
     return position;
   }
   
-  // In a live environment, this would check real price data
-  // For now, if currentPrice is 0, we simulate a price based on the position
-  const price = currentPrice > 0 ? currentPrice : (position.entry_price || 1) * 1.2;
+  // Update the position with current price to get latest ROI
+  const updatedPosition = updateTradingPosition(position, currentPrice);
   
-  // Calculate profit in percentage
-  const profitPercent = position.entry_price ? 
-    ((price - position.entry_price) / position.entry_price) * 100 : 0;
+  // Check if initial investment has already been secured
+  if (updatedPosition.securedInitial) {
+    return performScaleOutStrategy(updatedPosition, currentPrice);
+  }
+
+  // Calculate profit percentage
+  const profitPercent = ((currentPrice - position.entryPrice) / position.entryPrice) * 100;
   
-  // Only secure initial if in profit
-  if (profitPercent <= 0) {
-    return {
+  // Check if we've reached 2X (100% profit) to secure initial
+  if (profitPercent >= 100) {
+    console.log(`Securing initial investment at ${profitPercent.toFixed(2)}% profit`);
+    
+    // Calculate tokens owned
+    const tokensOwned = position.initialInvestment / position.entryPrice;
+    
+    // Calculate how many tokens to sell to secure initial (50% of position)
+    const tokensToSell = tokensOwned * 0.5;
+    const amountRecovered = tokensToSell * currentPrice;
+    
+    // Record scale out event
+    const scaleOutEvent: ScaleOutEvent = {
+      time: new Date().toISOString(),
+      price: currentPrice,
+      amount: amountRecovered,
+      tokens: tokensToSell,
+      reason: "Secured initial investment at 2X",
+      percentOfPosition: 50
+    };
+    
+    // Create updated position
+    const securedPosition: TradingPosition = {
+      ...updatedPosition,
+      securedInitial: true,
+      scaleOutHistory: [...(updatedPosition.scaleOutHistory || []), scaleOutEvent],
+      notes: `${updatedPosition.notes}; Initial investment secured at 2X (${new Date().toLocaleTimeString()})`
+    };
+    
+    // Now check if we should perform additional scale-outs
+    return performScaleOutStrategy(securedPosition, currentPrice);
+  }
+  
+  // No scale-out needed yet, return the updated position
+  return updatedPosition;
+};
+
+/**
+ * Implements an automated scale-out strategy for positions already in profit
+ * @param position Trading position with secured initial
+ * @param currentPrice Current token price
+ * @returns Updated position with additional scale-outs if triggered
+ */
+export const performScaleOutStrategy = (
+  position: TradingPosition, 
+  currentPrice: number
+): TradingPosition => {
+  // Only apply to positions that have already secured initial
+  if (!position.securedInitial) {
+    return position;
+  }
+  
+  // Calculate profit percentage
+  const profitPercent = ((currentPrice - position.entryPrice) / position.entryPrice) * 100;
+  
+  // Define scale-out tiers
+  const scaleOutTiers = [
+    { trigger: 200, percent: 25, reason: "Scale out at 3X" },
+    { trigger: 400, percent: 50, reason: "Scale out at 5X" },
+    { trigger: 900, percent: 75, reason: "Scale out at 10X" }
+  ];
+  
+  // Check if we've hit any scale-out tiers
+  for (const tier of scaleOutTiers) {
+    // Skip this tier if profit isn't high enough
+    if (profitPercent < tier.trigger) continue;
+    
+    // Check if we've already done this scale-out tier by looking at reasons
+    const alreadyScaledOut = position.scaleOutHistory.some(
+      event => event.reason.includes(tier.reason)
+    );
+    
+    // Skip if already scaled out at this tier
+    if (alreadyScaledOut) continue;
+    
+    // Calculate tokens owned originally
+    const tokensOwned = position.initialInvestment / position.entryPrice;
+    
+    // Calculate tokens already sold
+    const soldTokens = position.scaleOutHistory.reduce((total, event) => total + event.tokens, 0);
+    
+    // Calculate remaining tokens
+    const remainingTokens = tokensOwned - soldTokens;
+    
+    // Calculate how many tokens to sell at this tier (percentage of what's left)
+    const tokensToSell = remainingTokens * (tier.percent / 100);
+    const amountRecovered = tokensToSell * currentPrice;
+    
+    // Record scale out event
+    const scaleOutEvent: ScaleOutEvent = {
+      time: new Date().toISOString(),
+      price: currentPrice,
+      amount: amountRecovered,
+      tokens: tokensToSell,
+      reason: tier.reason,
+      percentOfPosition: tier.percent
+    };
+    
+    console.log(`Scaling out ${tier.percent}% at ${profitPercent.toFixed(2)}% profit (${tier.reason})`);
+    
+    // Create updated position with this scale-out
+    position = {
       ...position,
-      secured_initial: false,
-      scale_out_history: position.scale_out_history || []
+      scaleOutHistory: [...position.scaleOutHistory, scaleOutEvent],
+      notes: `${position.notes}; ${tier.reason} at ${profitPercent.toFixed(2)}% profit (${new Date().toLocaleTimeString()})`
     };
   }
   
-  // Calculate how much of initial investment to secure
-  const amountToSecure = (position.initial_investment * (percentToSecure / 100));
-  
-  // Calculate how many tokens to sell to secure initial
-  const tokensToSell = amountToSecure / price;
-  
-  // Record scale out in history
-  const scaleOutEvent = {
-    time: new Date().toISOString(),
-    price: price,
-    amount: amountToSecure,
-    tokens: tokensToSell,
-    reason: "Secure initial investment",
-    percentSecured: percentToSecure
-  };
-  
-  console.log(`Securing ${percentToSecure}% of initial investment: ${amountToSecure}`);
-  
-  // Update position
-  return {
-    ...position,
-    secured_initial: true,
-    scale_out_history: [...(position.scale_out_history || []), scaleOutEvent],
-    current_amount: position.current_amount ? 
-      (position.current_amount - amountToSecure) : 
-      (position.initial_investment - amountToSecure)
-  };
+  // Return position with all applicable scale-outs applied
+  return updateTradingPosition(position, currentPrice);
+};
+
+/**
+ * Load all trading positions from storage
+ * @returns Array of trading positions
+ */
+export const loadTradingPositions = (): TradingPosition[] => {
+  try {
+    const storedPositions = localStorage.getItem('trading_positions');
+    return storedPositions ? JSON.parse(storedPositions) : [];
+  } catch (error) {
+    console.error("Error loading trading positions:", error);
+    return [];
+  }
+};
+
+/**
+ * Save trading positions to storage
+ * @param positions Array of trading positions
+ */
+export const saveTradingPositions = (positions: TradingPosition[]): void => {
+  try {
+    localStorage.setItem('trading_positions', JSON.stringify(positions));
+  } catch (error) {
+    console.error("Error saving trading positions:", error);
+  }
 };
