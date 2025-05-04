@@ -1,9 +1,11 @@
-
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Bell, ArrowUpRight, ArrowDownRight, BarChart2, Wallet, Brain } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { heliusApiCall } from "@/utils/apiUtils";
+import { useToast } from "@/hooks/use-toast";
+import { playSound } from "@/utils/soundUtils";
 
 interface Alert {
   id: number;
@@ -17,6 +19,34 @@ interface Alert {
 
 const TradeAlerts = () => {
   const [alerts, setAlerts] = useState<Alert[]>([]);
+  const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
+  
+  useEffect(() => {
+    const fetchAlerts = async () => {
+      setLoading(true);
+      try {
+        // In a production app, we would fetch actual alert data from Helius API
+        // For now, we're keeping the UI clean with no mock data
+        setAlerts([]);
+      } catch (error) {
+        console.error("Error fetching alerts:", error);
+        toast({
+          title: "Error fetching alerts",
+          description: "Could not load trading alerts from the server",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchAlerts();
+    
+    // Set up polling for real-time alerts (disabled in this clean version)
+    const intervalId = setInterval(fetchAlerts, 30000);
+    return () => clearInterval(intervalId);
+  }, [toast]);
   
   const getAlertIcon = (iconType: string) => {
     switch (iconType) {
@@ -49,6 +79,16 @@ const TradeAlerts = () => {
     return timestamp.toLocaleDateString();
   };
   
+  const handleAlertAction = (alert: Alert) => {
+    if (alert.action) {
+      // Handle alert actions - implement later with real functionality
+      toast({
+        title: "Action triggered",
+        description: `Executing action for alert: ${alert.title}`,
+      });
+    }
+  };
+  
   return (
     <Card className="trading-card">
       <div className="p-4">
@@ -60,7 +100,12 @@ const TradeAlerts = () => {
         </div>
         
         <ScrollArea className="h-[220px] pr-4">
-          {alerts.length === 0 ? (
+          {loading ? (
+            <div className="flex flex-col items-center justify-center h-full">
+              <div className="animate-pulse w-6 h-6 rounded-full bg-trading-highlight/30 mb-2"></div>
+              <p className="text-sm text-gray-400">Loading alerts...</p>
+            </div>
+          ) : alerts.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-gray-400">
               <Bell className="h-8 w-8 mb-2 opacity-50" />
               <p className="text-sm">No alerts yet</p>
@@ -89,7 +134,10 @@ const TradeAlerts = () => {
                     </div>
                     <p className="text-sm text-gray-300 mt-1">{alert.message}</p>
                     {alert.action && (
-                      <button className="text-xs text-trading-highlight hover:underline mt-1">
+                      <button 
+                        className="text-xs text-trading-highlight hover:underline mt-1"
+                        onClick={() => handleAlertAction(alert)}
+                      >
                         {alert.action}
                       </button>
                     )}

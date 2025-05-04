@@ -1,4 +1,3 @@
-
 // API utility functions for interacting with Solana blockchain and external services
 import { PublicKey } from '@solana/web3.js';
 import { waitForRateLimit, setRateLimitTier, RateLimitTier } from './rateLimit';
@@ -112,17 +111,103 @@ export const getTokenMetadata = async (mintAddress: string): Promise<TokenMetada
 };
 
 /**
- * Checks the health of the Helius API connection
- * @returns True if the connection is healthy, false otherwise
+ * Tests connection to Helius API
+ * @returns Boolean indicating if connection was successful
  */
 export const testHeliusConnection = async (): Promise<boolean> => {
   try {
-    // Try to fetch transactions without API key for testing
-    await fetch("https://api.helius.xyz/v0/healthcheck");
+    const response = await fetch('https://api.helius.xyz/v0/addresses/vines1vzrYbzLMRdu58ou5XTby4qAqVRLmqo36NKPTg/balances?api-key=a18d2c93-d9fa-4db2-8419-707a4f1782f7');
+    
+    if (!response.ok) {
+      console.error("Helius API connection failed:", response.status, response.statusText);
+      return false;
+    }
+    
+    const data = await response.json();
     return true;
   } catch (error) {
-    console.error("Helius API connection test failed:", error);
+    console.error("Failed to connect to Helius API:", error);
     return false;
+  }
+};
+
+/**
+ * Makes a call to the Helius API
+ * @param endpoint API endpoint to call
+ * @param params Optional parameters
+ * @returns API response
+ */
+export const heliusApiCall = async (endpoint: string, params?: any): Promise<any> => {
+  try {
+    const baseUrl = 'https://api.helius.xyz/v0';
+    const apiKey = 'a18d2c93-d9fa-4db2-8419-707a4f1782f7';
+    
+    // Construct URL based on whether params are provided
+    let url = `${baseUrl}/${endpoint}`;
+    
+    // Add API key
+    url += url.includes('?') ? `&api-key=${apiKey}` : `?api-key=${apiKey}`;
+    
+    // Add additional params if provided
+    if (params) {
+      Object.keys(params).forEach(key => {
+        url += `&${key}=${params[key]}`;
+      });
+    }
+    
+    const response = await fetch(url);
+    
+    if (!response.ok) {
+      console.error(`Helius API error: ${response.status} ${response.statusText}`);
+      throw new Error(`Helius API error: ${response.status}`);
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error("Helius API call failed:", error);
+    throw error;
+  }
+};
+
+/**
+ * Makes an RPC call to the Helius RPC endpoint
+ * @param method RPC method to call
+ * @param params Parameters for the method
+ * @returns RPC response
+ */
+export const heliusRpcCall = async (method: string, params: any[]): Promise<any> => {
+  try {
+    const rpcUrl = 'https://mainnet.helius-rpc.com/?api-key=a18d2c93-d9fa-4db2-8419-707a4f1782f7';
+    
+    const response = await fetch(rpcUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        jsonrpc: '2.0',
+        id: Date.now().toString(),
+        method,
+        params,
+      }),
+    });
+    
+    if (!response.ok) {
+      console.error(`Helius RPC error: ${response.status} ${response.statusText}`);
+      throw new Error(`Helius RPC error: ${response.status}`);
+    }
+    
+    const result = await response.json();
+    
+    if (result.error) {
+      console.error("Helius RPC returned error:", result.error);
+      throw new Error(result.error.message || "Unknown RPC error");
+    }
+    
+    return result.result;
+  } catch (error) {
+    console.error("Helius RPC call failed:", error);
+    throw error;
   }
 };
 
@@ -165,79 +250,6 @@ export const getRecentTransactions = async (walletAddress: string, limit: number
   } catch (error) {
     console.error("Error fetching recent transactions:", error);
     return [];
-  }
-};
-
-/**
- * Makes an API call to Helius API with rate limiting
- * @param endpoint API endpoint path
- * @param options Fetch options
- * @returns Response data
- */
-export const heliusApiCall = async (endpoint: string, options = {}) => {
-  try {
-    // Wait for rate limit clearance
-    await waitForRateLimit('heliusApi');
-    
-    const baseURL = 'https://api.helius.xyz/v0';
-    // This should be stored securely in production
-    const apiKey = localStorage.getItem('helius_api_key') || 'a18d2c93-d9fa-4db2-8419-707a4f1782f7';
-    const url = `${baseURL}/${endpoint}`;
-    
-    // Add API key as a query parameter if not already present
-    const urlWithKey = url.includes('?') 
-      ? `${url}&api-key=${apiKey}` 
-      : `${url}?api-key=${apiKey}`;
-    
-    const response = await fetch(urlWithKey, options);
-    
-    if (!response.ok) {
-      throw new Error(`Helius API error: ${response.status} ${response.statusText}`);
-    }
-    
-    return await response.json();
-  } catch (error) {
-    console.error("Helius API call failed:", error);
-    throw error;
-  }
-};
-
-/**
- * Makes an RPC call to Helius with rate limiting
- * @param method RPC method name
- * @param params RPC parameters
- * @returns Response data
- */
-export const heliusRpcCall = async (method: string, params: any[] = []) => {
-  try {
-    // Wait for rate limit clearance
-    await waitForRateLimit('heliusRpc');
-    
-    // This should be stored securely in production
-    const apiKey = localStorage.getItem('helius_api_key') || 'a18d2c93-d9fa-4db2-8419-707a4f1782f7';
-    const rpcUrl = `https://mainnet.helius-rpc.com/?api-key=${apiKey}`;
-    
-    const response = await fetch(rpcUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        jsonrpc: '2.0',
-        id: Date.now().toString(),
-        method,
-        params
-      })
-    });
-    
-    const data = await response.json();
-    
-    if (data.error) {
-      throw new Error(`Helius RPC error: ${data.error.message}`);
-    }
-    
-    return data.result;
-  } catch (error) {
-    console.error("Helius RPC call failed:", error);
-    throw error;
   }
 };
 

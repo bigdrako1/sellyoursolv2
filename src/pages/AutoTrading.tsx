@@ -4,6 +4,8 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import StrategyManager from "@/components/StrategyManager";
 import StrategyConfig from "@/components/StrategyConfig";
+import TradeAlerts from "@/components/TradeAlerts";
+import TokenAlertMonitor from "@/components/TokenAlertMonitor";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
@@ -66,25 +68,25 @@ const AutoTrading = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">
             <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="mb-4">
-                <TabsTrigger value="config">Trade Settings</TabsTrigger>
-                <TabsTrigger value="strategies">Strategy Manager</TabsTrigger>
-                <TabsTrigger value="create">Create Strategy</TabsTrigger>
-              </TabsList>
+              <div className="flex justify-between items-center mb-4">
+                <TabsList>
+                  <TabsTrigger value="config">Trade Settings</TabsTrigger>
+                  <TabsTrigger value="strategies">Strategy Manager</TabsTrigger>
+                  <TabsTrigger value="create">Create Strategy</TabsTrigger>
+                </TabsList>
+                
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  className="flex items-center gap-1 bg-trading-success/10 text-trading-success border-trading-success/30"
+                  onClick={handleSecureAll}
+                >
+                  <Shield size={14} />
+                  <span>Secure All Initials</span>
+                </Button>
+              </div>
               
               <TabsContent value="config" className="ai-trading-card card-with-border">
-                <div className="flex justify-end mb-4">
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    className="flex items-center gap-1 bg-trading-success/10 text-trading-success border-trading-success/30"
-                    onClick={handleSecureAll}
-                  >
-                    <Shield size={14} />
-                    <span>Secure All Initials</span>
-                  </Button>
-                </div>
-                
                 <StrategyManager />
               </TabsContent>
               
@@ -123,45 +125,24 @@ const AutoTrading = () => {
                   
                   <div className="flex justify-between">
                     <span className="text-sm text-muted-foreground">Active Strategies</span>
-                    <span className="font-medium">2</span>
+                    <span className="font-medium">0</span>
                   </div>
                   
                   <div className="flex justify-between">
                     <span className="text-sm text-muted-foreground">Today's Trades</span>
-                    <span className="font-medium">8</span>
+                    <span className="font-medium">0</span>
                   </div>
                   
                   <div className="flex justify-between">
                     <span className="text-sm text-muted-foreground">Profit/Loss</span>
-                    <span className="text-green-500 font-medium">+2.34%</span>
+                    <span className="text-gray-400 font-medium">--</span>
                   </div>
                 </div>
               </CardContent>
             </Card>
             
-            <Card className="card-with-border">
-              <CardHeader>
-                <CardTitle>Recent Alerts</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="p-2 bg-trading-darkAccent/50 rounded">
-                    <p className="text-sm text-yellow-400">Strategy "SOL Momentum" triggered buy signal</p>
-                    <p className="text-xs text-gray-400 mt-1">10 minutes ago</p>
-                  </div>
-                  
-                  <div className="p-2 bg-trading-darkAccent/50 rounded">
-                    <p className="text-sm text-green-400">Limit order executed: +0.5 SOL</p>
-                    <p className="text-xs text-gray-400 mt-1">43 minutes ago</p>
-                  </div>
-                  
-                  <div className="p-2 bg-trading-darkAccent/50 rounded">
-                    <p className="text-sm text-red-400">Stop-loss triggered for BONK position</p>
-                    <p className="text-xs text-gray-400 mt-1">2 hours ago</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            <TokenAlertMonitor />
+            <TradeAlerts />
           </div>
         </div>
       </main>

@@ -1,5 +1,4 @@
-
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
@@ -7,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowUpRight, Bell, BellOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { playSound } from "@/utils/soundUtils";
+import { heliusApiCall } from "@/utils/apiUtils";
 
 interface Token {
   name: string;
@@ -24,7 +24,31 @@ interface Token {
 const TokenAlertMonitor: React.FC = () => {
   const [tokens, setTokens] = useState<Token[]>([]);
   const [alertsEnabled, setAlertsEnabled] = useState(true);
+  const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+
+  useEffect(() => {
+    const fetchTokens = async () => {
+      if (!alertsEnabled) return;
+      
+      setLoading(true);
+      try {
+        // In a production app, we would fetch real token data from Helius
+        // For now, we keep the UI clean with no mock data
+        setTokens([]);
+      } catch (error) {
+        console.error("Error fetching token alerts:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchTokens();
+    
+    // Set up polling for new tokens
+    const intervalId = setInterval(fetchTokens, 60000);
+    return () => clearInterval(intervalId);
+  }, [alertsEnabled]);
 
   const toggleAlerts = () => {
     setAlertsEnabled(!alertsEnabled);
@@ -48,6 +72,10 @@ const TokenAlertMonitor: React.FC = () => {
     if (minutes < 60) return `${minutes}m ago`;
     return `${Math.floor(minutes / 60)}h ${minutes % 60}m ago`;
   };
+  
+  const handleViewToken = (address: string) => {
+    window.open(`https://birdeye.so/token/${address}?chain=solana`, '_blank');
+  };
 
   return (
     <Card className="card-with-border">
@@ -64,7 +92,12 @@ const TokenAlertMonitor: React.FC = () => {
         </Button>
       </CardHeader>
       <CardContent>
-        {tokens.length === 0 ? (
+        {loading ? (
+          <div className="space-y-2">
+            <div className="h-16 bg-trading-darkAccent/50 rounded-md animate-pulse"></div>
+            <div className="h-16 bg-trading-darkAccent/50 rounded-md animate-pulse"></div>
+          </div>
+        ) : tokens.length === 0 ? (
           <div className="text-center py-6 text-gray-400">
             No token alerts yet
           </div>
@@ -89,14 +122,12 @@ const TokenAlertMonitor: React.FC = () => {
                   </div>
                   <div className="flex flex-col items-end">
                     {getQualityBadge(token.qualityScore)}
-                    <a 
-                      href={`https://birdeye.so/token/${token.address}?chain=solana`}
-                      target="_blank" 
-                      rel="noopener noreferrer"
+                    <button
+                      onClick={() => handleViewToken(token.address)}
                       className="text-xs flex items-center text-trading-highlight mt-2 hover:underline"
                     >
                       View <ArrowUpRight className="h-3 w-3 ml-1" />
-                    </a>
+                    </button>
                   </div>
                 </div>
               </Alert>

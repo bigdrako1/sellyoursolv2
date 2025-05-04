@@ -99,7 +99,7 @@ const TradingTab = () => {
           <StrategyConfig
             title="Front Running Strategy"
             description="Automatically detect and execute trades in advance of large pending transactions"
-            defaultEnabled={strategies.frontRunning?.enabled || true}
+            defaultEnabled={strategies.frontRunning?.enabled || false}
             onSave={(config) => handleSaveStrategy('frontRunning', config)}
           />
           <StrategyConfig
