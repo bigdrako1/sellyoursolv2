@@ -7,12 +7,15 @@ interface FooterProps {
 }
 
 const Footer = ({ systemActive, systemLatency }: FooterProps) => {
+  // Get the current year dynamically
+  const currentYear = new Date().getFullYear();
+  
   return (
     <footer className="glass-panel py-4 mt-auto">
       <div className="container mx-auto px-4">
         <div className="flex flex-col md:flex-row justify-between items-center">
           <div className="text-sm text-gray-400">
-            © 2024 SellYourSOL V2 AI. All rights reserved.
+            © {currentYear} SellYourSOL V2 AI. All rights reserved.
           </div>
           <div className="flex items-center gap-4 mt-2 md:mt-0">
             <div className="flex items-center gap-1 text-sm">

@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Wallet, RotateCw, LogOut, ArrowUpRight, Copy } from "lucide-react";
-import { getWalletBalances, connectWallet, disconnectWallet, getConnectedWallet } from "@/utils/walletUtils";
+import { getWalletBalances, connectWallet, disconnectWallet, getConnectedWallet, formatWalletAddress } from "@/utils/walletUtils";
 import { useToast } from "@/hooks/use-toast";
 import { useCurrencyStore } from "@/store/currencyStore";
 
@@ -29,7 +29,7 @@ const WalletConnect = ({ onConnect, onDisconnect }: WalletConnectProps) => {
       onConnect(savedWallet);
       fetchWalletBalances(savedWallet);
     }
-  }, []);
+  }, [onConnect]);
 
   const handleConnect = async () => {
     setConnecting(true);
@@ -42,7 +42,7 @@ const WalletConnect = ({ onConnect, onDisconnect }: WalletConnectProps) => {
         
         toast({
           title: "Wallet Connected",
-          description: "Successfully connected to wallet address: " + result.address,
+          description: "Successfully connected to wallet address: " + formatWalletAddress(result.address),
           variant: "default",
         });
         
@@ -129,7 +129,8 @@ const WalletConnect = ({ onConnect, onDisconnect }: WalletConnectProps) => {
       USD: 1,
       EUR: 0.92,
       GBP: 0.79,
-      JPY: 150.56
+      JPY: 150.56,
+      KES: 129.45
     };
     
     return value * (rates[currency as keyof typeof rates] || 1);
@@ -145,7 +146,7 @@ const WalletConnect = ({ onConnect, onDisconnect }: WalletConnectProps) => {
               <div className="flex flex-col">
                 <span className="text-sm text-gray-400">Connected Wallet</span>
                 <div className="flex items-center gap-1">
-                  <span className="font-medium">{walletAddress}</span>
+                  <span className="font-medium">{formatWalletAddress(walletAddress)}</span>
                   <button 
                     onClick={copyAddress}
                     className="text-trading-highlight hover:text-trading-highlight/80"

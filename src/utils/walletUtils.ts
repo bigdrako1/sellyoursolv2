@@ -182,6 +182,11 @@ export const isValidWalletAddress = (address: string): boolean => {
 export const formatWalletAddress = (address: string, length = 4): string => {
   if (!address) return '';
   
+  // If address already contains "...", assume it's already formatted
+  if (address.includes('...')) {
+    return address;
+  }
+  
   const start = address.substring(0, length);
   const end = address.substring(address.length - length);
   

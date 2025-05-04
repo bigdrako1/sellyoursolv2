@@ -1,14 +1,31 @@
 
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import WalletConnect from "@/components/WalletConnect";
 import CurrencySelector from "@/components/CurrencySelector";
+import { useState } from "react";
+import { Menu, X } from "lucide-react";
 
 interface HeaderProps {
   walletAddress?: string;
 }
 
 const Header = ({ walletAddress = "" }: HeaderProps) => {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const location = useLocation();
+  
+  const navItems = [
+    { path: "/", label: "Dashboard" },
+    { path: "/market-analysis", label: "Market Analysis" },
+    { path: "/portfolio", label: "Portfolio" },
+    { path: "/settings", label: "Settings" },
+    { path: "/webhooks", label: "Webhooks" }
+  ];
+  
+  const isActive = (path: string) => {
+    return location.pathname === path ? "bg-trading-highlight/20 text-white" : "hover:bg-trading-darkAccent";
+  };
+  
   return (
     <header className="bg-trading-darkAccent border-b border-white/5">
       <div className="container mx-auto px-4">
@@ -18,18 +35,15 @@ const Header = ({ walletAddress = "" }: HeaderProps) => {
             <Link to="/" className="text-xl font-bold text-trading-highlight">SellYourSOL V2</Link>
             
             <nav className="hidden md:flex items-center space-x-1">
-              <Link to="/" className="px-3 py-2 rounded-md hover:bg-trading-darkAccent">
-                Dashboard
-              </Link>
-              <Link to="/market-analysis" className="px-3 py-2 rounded-md hover:bg-trading-darkAccent">
-                Market Analysis
-              </Link>
-              <Link to="/portfolio" className="px-3 py-2 rounded-md hover:bg-trading-darkAccent">
-                Portfolio
-              </Link>
-              <Link to="/settings" className="px-3 py-2 rounded-md hover:bg-trading-darkAccent">
-                Settings
-              </Link>
+              {navItems.map((item) => (
+                <Link 
+                  key={item.path} 
+                  to={item.path} 
+                  className={`px-3 py-2 rounded-md ${isActive(item.path)}`}
+                >
+                  {item.label}
+                </Link>
+              ))}
             </nav>
           </div>
           
@@ -37,16 +51,59 @@ const Header = ({ walletAddress = "" }: HeaderProps) => {
           <div className="flex items-center space-x-4">
             <CurrencySelector />
             
-            {walletAddress ? (
-              <span className="text-sm hidden md:inline-flex">{walletAddress}</span>
-            ) : (
-              <WalletConnect 
-                onConnect={(address) => console.log("Wallet connected:", address)} 
-              />
-            )}
+            <div className="hidden md:block">
+              {walletAddress ? (
+                <span className="text-sm">{walletAddress}</span>
+              ) : (
+                <WalletConnect 
+                  onConnect={(address) => console.log("Wallet connected:", address)} 
+                />
+              )}
+            </div>
+            
+            {/* Mobile menu button */}
+            <Button 
+              variant="ghost" 
+              className="md:hidden" 
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              size="icon"
+            >
+              {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            </Button>
           </div>
         </div>
       </div>
+      
+      {/* Mobile menu */}
+      {mobileMenuOpen && (
+        <div className="md:hidden bg-trading-darkAccent border-t border-white/5">
+          <div className="container mx-auto px-4 py-2">
+            <nav className="flex flex-col space-y-1">
+              {navItems.map((item) => (
+                <Link 
+                  key={item.path} 
+                  to={item.path} 
+                  className={`px-3 py-2 rounded-md ${isActive(item.path)}`}
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  {item.label}
+                </Link>
+              ))}
+            </nav>
+            
+            <div className="mt-4">
+              {!walletAddress && (
+                <WalletConnect 
+                  onConnect={(address) => {
+                    console.log("Wallet connected:", address);
+                    setMobileMenuOpen(false);
+                  }} 
+                />
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </header>
   );
 };

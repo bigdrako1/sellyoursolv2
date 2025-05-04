@@ -136,7 +136,7 @@ const MarketAnalysis = () => {
               <TabsContent value="overview">
                 <Card>
                   <CardHeader>
-                    <CardTitle>Top Tokens by Market Cap</CardTitle>
+                    <CardTitle>Top Solana Tokens</CardTitle>
                   </CardHeader>
                   <CardContent>
                     {isLoading ? (

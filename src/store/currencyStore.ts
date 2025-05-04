@@ -2,7 +2,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-type Currency = 'USD' | 'EUR' | 'GBP' | 'JPY';
+type Currency = 'USD' | 'EUR' | 'GBP' | 'JPY' | 'KES';
 
 interface CurrencyState {
   currency: Currency;
@@ -15,7 +15,8 @@ const currencySymbols: Record<Currency, string> = {
   USD: '$',
   EUR: '€',
   GBP: '£',
-  JPY: '¥'
+  JPY: '¥',
+  KES: 'KSh'
 };
 
 export const useCurrencyStore = create<CurrencyState>()(

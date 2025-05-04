@@ -34,7 +34,8 @@ const WalletBalances = () => {
       USD: 1,
       EUR: 0.92,
       GBP: 0.79,
-      JPY: 150.56
+      JPY: 150.56,
+      KES: 129.45
     };
     
     return value * (rates[currency as keyof typeof rates] || 1);
