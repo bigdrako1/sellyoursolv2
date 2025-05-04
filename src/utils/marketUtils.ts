@@ -1,5 +1,225 @@
+
 // Trading utilities for autonomous trading platform
 import { getTokenPrices, heliusRpcCall, heliusApiCall } from './apiUtils';
+
+/**
+ * Get price history for a token
+ * @param tokenSymbol Symbol of the token
+ * @param days Number of days to get history for
+ * @returns Array of price data points
+ */
+export const getTokenPriceHistory = async (tokenSymbol: string, days: number = 1) => {
+  try {
+    // This would normally fetch real price history from an API
+    // For now we generate realistic mock data
+    const currentPrice = await getTokenPrice(tokenSymbol) || 50;
+    const points = days === (1/24) ? 24 : days === 1 ? 24 : 7 * 24;
+    const interval = (days * 24 * 60 * 60 * 1000) / points;
+    
+    const now = new Date();
+    const startTime = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
+    
+    // Create realistic price data with some volatility
+    const data = [];
+    let lastPrice = currentPrice * 0.85; // Start a bit lower than current
+    
+    for (let i = 0; i <= points; i++) {
+      const time = new Date(startTime.getTime() + i * interval);
+      
+      // Add some randomness to price movement (more volatile for shorter timeframes)
+      const volatility = days <= 1 ? 0.02 : 0.01;
+      const change = (Math.random() - 0.5) * volatility;
+      
+      // Trend upwards slightly over time
+      const trend = 0.001;
+      
+      // Calculate new price
+      lastPrice = lastPrice * (1 + change + trend);
+      
+      // Ensure price stays positive
+      if (lastPrice <= 0) lastPrice = 0.01;
+      
+      // Format time string based on timeframe
+      let timeString = "";
+      if (days <= 1/24) {
+        timeString = time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      } else if (days <= 1) {
+        timeString = time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      } else {
+        timeString = time.toLocaleDateString([], { month: 'short', day: 'numeric' });
+      }
+      
+      data.push({
+        time: timeString,
+        price: lastPrice,
+        fullDate: time
+      });
+    }
+    
+    // Ensure the last data point matches current price
+    if (data.length > 0) {
+      data[data.length - 1].price = currentPrice;
+    }
+    
+    return data;
+  } catch (error) {
+    console.error(`Error getting price history for ${tokenSymbol}:`, error);
+    return [];
+  }
+};
+
+/**
+ * Get trending tokens
+ * @param limit Number of tokens to return
+ * @returns Array of trending token data
+ */
+export const getTrendingTokens = async (limit: number = 10) => {
+  try {
+    // This would normally fetch real trending tokens from an API
+    // For now we create realistic mock data
+    const trendingTokens = [
+      {
+        name: "Solana",
+        symbol: "SOL",
+        price: 160.42,
+        change24h: 5.2,
+        volume24h: 1200000000,
+        source: "Jupiter"
+      },
+      {
+        name: "Bonk",
+        symbol: "BONK",
+        price: 0.000023,
+        change24h: 12.5,
+        volume24h: 85000000,
+        source: "Raydium"
+      },
+      {
+        name: "Daisy",
+        symbol: "DAISY",
+        price: 0.00074,
+        change24h: -3.1,
+        volume24h: 23000000,
+        source: "Pump.fun"
+      },
+      {
+        name: "Samoyedcoin",
+        symbol: "SAMO",
+        price: 0.0234,
+        change24h: 8.7,
+        volume24h: 19000000,
+        source: "Jupiter" 
+      },
+      {
+        name: "Pyth Network",
+        symbol: "PYTH",
+        price: 0.532,
+        change24h: 2.1,
+        volume24h: 17500000,
+        source: "Raydium"
+      },
+      {
+        name: "MonkeyBucks",
+        symbol: "MBS",
+        price: 0.0005234,
+        change24h: 45.3,
+        volume24h: 8500000,
+        source: "Pump.fun"
+      },
+      {
+        name: "Dogwifhat",
+        symbol: "WIF",
+        price: 1.23,
+        change24h: -1.7,
+        volume24h: 65000000,
+        source: "Jupiter"
+      },
+      {
+        name: "Render Token",
+        symbol: "RNDR",
+        price: 7.32,
+        change24h: 0.5,
+        volume24h: 12000000,
+        source: "Raydium"
+      },
+      {
+        name: "Jito",
+        symbol: "JTO",
+        price: 3.75,
+        change24h: 1.2,
+        volume24h: 8900000,
+        source: "Jupiter"
+      },
+      {
+        name: "Meme100",
+        symbol: "MEME",
+        price: 0.000178,
+        change24h: 103.5,
+        volume24h: 4300000,
+        source: "Pump.fun"
+      }
+    ];
+    
+    return trendingTokens.slice(0, limit);
+  } catch (error) {
+    console.error("Error fetching trending tokens:", error);
+    return [];
+  }
+};
+
+/**
+ * Format currency value
+ * @param value Number to format
+ * @param currency Currency code
+ * @returns Formatted currency string
+ */
+export const formatCurrency = (value: number, currency: string = 'USD'): string => {
+  const formatter = new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: currency,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: value < 0.01 ? 8 : 2
+  });
+  
+  return formatter.format(value);
+};
+
+/**
+ * Get market overview data
+ * @returns Market overview data
+ */
+export const getMarketOverview = async () => {
+  try {
+    // This would normally fetch real market overview data from an API
+    // For now we create realistic mock data
+    return {
+      totalMarketCap: 3200000000000,
+      solanaMarketCap: 75000000000,
+      totalVolume24h: 120000000000,
+      solanaVolume24h: 8500000000,
+      btcDominance: 52.3,
+      fearGreedIndex: 65,
+      trending: ["SOL", "WIF", "BONK", "JTO", "MEME"],
+      gainers: [
+        { symbol: "MEME", change24h: 103.5 },
+        { symbol: "MBS", change24h: 45.3 },
+        { symbol: "BONK", change24h: 12.5 },
+        { symbol: "SAMO", change24h: 8.7 },
+        { symbol: "SOL", change24h: 5.2 }
+      ],
+      losers: [
+        { symbol: "DAISY", change24h: -3.1 },
+        { symbol: "WIF", change24h: -1.7 },
+        { symbol: "DUST", change24h: -0.9 },
+        { symbol: "GENOPETS", change24h: -0.6 },
+        { symbol: "STEP", change24h: -0.4 }
+      ]
+    };
+  } catch (error) {
+    console.error("Error fetching market overview:", error);
+    return null;
+  }
+};
 
 /**
  * Analyzes market data to identify potential runners

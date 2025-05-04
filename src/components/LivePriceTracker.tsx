@@ -2,7 +2,6 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { getSolPrice, getToken24hChange } from '@/utils/apiUtils';
-import { formatCurrency } from '@/utils/marketUtils';
 import { Card, CardContent } from '@/components/ui/card';
 import { ArrowUp, ArrowDown, Loader2 } from 'lucide-react';
 import { useCurrencyStore } from '@/store/currencyStore';

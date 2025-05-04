@@ -78,24 +78,26 @@ const Webhooks: React.FC = () => {
     
     try {
       setLoading(true);
-      let webhookId = "";
+      let result;
+      const name = webhookName || "Webhook " + new Date().toISOString();
       
       switch (webhookType) {
+        case WebhookTransactionType.TOKEN_TRANSFER:
         case WebhookTransactionType.TRANSFER:
-          webhookId = await createTokenTransferWebhook(webhookUrl, [accountAddress]);
+          result = await createTokenTransferWebhook(name, webhookUrl, [accountAddress]);
           break;
         case WebhookTransactionType.NFT_MINT:
         case WebhookTransactionType.NFT_SALE:
         case WebhookTransactionType.NFT_LISTING:
-          webhookId = await createNftActivityWebhook(webhookUrl, [accountAddress]);
+          result = await createNftActivityWebhook(name, webhookUrl, [accountAddress]);
           break;
         default:
-          webhookId = await createWalletActivityWebhook(webhookUrl, [accountAddress], [webhookType as WebhookTransactionType]);
+          result = await createWalletActivityWebhook(name, webhookUrl, [accountAddress]);
       }
       
       toast({
         title: "Webhook Created",
-        description: `Successfully created webhook with ID: ${webhookId}`,
+        description: `Successfully created webhook with ID: ${result?.id || 'unknown'}`,
       });
       
       // Reset form
@@ -213,7 +215,7 @@ const Webhooks: React.FC = () => {
                         <SelectValue placeholder="Select webhook type" />
                       </SelectTrigger>
                       <SelectContent className="bg-trading-darkAccent border-white/10">
-                        <SelectItem value={WebhookTransactionType.TRANSFER}>Token Transfer</SelectItem>
+                        <SelectItem value={WebhookTransactionType.TOKEN_TRANSFER}>Token Transfer</SelectItem>
                         <SelectItem value={WebhookTransactionType.NFT_MINT}>NFT Mint</SelectItem>
                         <SelectItem value={WebhookTransactionType.NFT_SALE}>NFT Sale</SelectItem>
                         <SelectItem value={WebhookTransactionType.NFT_LISTING}>NFT Listing</SelectItem>
@@ -275,16 +277,16 @@ const Webhooks: React.FC = () => {
                       </TableHeader>
                       <TableBody>
                         {webhooks.map((webhook) => (
-                          <TableRow key={webhook.webhookID} className="border-white/10">
-                            <TableCell className="font-mono">{webhook.webhookID}</TableCell>
-                            <TableCell className="truncate max-w-[200px]">{webhook.webhookURL}</TableCell>
-                            <TableCell>{webhook.transactionTypes?.join(', ') || 'Any'}</TableCell>
+                          <TableRow key={webhook.id} className="border-white/10">
+                            <TableCell className="font-mono">{webhook.id}</TableCell>
+                            <TableCell className="truncate max-w-[200px]">{webhook.url}</TableCell>
+                            <TableCell>{Array.isArray(webhook.transactionTypes) ? webhook.transactionTypes.join(', ') : 'Any'}</TableCell>
                             <TableCell className="truncate max-w-[200px]">
-                              {webhook.accountAddresses?.length || 0} address(es)
+                              {Array.isArray(webhook.accountAddresses) ? webhook.accountAddresses.length : 0} address(es)
                             </TableCell>
                             <TableCell>
                               <Button 
-                                onClick={() => handleDeleteWebhook(webhook.webhookID)}
+                                onClick={() => handleDeleteWebhook(webhook.id)}
                                 variant="ghost" 
                                 size="sm"
                                 className="hover:bg-red-900/20 hover:text-red-500"

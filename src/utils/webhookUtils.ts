@@ -22,7 +22,9 @@ export enum WebhookTransactionType {
   NFT_SALE = 'NFT_SALE',
   NFT_LISTING = 'NFT_LISTING',
   NFT_MINT = 'NFT_MINT',
-  SWAP = 'SWAP'
+  SWAP = 'SWAP',
+  ANY = 'ANY',
+  TRANSFER = 'TRANSFER'
 }
 
 /**
