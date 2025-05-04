@@ -1,9 +1,10 @@
+
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { ArrowUpRight, Bell, BellOff } from "lucide-react";
+import { ArrowUpRight, Bell, BellOff, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { playSound } from "@/utils/soundUtils";
 import { heliusApiCall } from "@/utils/apiUtils";
@@ -36,6 +37,26 @@ const TokenAlertMonitor: React.FC = () => {
         // In a production app, we would fetch real token data from Helius
         // For now, we keep the UI clean with no mock data
         setTokens([]);
+        
+        // In a production environment, uncomment this code to fetch real token data:
+        /*
+        const response = await heliusApiCall("getRecentTokenActivity", []);
+        if (response && Array.isArray(response)) {
+          const tokenData = response.map(token => ({
+            name: token.name || "Unknown Token",
+            symbol: token.symbol || "???",
+            address: token.address,
+            price: token.price || 0,
+            marketCap: token.marketCap || 0,
+            liquidity: token.liquidity || 0,
+            holders: token.holders || 0,
+            qualityScore: token.qualityScore || 0,
+            source: token.source || "Helius",
+            createdAt: new Date(token.timestamp || Date.now())
+          }));
+          setTokens(tokenData);
+        }
+        */
       } catch (error) {
         console.error("Error fetching token alerts:", error);
       } finally {
@@ -93,13 +114,13 @@ const TokenAlertMonitor: React.FC = () => {
       </CardHeader>
       <CardContent>
         {loading ? (
-          <div className="space-y-2">
-            <div className="h-16 bg-trading-darkAccent/50 rounded-md animate-pulse"></div>
-            <div className="h-16 bg-trading-darkAccent/50 rounded-md animate-pulse"></div>
+          <div className="flex flex-col items-center justify-center py-8">
+            <Loader2 className="h-8 w-8 text-trading-highlight animate-spin mb-2" />
+            <p className="text-sm text-gray-400">Fetching token alerts...</p>
           </div>
         ) : tokens.length === 0 ? (
           <div className="text-center py-6 text-gray-400">
-            No token alerts yet
+            {alertsEnabled ? "No token alerts yet. Waiting for new activity..." : "Alerts are disabled"}
           </div>
         ) : (
           <div className="space-y-4">

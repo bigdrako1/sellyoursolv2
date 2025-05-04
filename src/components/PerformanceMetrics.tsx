@@ -3,31 +3,7 @@ import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
-import { ChevronUp, TrendingUp, ArrowRight } from "lucide-react";
-
-// Generate random performance data
-const generatePerformanceData = (days: number, startValue = 1000, volatility = 0.03, trend = 0.005) => {
-  const data = [];
-  let currentValue = startValue;
-  
-  for (let i = 0; i < days; i++) {
-    // Add a random change with a slight upward trend
-    const change = (Math.random() * 2 - 1) * volatility + trend;
-    currentValue = Math.max(1, currentValue * (1 + change));
-    
-    // Create a date for each point
-    const date = new Date();
-    date.setDate(date.getDate() - (days - i - 1));
-    
-    data.push({
-      date: date.toISOString().slice(0, 10),
-      value: currentValue,
-      comparative: startValue * (1 + (i * 0.003))
-    });
-  }
-  
-  return data;
-};
+import { ChevronUp, TrendingUp, ArrowRight, Loader2 } from "lucide-react";
 
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
@@ -38,10 +14,12 @@ const CustomTooltip = ({ active, payload, label }: any) => {
           <span className="font-bold">${payload[0].value.toFixed(2)}</span>
           <span className="text-xs ml-1">Portfolio Value</span>
         </p>
-        <p className="text-sm text-gray-400">
-          <span className="font-medium">${payload[1].value.toFixed(2)}</span>
-          <span className="text-xs ml-1">Market Benchmark</span>
-        </p>
+        {payload[1] && (
+          <p className="text-sm text-gray-400">
+            <span className="font-medium">${payload[1].value.toFixed(2)}</span>
+            <span className="text-xs ml-1">Market Benchmark</span>
+          </p>
+        )}
       </div>
     );
   }
@@ -51,6 +29,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 
 const PerformanceMetrics = () => {
   const [timeframe, setTimeframe] = useState("1m");
+  const [loading, setLoading] = useState(false);
   const [performanceData, setPerformanceData] = useState<any[]>([]);
   const [performanceStats, setPerformanceStats] = useState({
     totalGrowth: 0,
@@ -60,50 +39,51 @@ const PerformanceMetrics = () => {
   });
   
   useEffect(() => {
-    // Generate data based on timeframe
-    const days = 
-      timeframe === "1w" ? 7 : 
-      timeframe === "1m" ? 30 : 
-      timeframe === "3m" ? 90 : 365;
-    
-    const trend = 
-      timeframe === "1w" ? 0.008 : 
-      timeframe === "1m" ? 0.006 : 
-      timeframe === "3m" ? 0.005 : 0.004;
-    
-    const data = generatePerformanceData(days, 1000, 0.03, trend);
-    setPerformanceData(data);
-    
-    // Calculate stats
-    if (data.length > 0) {
-      const startValue = data[0].value;
-      const endValue = data[data.length - 1].value;
-      const totalGrowth = ((endValue - startValue) / startValue) * 100;
+    const fetchPerformanceData = async () => {
+      setLoading(true);
       
-      // Calculate daily returns
-      const dailyReturns = [];
-      for (let i = 1; i < data.length; i++) {
-        const returnValue = (data[i].value - data[i-1].value) / data[i-1].value;
-        dailyReturns.push(returnValue);
+      try {
+        // In a production app, we would fetch real performance data from an API
+        // For now, we're just showing an empty state
+        setPerformanceData([]);
+        setPerformanceStats({
+          totalGrowth: 0,
+          averageDailyReturn: 0,
+          winRate: 0,
+          sharpeRatio: 0
+        });
+        
+        // Example code to fetch real performance data when API is available:
+        /*
+        const walletAddress = localStorage.getItem('walletAddress');
+        if (walletAddress) {
+          const days = 
+            timeframe === "1w" ? 7 : 
+            timeframe === "1m" ? 30 : 
+            timeframe === "3m" ? 90 : 365;
+            
+          const response = await fetch(`/api/performance?wallet=${walletAddress}&timeframe=${timeframe}&days=${days}`);
+          const data = await response.json();
+          
+          if (data && data.performanceData) {
+            setPerformanceData(data.performanceData);
+            setPerformanceStats({
+              totalGrowth: data.metrics.totalGrowth || 0,
+              averageDailyReturn: data.metrics.averageDailyReturn || 0,
+              winRate: data.metrics.winRate || 0,
+              sharpeRatio: data.metrics.sharpeRatio || 0
+            });
+          }
+        }
+        */
+      } catch (error) {
+        console.error('Error fetching performance data:', error);
+      } finally {
+        setLoading(false);
       }
-      
-      const averageDailyReturn = (dailyReturns.reduce((sum, val) => sum + val, 0) / dailyReturns.length) * 100;
-      const winRate = (dailyReturns.filter(r => r > 0).length / dailyReturns.length) * 100;
-      
-      // Simple Sharpe ratio calculation (not fully accurate without risk-free rate)
-      const returnMean = dailyReturns.reduce((sum, val) => sum + val, 0) / dailyReturns.length;
-      const stdDev = Math.sqrt(
-        dailyReturns.reduce((sum, val) => sum + Math.pow(val - returnMean, 2), 0) / dailyReturns.length
-      );
-      const sharpeRatio = (returnMean / stdDev) * Math.sqrt(252); // Annualized
-      
-      setPerformanceStats({
-        totalGrowth,
-        averageDailyReturn,
-        winRate,
-        sharpeRatio
-      });
-    }
+    };
+    
+    fetchPerformanceData();
   }, [timeframe]);
   
   return (
@@ -146,60 +126,76 @@ const PerformanceMetrics = () => {
             <div className="text-sm text-gray-400">Sharpe Ratio</div>
             <div className="flex items-center">
               <div className="text-xl font-bold">{performanceStats.sharpeRatio.toFixed(2)}</div>
-              <TrendingUp size={16} className="text-trading-highlight ml-1" />
+              {performanceStats.sharpeRatio > 0 && (
+                <TrendingUp size={16} className="text-trading-highlight ml-1" />
+              )}
             </div>
           </div>
         </div>
         
         <div className="h-60 w-full">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart
-              data={performanceData}
-              margin={{ top: 5, right: 5, left: 5, bottom: 5 }}
-            >
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.1)" />
-              <XAxis 
-                dataKey="date" 
-                tick={{ fontSize: 10, fill: '#9ca3af' }}
-                axisLine={{ stroke: 'rgba(255,255,255,0.1)' }}
-                tickLine={false}
-                minTickGap={30}
-              />
-              <YAxis 
-                domain={['auto', 'auto']}
-                tick={{ fontSize: 10, fill: '#9ca3af' }}
-                axisLine={false}
-                tickLine={false}
-                width={40}
-                tickFormatter={(value) => `$${value.toFixed(0)}`}
-              />
-              <Tooltip content={<CustomTooltip />} />
-              <Legend 
-                iconType="circle" 
-                iconSize={8}
-                wrapperStyle={{ fontSize: '12px', bottom: 0 }}
-              />
-              <Line 
-                type="monotone" 
-                dataKey="value" 
-                name="Portfolio Performance" 
-                stroke="#6366f1" 
-                strokeWidth={2}
-                dot={false}
-                activeDot={{ r: 4, fill: '#6366f1', stroke: 'white', strokeWidth: 1 }}
-              />
-              <Line 
-                type="monotone" 
-                dataKey="comparative" 
-                name="Market Benchmark" 
-                stroke="#9ca3af" 
-                strokeWidth={1.5}
-                dot={false}
-                strokeDasharray="4 4"
-                activeDot={{ r: 4, fill: '#9ca3af', stroke: 'white', strokeWidth: 1 }}
-              />
-            </LineChart>
-          </ResponsiveContainer>
+          {loading ? (
+            <div className="flex flex-col items-center justify-center h-full">
+              <Loader2 className="h-8 w-8 text-trading-highlight animate-spin mb-2" />
+              <p className="text-sm text-gray-400">Loading performance metrics...</p>
+            </div>
+          ) : performanceData.length > 0 ? (
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart
+                data={performanceData}
+                margin={{ top: 5, right: 5, left: 5, bottom: 5 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.1)" />
+                <XAxis 
+                  dataKey="date" 
+                  tick={{ fontSize: 10, fill: '#9ca3af' }}
+                  axisLine={{ stroke: 'rgba(255,255,255,0.1)' }}
+                  tickLine={false}
+                  minTickGap={30}
+                />
+                <YAxis 
+                  domain={['auto', 'auto']}
+                  tick={{ fontSize: 10, fill: '#9ca3af' }}
+                  axisLine={false}
+                  tickLine={false}
+                  width={40}
+                  tickFormatter={(value) => `$${value.toFixed(0)}`}
+                />
+                <Tooltip content={<CustomTooltip />} />
+                <Legend 
+                  iconType="circle" 
+                  iconSize={8}
+                  wrapperStyle={{ fontSize: '12px', bottom: 0 }}
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="value" 
+                  name="Portfolio Performance" 
+                  stroke="#6366f1" 
+                  strokeWidth={2}
+                  dot={false}
+                  activeDot={{ r: 4, fill: '#6366f1', stroke: 'white', strokeWidth: 1 }}
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="comparative" 
+                  name="Market Benchmark" 
+                  stroke="#9ca3af" 
+                  strokeWidth={1.5}
+                  dot={false}
+                  strokeDasharray="4 4"
+                  activeDot={{ r: 4, fill: '#9ca3af', stroke: 'white', strokeWidth: 1 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="flex items-center justify-center h-full">
+              <div className="text-center">
+                <p className="text-gray-400">No performance data available</p>
+                <p className="text-sm text-gray-500 mt-1">Connect your wallet to track your performance</p>
+              </div>
+            </div>
+          )}
         </div>
         
         <div className="flex justify-end mt-3">

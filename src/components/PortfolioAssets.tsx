@@ -1,31 +1,104 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Search, Filter, SlidersHorizontal } from "lucide-react";
+import { Search, Filter, SlidersHorizontal, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useCurrencyStore } from "@/store/currencyStore";
+import { heliusApiCall } from "@/utils/apiUtils";
+import { getConnectedWallet } from "@/utils/walletUtils";
 
-// Generate sample assets data
-const generateAssets = () => {
-  const assets = [
-    { name: "Solana", symbol: "SOL", type: "token", chain: "solana", balance: 14.8, price: 158.32, value: 2343.14, change24h: 9.8 },
-    { name: "SOL Runner", symbol: "SRUN", type: "token", chain: "solana", balance: 2450, price: 0.243, value: 594.34, change24h: 3.2 },
-    { name: "Trading X", symbol: "TDX", type: "token", chain: "solana", balance: 455, price: 0.34, value: 154.7, change24h: -2.3 },
-    { name: "Auto", symbol: "AUTO", type: "token", chain: "solana", balance: 28.5, price: 16.73, value: 476.80, change24h: 1.8 }
-  ];
-
-  // Sort by value descending
-  return assets.sort((a, b) => b.value - a.value);
-};
+interface AssetData {
+  name: string;
+  symbol: string;
+  type: string;
+  chain: string;
+  balance: number;
+  price: number;
+  value: number;
+  change24h: number;
+}
 
 const PortfolioAssets = () => {
-  const [assets] = useState(generateAssets());
+  const [assets, setAssets] = useState<AssetData[]>([]);
+  const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
   const { currency, currencySymbol } = useCurrencyStore();
+
+  useEffect(() => {
+    const fetchAssets = async () => {
+      setLoading(true);
+      try {
+        const walletAddress = getConnectedWallet();
+        
+        if (walletAddress) {
+          // In a production app, we would fetch real wallet assets from Helius API
+          // For now, we're just showing an empty state
+          setAssets([]);
+          
+          // Example code to fetch real assets when API is available:
+          /*
+          const response = await heliusApiCall("getTokenBalances", [walletAddress]);
+          
+          if (response && response.tokens) {
+            // Process token data and fetch prices
+            const processedAssets = await Promise.all(response.tokens.map(async (token: any) => {
+              // Get price data from Jupiter or other price API
+              const priceResponse = await fetch(`https://price.jup.ag/v4/price?ids=${token.mint}`);
+              const priceData = await priceResponse.json();
+              const price = priceData?.data?.[token.mint]?.price || 0;
+              
+              // Calculate value
+              const balance = token.amount / Math.pow(10, token.decimals);
+              const value = balance * price;
+              
+              return {
+                name: token.name || "Unknown Token",
+                symbol: token.symbol || token.mint.substring(0, 4),
+                type: "token",
+                chain: "solana",
+                balance,
+                price,
+                value,
+                change24h: priceData?.data?.[token.mint]?.change24h || 0
+              };
+            }));
+            
+            // Add SOL balance if present
+            if (response.nativeBalance) {
+              const solBalance = response.nativeBalance / 1e9; // Convert lamports to SOL
+              const solPrice = await fetch("https://price.jup.ag/v4/price?ids=SOL");
+              const solPriceData = await solPrice.json();
+              const solUsdPrice = solPriceData?.data?.SOL?.price || 0;
+              
+              processedAssets.unshift({
+                name: "Solana",
+                symbol: "SOL",
+                type: "token",
+                chain: "solana",
+                balance: solBalance,
+                price: solUsdPrice,
+                value: solBalance * solUsdPrice,
+                change24h: solPriceData?.data?.SOL?.change24h || 0
+              });
+            }
+            
+            setAssets(processedAssets);
+          }
+          */
+        }
+      } catch (error) {
+        console.error("Error fetching portfolio assets:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchAssets();
+  }, []);
   
   // Apply filters
   const filteredAssets = assets.filter(asset => {
@@ -114,38 +187,60 @@ const PortfolioAssets = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredAssets.map((asset) => (
-                <TableRow key={asset.symbol} className="border-white/5 hover:bg-white/5">
-                  <TableCell>
-                    <div className="font-medium">{asset.name}</div>
-                    <div className="text-xs text-gray-400">{asset.symbol}</div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className="bg-solana/20 text-solana-foreground">
-                      Solana
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right">{asset.balance.toLocaleString()}</TableCell>
-                  <TableCell className="text-right">{currencySymbol}{convertToCurrency(asset.price).toFixed(asset.price < 1 ? 3 : 2)}</TableCell>
-                  <TableCell className="text-right font-medium">{currencySymbol}{convertToCurrency(asset.value).toLocaleString()}</TableCell>
-                  <TableCell className={`text-right ${asset.change24h >= 0 ? 'text-trading-success' : 'text-trading-danger'}`}>
-                    {asset.change24h >= 0 ? '+' : ''}{asset.change24h}%
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button variant="outline" size="sm" className="h-7 bg-trading-darkAccent border-white/10">Trade</Button>
-                      <Button variant="outline" size="sm" className="h-7 bg-trading-darkAccent border-white/10">Details</Button>
+              {loading ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="h-48">
+                    <div className="flex flex-col items-center justify-center h-full">
+                      <Loader2 className="h-8 w-8 text-trading-highlight animate-spin mb-2" />
+                      <p className="text-gray-400">Loading assets...</p>
                     </div>
                   </TableCell>
                 </TableRow>
-              ))}
+              ) : filteredAssets.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={7}>
+                    <div className="text-center py-10">
+                      <p className="text-gray-400">No assets found</p>
+                      {!getConnectedWallet() && (
+                        <p className="text-sm text-gray-500 mt-1">Connect your wallet to view your assets</p>
+                      )}
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filteredAssets.map((asset) => (
+                  <TableRow key={asset.symbol} className="border-white/5 hover:bg-white/5">
+                    <TableCell>
+                      <div className="font-medium">{asset.name}</div>
+                      <div className="text-xs text-gray-400">{asset.symbol}</div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="bg-solana/20 text-solana-foreground">
+                        Solana
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">{asset.balance.toLocaleString()}</TableCell>
+                    <TableCell className="text-right">{currencySymbol}{convertToCurrency(asset.price).toFixed(asset.price < 1 ? 3 : 2)}</TableCell>
+                    <TableCell className="text-right font-medium">{currencySymbol}{convertToCurrency(asset.value).toLocaleString()}</TableCell>
+                    <TableCell className={`text-right ${asset.change24h >= 0 ? 'text-trading-success' : 'text-trading-danger'}`}>
+                      {asset.change24h >= 0 ? '+' : ''}{asset.change24h}%
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-2">
+                        <Button variant="outline" size="sm" className="h-7 bg-trading-darkAccent border-white/10">Trade</Button>
+                        <Button variant="outline" size="sm" className="h-7 bg-trading-darkAccent border-white/10">Details</Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </div>
         
         <div className="mt-4 flex justify-between items-center">
           <div className="text-sm text-gray-400">
-            Showing {filteredAssets.length} of {assets.length} assets
+            {loading ? 'Loading...' : `Showing ${filteredAssets.length} of ${assets.length} assets`}
           </div>
           <div className="text-sm">
             Total Value: <span className="font-bold">{currencySymbol}{convertToCurrency(totalValue).toFixed(2)}</span>

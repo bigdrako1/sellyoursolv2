@@ -1,7 +1,8 @@
+
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Bell, ArrowUpRight, ArrowDownRight, BarChart2, Wallet, Brain } from "lucide-react";
+import { Bell, ArrowUpRight, ArrowDownRight, BarChart2, Wallet, Brain, Loader2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { heliusApiCall } from "@/utils/apiUtils";
 import { useToast } from "@/hooks/use-toast";
@@ -26,9 +27,31 @@ const TradeAlerts = () => {
     const fetchAlerts = async () => {
       setLoading(true);
       try {
-        // In a production app, we would fetch actual alert data from Helius API
-        // For now, we're keeping the UI clean with no mock data
+        // In a production app, we would fetch real alert data from Helius API
+        // For now, we're showing an empty state
         setAlerts([]);
+        
+        // In a production environment, uncomment this code to fetch real alerts:
+        /*
+        const response = await heliusApiCall("getTradeAlerts", []);
+        if (response && Array.isArray(response)) {
+          const alertData = response.map(alert => ({
+            id: alert.id,
+            type: alert.type || "info",
+            title: alert.title || "New Alert",
+            message: alert.message || "Alert details",
+            timestamp: new Date(alert.timestamp || Date.now()),
+            icon: alert.icon || "system",
+            action: alert.action
+          }));
+          setAlerts(alertData);
+          
+          // Play sound for new alerts
+          if (alertData.length > 0 && alertData[0].timestamp > new Date(Date.now() - 60000)) {
+            playSound("alert");
+          }
+        }
+        */
       } catch (error) {
         console.error("Error fetching alerts:", error);
         toast({
@@ -43,7 +66,7 @@ const TradeAlerts = () => {
     
     fetchAlerts();
     
-    // Set up polling for real-time alerts (disabled in this clean version)
+    // Set up polling for real-time alerts
     const intervalId = setInterval(fetchAlerts, 30000);
     return () => clearInterval(intervalId);
   }, [toast]);
@@ -81,7 +104,7 @@ const TradeAlerts = () => {
   
   const handleAlertAction = (alert: Alert) => {
     if (alert.action) {
-      // Handle alert actions - implement later with real functionality
+      // Handle alert actions - implement with real functionality
       toast({
         title: "Action triggered",
         description: `Executing action for alert: ${alert.title}`,
@@ -102,7 +125,7 @@ const TradeAlerts = () => {
         <ScrollArea className="h-[220px] pr-4">
           {loading ? (
             <div className="flex flex-col items-center justify-center h-full">
-              <div className="animate-pulse w-6 h-6 rounded-full bg-trading-highlight/30 mb-2"></div>
+              <Loader2 className="h-6 w-6 animate-spin text-trading-highlight mb-2" />
               <p className="text-sm text-gray-400">Loading alerts...</p>
             </div>
           ) : alerts.length === 0 ? (

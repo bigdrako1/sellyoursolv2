@@ -6,6 +6,7 @@ import StrategyConfig from "@/components/StrategyConfig";
 import { StrategySettings } from "@/components/StrategyConfig";
 import { useToast } from "@/hooks/use-toast";
 import { secureInitialInvestment } from "@/utils/tradingUtils";
+import { Button } from "@/components/ui/button";
 
 const TradingTab = () => {
   const { toast } = useToast();
@@ -92,6 +93,11 @@ const TradingTab = () => {
     });
   };
 
+  // Check if any strategies are enabled and have secure initial enabled
+  const anyStrategiesWithSecureInitial = Object.values(strategies).some(
+    strategy => strategy.enabled && strategy.secureInitial
+  );
+
   return (
     <>
       <div className="mb-6">
@@ -109,6 +115,18 @@ const TradingTab = () => {
             onSave={(config) => handleSaveStrategy('marketDetection', config)}
           />
         </div>
+        
+        {anyStrategiesWithSecureInitial && (
+          <div className="flex justify-end">
+            <Button 
+              variant="outline" 
+              className="text-sm bg-trading-darkAccent hover:bg-trading-highlight/30"
+              onClick={handleSecureAll}
+            >
+              Secure All Initial Investments
+            </Button>
+          </div>
+        )}
       </div>
       
       <div className="mb-6">

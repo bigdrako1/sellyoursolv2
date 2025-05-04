@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Loader2 } from "lucide-react";
 import { useCurrencyStore } from "@/store/currencyStore";
 import { heliusRpcCall } from "@/utils/apiUtils";
 
@@ -47,34 +48,47 @@ const TransactionHistory = () => {
         const walletAddress = localStorage.getItem('walletAddress');
         
         if (walletAddress) {
-          // Fetch recent transactions for the wallet from Helius API
+          // In a production app, we would fetch real transactions from Helius API
+          // For now, we're just showing an empty state
+          setTransactions([]);
+          
+          // Example code to fetch real transactions when API is available:
+          /*
           const response = await heliusRpcCall("getSignaturesForAddress", [walletAddress, { limit: 10 }]);
           
           if (response && Array.isArray(response)) {
             // Process the transaction data
-            const processedTx = await Promise.all(response.map(async (tx: any, index: number) => {
-              // Strategy assignment based on transaction pattern
-              const strategies = ["Front Running", "Market Detection", "Smart Tracking"];
-              const strategy = strategies[index % strategies.length];
+            const processedTx = await Promise.all(response.map(async (tx: any) => {
+              // Fetch transaction details
+              const txDetails = await heliusRpcCall("getTransaction", [tx.signature]);
               
-              // Token determination - in a real app, this would be parsed from transaction data
-              const tokens = ["SOL", "SRUN", "JUP", "TDX"];
-              const token = tokens[index % tokens.length];
+              // Determine transaction type (swap, transfer, etc.)
+              // This would require parsing the transaction data in detail
               
-              // Determine if this was a buy or sell based on signature (simplified)
-              const action = tx.signature?.charAt(0) > "5" ? "Buy" : "Sell";
+              let token = "SOL";
+              let action = "Transfer";
+              let amount = 0;
+              let value = 0;
+              let profit = 0;
+              let strategy = "Manual";
               
-              // Generate plausible transaction amounts
-              const amount = parseFloat((Math.random() * (token === "SOL" ? 1 : 10)).toFixed(3));
-              const value = parseFloat((amount * (Math.random() * 100 + 10)).toFixed(2));
-              const status: "completed" | "pending" | "failed" = 
-                tx.confirmationStatus === "finalized" ? "completed" : 
-                tx.confirmationStatus === "confirmed" ? "completed" : "pending";
-              
-              // Calculate profit/loss (in a real scenario, this would come from actual trading data)
-              const profit = status === "completed" 
-                ? parseFloat((value * (Math.random() * 0.3 - 0.1)).toFixed(2)) 
-                : 0;
+              // For SOL transfers
+              if (txDetails && txDetails.meta && !txDetails.meta.preTokenBalances) {
+                // This is a SOL transfer
+                const preBalance = txDetails.meta.preBalances[0];
+                const postBalance = txDetails.meta.postBalances[0];
+                amount = Math.abs(postBalance - preBalance) / 1e9; // Convert from lamports to SOL
+                
+                // Get SOL price
+                const solPriceRes = await fetch("https://price.jup.ag/v4/price?ids=SOL");
+                const solPriceData = await solPriceRes.json();
+                const solPrice = solPriceData?.data?.SOL?.price || 0;
+                
+                value = amount * solPrice;
+              } else if (txDetails && txDetails.meta && txDetails.meta.preTokenBalances) {
+                // This is a token transaction
+                // Would need detailed token parsing here
+              }
               
               return {
                 id: tx.signature,
@@ -84,25 +98,18 @@ const TransactionHistory = () => {
                 amount,
                 value,
                 timestamp: new Date(tx.blockTime * 1000).toISOString(),
-                status,
+                status: "completed",
                 profit,
                 signature: tx.signature
               };
             }));
             
             setTransactions(processedTx);
-          } else {
-            console.error("Invalid transaction response format", response);
-            // Fallback to empty array if API call failed
-            setTransactions([]);
           }
-        } else {
-          // No wallet connected, empty transaction list
-          setTransactions([]);
+          */
         }
       } catch (error) {
         console.error("Failed to fetch transactions:", error);
-        setTransactions([]);
       } finally {
         setIsLoading(false);
       }
@@ -164,11 +171,11 @@ const TransactionHistory = () => {
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center py-4">
-                    <div className="flex justify-center">
-                      <div className="w-6 h-6 border-2 border-trading-highlight border-t-transparent rounded-full animate-spin"></div>
+                  <TableCell colSpan={8} className="h-48">
+                    <div className="flex flex-col items-center justify-center h-full">
+                      <Loader2 className="h-8 w-8 text-trading-highlight animate-spin mb-2" />
+                      <p className="text-sm text-gray-400">Loading transactions...</p>
                     </div>
-                    <div className="mt-2 text-sm text-gray-400">Loading transactions...</div>
                   </TableCell>
                 </TableRow>
               ) : filteredTransactions.length > 0 ? (
@@ -204,8 +211,10 @@ const TransactionHistory = () => {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center py-4 text-gray-400">
-                    {localStorage.getItem('walletAddress') ? 'No transactions found' : 'Connect wallet to view transactions'}
+                  <TableCell colSpan={8} className="h-48">
+                    <div className="text-center py-4 text-gray-400">
+                      {localStorage.getItem('walletAddress') ? 'No transactions found' : 'Connect wallet to view transactions'}
+                    </div>
                   </TableCell>
                 </TableRow>
               )}

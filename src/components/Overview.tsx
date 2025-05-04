@@ -1,6 +1,9 @@
 
 import { Card } from "@/components/ui/card";
-import { ArrowUpRight, ArrowDownRight, Brain, Zap } from "lucide-react";
+import { ArrowUpRight, ArrowDownRight, Brain, Zap, Wallet } from "lucide-react";
+import { useState, useEffect } from "react";
+import { getConnectedWallet } from "@/utils/walletUtils";
+import { heliusApiCall } from "@/utils/apiUtils";
 
 interface OverviewProps {
   totalProfit: number;
@@ -9,7 +12,48 @@ interface OverviewProps {
   totalTrades: number;
 }
 
-const Overview = ({ totalProfit, activeStrategies, pendingTrades, totalTrades }: OverviewProps) => {
+const Overview = ({ totalProfit = 0, activeStrategies = 0, pendingTrades = 0, totalTrades = 0 }: OverviewProps) => {
+  const [realizedProfit, setRealizedProfit] = useState(0);
+  const [unrealizedProfit, setUnrealizedProfit] = useState(0);
+  const [loading, setLoading] = useState(true);
+  
+  useEffect(() => {
+    const fetchWalletPnL = async () => {
+      setLoading(true);
+      try {
+        const walletAddress = getConnectedWallet();
+        
+        if (walletAddress) {
+          // In a production app, we would fetch real PnL data from Helius API
+          // For now, we're just showing zeros
+          setRealizedProfit(0);
+          setUnrealizedProfit(0);
+          
+          // Example code to fetch real PnL when API is available:
+          /*
+          const response = await heliusApiCall("getWalletPerformance", [walletAddress]);
+          if (response) {
+            setRealizedProfit(response.realizedPnl || 0);
+            setUnrealizedProfit(response.unrealizedPnl || 0);
+          }
+          */
+        }
+      } catch (error) {
+        console.error("Error fetching wallet PnL:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchWalletPnL();
+  }, []);
+
+  // Calculate total profit
+  const calculatedTotalProfit = realizedProfit + unrealizedProfit;
+  
+  // Calculate percentage change (assuming $1000 as a baseline if no data is available)
+  const percentChange = calculatedTotalProfit !== 0 ? ((calculatedTotalProfit / 1000) * 100) : 0;
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
       <Card className="p-4 bg-trading-darkAccent border-white/5">
@@ -17,30 +61,30 @@ const Overview = ({ totalProfit, activeStrategies, pendingTrades, totalTrades }:
           <div>
             <p className="text-sm text-gray-400">Total PnL</p>
             <div className="flex items-baseline mt-1">
-              <h3 className={`text-2xl font-bold ${totalProfit >= 0 ? 'text-trading-success' : 'text-trading-danger'}`}>
-                ${Math.abs(totalProfit).toFixed(2)}
+              <h3 className={`text-2xl font-bold ${calculatedTotalProfit >= 0 ? 'text-trading-success' : 'text-trading-danger'}`}>
+                ${Math.abs(calculatedTotalProfit).toFixed(2)}
               </h3>
-              <span className={`ml-2 text-sm flex items-center ${totalProfit >= 0 ? 'text-trading-success' : 'text-trading-danger'}`}>
-                {totalProfit >= 0 ? <ArrowUpRight size={16} /> : <ArrowDownRight size={16} />}
-                {Math.abs(((totalProfit / 1000) * 100)).toFixed(1)}%
+              <span className={`ml-2 text-sm flex items-center ${calculatedTotalProfit >= 0 ? 'text-trading-success' : 'text-trading-danger'}`}>
+                {calculatedTotalProfit >= 0 ? <ArrowUpRight size={16} /> : <ArrowDownRight size={16} />}
+                {Math.abs(percentChange).toFixed(1)}%
               </span>
             </div>
           </div>
-          <div className={`p-2 rounded-full ${totalProfit >= 0 ? 'bg-trading-success/20' : 'bg-trading-danger/20'}`}>
-            {totalProfit >= 0 ? <ArrowUpRight className="text-trading-success" /> : <ArrowDownRight className="text-trading-danger" />}
+          <div className={`p-2 rounded-full ${calculatedTotalProfit >= 0 ? 'bg-trading-success/20' : 'bg-trading-danger/20'}`}>
+            {calculatedTotalProfit >= 0 ? <ArrowUpRight className="text-trading-success" /> : <ArrowDownRight className="text-trading-danger" />}
           </div>
         </div>
         <div className="mt-4 pt-4 border-t border-white/5">
           <div className="flex items-center justify-between text-sm text-gray-400">
             <span>Realized</span>
-            <span className={totalProfit >= 0 ? 'text-trading-success' : 'text-trading-danger'}>
-              ${(totalProfit * 0.8).toFixed(2)}
+            <span className={realizedProfit >= 0 ? 'text-trading-success' : 'text-trading-danger'}>
+              ${realizedProfit.toFixed(2)}
             </span>
           </div>
           <div className="flex items-center justify-between text-sm text-gray-400 mt-1">
             <span>Unrealized</span>
-            <span className={totalProfit >= 0 ? 'text-trading-success' : 'text-trading-danger'}>
-              ${(totalProfit * 0.2).toFixed(2)}
+            <span className={unrealizedProfit >= 0 ? 'text-trading-success' : 'text-trading-danger'}>
+              ${unrealizedProfit.toFixed(2)}
             </span>
           </div>
         </div>
@@ -62,7 +106,7 @@ const Overview = ({ totalProfit, activeStrategies, pendingTrades, totalTrades }:
         <div className="mt-4 pt-4 border-t border-white/5">
           <div className="flex items-center justify-between text-sm text-gray-400">
             <span>Success Rate</span>
-            <span className="text-trading-success">78%</span>
+            <span className="text-trading-success">0%</span>
           </div>
         </div>
       </Card>
@@ -83,7 +127,7 @@ const Overview = ({ totalProfit, activeStrategies, pendingTrades, totalTrades }:
         <div className="mt-4 pt-4 border-t border-white/5">
           <div className="flex items-center justify-between text-sm text-gray-400">
             <span>Avg Duration</span>
-            <span>2m 15s</span>
+            <span>0m 0s</span>
           </div>
         </div>
       </Card>
@@ -94,20 +138,19 @@ const Overview = ({ totalProfit, activeStrategies, pendingTrades, totalTrades }:
             <p className="text-sm text-gray-400">Total Trades</p>
             <div className="flex items-baseline mt-1">
               <h3 className="text-2xl font-bold">{totalTrades}</h3>
-              <span className="ml-2 text-sm text-trading-success">
-                <ArrowUpRight size={16} className="inline" />
+              <span className="ml-2 text-sm text-trading-secondary">
                 24h
               </span>
             </div>
           </div>
-          <div className="p-2 rounded-full bg-trading-success/20">
-            <ArrowUpRight className="text-trading-success" />
+          <div className="p-2 rounded-full bg-trading-secondary/20">
+            <Wallet className="text-trading-secondary" />
           </div>
         </div>
         <div className="mt-4 pt-4 border-t border-white/5">
           <div className="flex items-center justify-between text-sm text-gray-400">
             <span>Win Rate</span>
-            <span className="text-trading-success">82%</span>
+            <span className="text-trading-success">0%</span>
           </div>
         </div>
       </Card>

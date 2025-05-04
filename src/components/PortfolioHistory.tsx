@@ -1,9 +1,12 @@
+
 import React, { useEffect, useState } from 'react';
 import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Loader2 } from "lucide-react";
 import { useCurrencyStore } from "@/store/currencyStore";
+import { heliusRpcCall } from "@/utils/apiUtils";
 
 interface PortfolioHistoryProps {
   walletAddress: string | null;
@@ -33,47 +36,92 @@ const formatDate = (timestamp: string) => {
 
 const PortfolioHistory: React.FC<PortfolioHistoryProps> = ({ walletAddress }) => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [filter, setFilter] = useState("all");
   const { currency, currencySymbol } = useCurrencyStore();
   
   // Initialize with transactions on mount
   useEffect(() => {
-    if (!walletAddress) return;
+    const fetchTransactions = async () => {
+      setIsLoading(true);
+      try {
+        if (walletAddress) {
+          // In a production app, we would fetch real transactions from Helius API
+          // For now, we're just showing an empty state
+          setTransactions([]);
+          
+          // Example code to fetch real transactions when API is available:
+          /*
+          const response = await heliusRpcCall("getSignaturesForAddress", [walletAddress, { limit: 20 }]);
+          
+          if (response && Array.isArray(response)) {
+            // Process the transaction data
+            const processedTxs = await Promise.all(response.map(async (tx: any, index: number) => {
+              // Get transaction details
+              const txDetails = await heliusRpcCall("getTransaction", [tx.signature]);
+              
+              // Determine if this was a token transfer, swap, etc.
+              // This is simplified - in reality would need more sophisticated parsing
+              const isTokenTransaction = txDetails.meta?.preTokenBalances && txDetails.meta?.postTokenBalances;
+              const tokenInfoPromises = [];
+              
+              let tokenSymbol = "SOL";
+              let amount = 0;
+              let value = 0;
+              let type = "Transfer";
+              
+              if (isTokenTransaction) {
+                // Get token info
+                const tokenInfo = await heliusRpcCall("getTokenAccountsByOwner", [
+                  walletAddress,
+                  { programId: "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA" }
+                ]);
+                
+                // Parse token transfers - simplified
+                tokenSymbol = "Unknown Token";
+                amount = txDetails.meta.postTokenBalances[0]?.uiTokenAmount.uiAmount || 0;
+                
+                // Determine if swap
+                if (txDetails.meta.preTokenBalances.length > 1 && txDetails.meta.postTokenBalances.length > 1) {
+                  type = "Swap";
+                }
+              } else {
+                // Native SOL transfer
+                const preBalance = txDetails.meta?.preBalances[0] || 0;
+                const postBalance = txDetails.meta?.postBalances[0] || 0;
+                amount = Math.abs(postBalance - preBalance) / 1e9; // lamports to SOL
+                
+                // Get SOL price for value calculation
+                const solPriceResponse = await fetch("https://price.jup.ag/v4/price?ids=SOL");
+                const solPriceData = await solPriceResponse.json();
+                const solPrice = solPriceData?.data?.SOL?.price || 0;
+                value = amount * solPrice;
+              }
+              
+              return {
+                id: index,
+                type,
+                token: tokenSymbol,
+                amount,
+                value,
+                timestamp: new Date(tx.blockTime * 1000).toISOString(),
+                status: "completed",
+                txHash: tx.signature
+              };
+            }));
+            
+            setTransactions(processedTxs);
+          }
+          */
+        }
+      } catch (error) {
+        console.error("Failed to fetch transactions:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
     
-    const types = ["Deposit", "Withdrawal", "Swap", "Transfer"];
-    const tokens = ["SOL", "USDC", "JUP", "BONK", "RAY"];
-    const statuses: ("completed" | "pending" | "failed")[] = ["completed", "pending", "failed"];
-    
-    const mockTransactions: Transaction[] = [];
-    const now = new Date();
-    
-    // Generate 10 transactions
-    for (let i = 0; i < 10; i++) {
-      const days = Math.floor(Math.random() * 30);
-      const timestamp = new Date(now.getTime() - days * 24 * 60 * 60 * 1000).toISOString();
-      const type = types[Math.floor(Math.random() * types.length)];
-      const token = tokens[Math.floor(Math.random() * tokens.length)];
-      const amount = parseFloat((Math.random() * (token === "SOL" ? 5 : 100)).toFixed(3));
-      const value = parseFloat((amount * (Math.random() * 100 + 10)).toFixed(2));
-      const status = statuses[Math.floor(Math.random() * statuses.length)];
-      const txHash = `${Math.random().toString(16).substring(2, 10)}...${Math.random().toString(16).substring(2, 6)}`;
-      
-      mockTransactions.push({
-        id: i + 1,
-        type,
-        token,
-        amount,
-        value,
-        timestamp,
-        status,
-        txHash
-      });
-    }
-    
-    // Sort by timestamp descending (newest first)
-    setTransactions(mockTransactions.sort((a, b) => 
-      new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-    ));
+    fetchTransactions();
   }, [walletAddress]);
 
   // Convert USD values to the selected currency
@@ -135,7 +183,16 @@ const PortfolioHistory: React.FC<PortfolioHistoryProps> = ({ walletAddress }) =>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredTransactions.length > 0 ? (
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="h-40">
+                    <div className="flex flex-col items-center justify-center h-full">
+                      <Loader2 className="h-8 w-8 text-trading-highlight animate-spin mb-2" />
+                      <p className="text-gray-400">Loading transactions...</p>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ) : filteredTransactions.length > 0 ? (
                 filteredTransactions.map((tx) => (
                   <TableRow key={tx.id} className="border-white/5 hover:bg-white/5">
                     <TableCell>
@@ -178,8 +235,10 @@ const PortfolioHistory: React.FC<PortfolioHistoryProps> = ({ walletAddress }) =>
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-4 text-gray-400">
-                    No transactions found
+                  <TableCell colSpan={7} className="h-40">
+                    <div className="text-center py-4 text-gray-400">
+                      No transactions found for this wallet
+                    </div>
                   </TableCell>
                 </TableRow>
               )}
@@ -188,7 +247,7 @@ const PortfolioHistory: React.FC<PortfolioHistoryProps> = ({ walletAddress }) =>
         </div>
         
         <div className="mt-4 text-sm text-gray-400">
-          Showing {filteredTransactions.length} of {transactions.length} transactions
+          {isLoading ? 'Loading...' : `Showing ${filteredTransactions.length} of ${transactions.length} transactions`}
         </div>
       </div>
     </Card>
