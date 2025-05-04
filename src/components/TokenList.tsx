@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -9,7 +8,7 @@ import { ChevronUp, ChevronDown, Search, Star, AlertTriangle, Zap, Shield } from
 import { useCurrencyStore } from "@/store/currencyStore";
 import { useQuery } from "@tanstack/react-query";
 import { getMarketOverview } from "@/utils/marketUtils";
-import { Tooltip } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface TokenData {
   name: string;
@@ -116,12 +115,19 @@ const TokenList = () => {
     if (!level || level < 20) return null;
     
     return (
-      <Tooltip content={`Smart money interest: ${level}/100`}>
-        <div className={`flex items-center gap-1 ${level > 70 ? 'text-trading-success' : 'text-trading-highlight'}`}>
-          <Zap size={14} className="fill-current" />
-          {level > 70 && <Shield size={14} />}
-        </div>
-      </Tooltip>
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div className={`flex items-center gap-1 ${level > 70 ? 'text-trading-success' : 'text-trading-highlight'}`}>
+              <Zap size={14} className="fill-current" />
+              {level > 70 && <Shield size={14} />}
+            </div>
+          </TooltipTrigger>
+          <TooltipContent>
+            Smart money interest: {level}/100
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
     );
   };
   
