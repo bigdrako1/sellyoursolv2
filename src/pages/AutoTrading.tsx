@@ -51,7 +51,7 @@ const AutoTrading: React.FC = () => {
             toggleSystemActive={toggleSystemActive}
           />
           
-          <Tabs defaultValue="trading">
+          <Tabs value={activeTab} onValueChange={setActiveTab} defaultValue="trading">
             <TabsContent value="trading" className="mt-2">
               <StrategyManager />
             </TabsContent>
