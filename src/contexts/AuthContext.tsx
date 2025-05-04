@@ -29,22 +29,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const { toast } = useToast();
 
   useEffect(() => {
+    // Set up auth state listener FIRST
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setSession(session);
+        setUser(session?.user ?? null);
+      }
+    );
+    
     // Check for connected wallet on mount
     const savedWallet = getConnectedWallet();
     if (savedWallet) {
       setWalletAddress(savedWallet);
     }
     
-    // Set up auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        setLoading(false);
-      }
-    );
-
-    // Get initial session
+    // THEN check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
@@ -59,27 +58,54 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signIn = async () => {
     try {
       setLoading(true);
-      // Only use wallet connection for authentication
-      const result = await connectWallet("Phantom");
-      if (result.success) {
+      
+      // If the wallet is not connected yet, connect it
+      if (!walletAddress) {
+        const result = await connectWallet("Phantom");
+        if (!result.success) {
+          throw new Error(result.error || "Failed to connect wallet");
+        }
         setWalletAddress(result.address);
+      }
+      
+      // Use the wallet address for authentication
+      const email = `${walletAddress}@solana.wallet`;
+      
+      // Try sign in first
+      let { error } = await supabase.auth.signInWithPassword({ 
+        email, 
+        password: "wallet-auth-placeholder" 
+      });
+      
+      // If user doesn't exist, sign up
+      if (error && error.message.includes("Invalid login credentials")) {
+        const { error: signUpError } = await supabase.auth.signUp({
+          email,
+          password: "wallet-auth-placeholder",
+          options: {
+            data: {
+              wallet_address: walletAddress
+            }
+          }
+        });
         
-        // Use Supabase custom auth for wallet authentication
-        // (Note: In a real app, this would verify the wallet signature)
-        const { error } = await supabase.auth.signInWithPassword({ 
-          email: `${result.address}@solana.wallet`, 
+        if (signUpError) throw signUpError;
+        
+        // After signup, attempt login again
+        const { error: retryError } = await supabase.auth.signInWithPassword({ 
+          email, 
           password: "wallet-auth-placeholder" 
         });
         
-        if (error) throw error;
-        
-        toast({
-          title: "Wallet Connected",
-          description: "Successfully authenticated with wallet",
-        });
-      } else {
-        throw new Error(result.error || "Failed to connect wallet");
+        if (retryError) throw retryError;
+      } else if (error) {
+        throw error;
       }
+      
+      toast({
+        title: "Wallet Connected",
+        description: "Successfully authenticated with wallet",
+      });
     } catch (error: any) {
       toast({
         title: "Authentication Failed",
@@ -129,7 +155,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       loading,
       signIn,
       signOut,
-      isAuthenticated: !!walletAddress && !!user,
+      isAuthenticated: !!user,
       walletAddress,
     }}>
       {children}

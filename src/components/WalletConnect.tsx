@@ -6,6 +6,7 @@ import { Wallet, RotateCw, LogOut, ArrowUpRight, Copy } from "lucide-react";
 import { getWalletBalances, connectWallet, disconnectWallet, getConnectedWallet, formatWalletAddress } from "@/utils/walletUtils";
 import { useToast } from "@/hooks/use-toast";
 import { useCurrencyStore } from "@/store/currencyStore";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface WalletConnectProps {
   onConnect: (address: string) => void;
@@ -15,21 +16,18 @@ interface WalletConnectProps {
 const WalletConnect = ({ onConnect, onDisconnect }: WalletConnectProps) => {
   const [connecting, setConnecting] = useState(false);
   const [disconnecting, setDisconnecting] = useState(false);
-  const [walletAddress, setWalletAddress] = useState<string | null>(null);
-  const [walletBalances, setWalletBalances] = useState<any>(null);
   const [showBalances, setShowBalances] = useState(false);
+  const [walletBalances, setWalletBalances] = useState<any>(null);
   const { toast } = useToast();
   const { currency, currencySymbol } = useCurrencyStore();
+  const { walletAddress, isAuthenticated } = useAuth();
 
-  // Check for connected wallet on mount
+  // Fetch wallet balances when wallet is connected
   useEffect(() => {
-    const savedWallet = getConnectedWallet();
-    if (savedWallet) {
-      setWalletAddress(savedWallet);
-      onConnect(savedWallet);
-      fetchWalletBalances(savedWallet);
+    if (walletAddress) {
+      fetchWalletBalances(walletAddress);
     }
-  }, [onConnect]);
+  }, [walletAddress]);
 
   const handleConnect = async () => {
     setConnecting(true);
@@ -37,7 +35,6 @@ const WalletConnect = ({ onConnect, onDisconnect }: WalletConnectProps) => {
     try {
       const result = await connectWallet("Phantom");
       if (result.success) {
-        setWalletAddress(result.address);
         onConnect(result.address);
         
         toast({
@@ -69,7 +66,6 @@ const WalletConnect = ({ onConnect, onDisconnect }: WalletConnectProps) => {
       const success = await disconnectWallet();
       
       if (success) {
-        setWalletAddress(null);
         setWalletBalances(null);
         setShowBalances(false);
         if (onDisconnect) onDisconnect();
@@ -162,6 +158,11 @@ const WalletConnect = ({ onConnect, onDisconnect }: WalletConnectProps) => {
                   >
                     {showBalances ? "Hide Balance" : "Show Balance"} <ArrowUpRight className="ml-1 h-3 w-3" />
                   </button>
+                )}
+                {!isAuthenticated && (
+                  <span className="text-xs text-amber-500">
+                    Wallet connected but not authenticated
+                  </span>
                 )}
               </div>
             ) : (

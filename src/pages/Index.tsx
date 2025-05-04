@@ -7,18 +7,11 @@ import { useAuth } from "@/contexts/AuthContext";
 import TokenAlertMonitor from "@/components/TokenAlertMonitor";
 
 const Index: React.FC = () => {
-  const [connectedWallet, setConnectedWallet] = useState<string | null>(null);
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, walletAddress, signIn } = useAuth();
   const [systemActive, setSystemActive] = useState(true);
   const [systemLatency, setSystemLatency] = useState<number | null>(42);
   
   useEffect(() => {
-    // Check if wallet is already connected on mount
-    const storedWallet = localStorage.getItem('walletAddress');
-    if (storedWallet) {
-      setConnectedWallet(storedWallet);
-    }
-    
     // Simulate random system status and latency
     const interval = setInterval(() => {
       setSystemActive(Math.random() > 0.1);
@@ -28,12 +21,13 @@ const Index: React.FC = () => {
     return () => clearInterval(interval);
   }, []);
   
-  const handleWalletConnect = (address: string) => {
-    setConnectedWallet(address);
+  const handleWalletConnect = async (address: string) => {
+    // This only sets the wallet address without authentication
+    // Authentication is handled separately in the Auth page
   };
   
   const handleWalletDisconnect = () => {
-    setConnectedWallet(null);
+    // Wallet disconnect is handled in AuthContext
   };
   
   return (

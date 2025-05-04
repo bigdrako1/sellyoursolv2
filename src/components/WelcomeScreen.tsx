@@ -4,6 +4,7 @@ import WalletConnect from "@/components/WalletConnect";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { LogIn } from "lucide-react";
+import { APP_CONFIG } from "@/config/appDefinition";
 
 interface WelcomeScreenProps {
   onConnect: (address: string) => void;
@@ -11,12 +12,12 @@ interface WelcomeScreenProps {
 }
 
 const WelcomeScreen = ({ onConnect, onDisconnect }: WelcomeScreenProps) => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, walletAddress } = useAuth();
   
   return (
     <div className="flex flex-col items-center justify-center mt-20">
       <div className="mb-8 text-center">
-        <h1 className="text-4xl font-bold mb-3 trading-gradient-text">SellYourSOL™ v2</h1>
+        <h1 className="text-4xl font-bold mb-3 trading-gradient-text">{APP_CONFIG.name}</h1>
         <p className="text-gray-400 max-w-lg">
           Autonomous, AFK-capable trading system for Solana.
           Connect your wallet to begin trading with advanced AI strategies.
@@ -26,7 +27,8 @@ const WelcomeScreen = ({ onConnect, onDisconnect }: WelcomeScreenProps) => {
         <WalletConnect onConnect={onConnect} onDisconnect={onDisconnect} />
       </div>
       
-      {!isAuthenticated && (
+      {/* Only show login button if wallet is connected but user is not authenticated */}
+      {walletAddress && !isAuthenticated && (
         <div className="mt-6">
           <Link to="/auth">
             <Button className="bg-trading-highlight hover:bg-trading-highlight/80">
