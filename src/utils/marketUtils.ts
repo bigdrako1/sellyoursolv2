@@ -1,4 +1,3 @@
-
 /**
  * Market utilities for SellYourSOL V2 AI trading platform
  * Functions to interact with market data from Solana ecosystem
@@ -43,13 +42,23 @@ export const getMarketOverview = async (limit = 5) => {
             // Calculate an estimated market cap based on available data
             const estimatedMarketCap = data.price * (data.volume24h / (data.price * 0.05) || 1000000);
             
+            // Generate random values for demo purposes - in production these would come from your AI analysis
+            const launchTime = getRandomLaunchTime(symbol);
+            const liquidityScore = getRandomMetric(symbol, 40, 90);
+            const riskScore = getRandomMetric(symbol, 20, 85);
+            const smartMoneyActivity = getSmartMoneyMetric(symbol);
+            
             return {
               name: data.name || symbol,
               symbol: symbol,
               price: data.price || 0,
               change24h: data.priceChange24h || 0,
               volume24h: data.volume24h || 0,
-              marketCap: estimatedMarketCap // Add market cap
+              marketCap: estimatedMarketCap,
+              launchTime,
+              liquidityScore,
+              riskScore,
+              smartMoneyActivity
             };
           });
           
@@ -69,13 +78,24 @@ export const getMarketOverview = async (limit = 5) => {
           // Calculate an estimated market cap based on available data
           const estimatedMarketCap = token.price * (token.volume24h / (token.price * 0.05) || 1000000);
           
+          // Generate random values for demo purposes - in production these would come from your AI analysis
+          const symbol = token.symbol || getSymbolFromMint(token.mint);
+          const launchTime = getRandomLaunchTime(symbol);
+          const liquidityScore = getRandomMetric(symbol, 40, 90);
+          const riskScore = getRandomMetric(symbol, 20, 85);
+          const smartMoneyActivity = getSmartMoneyMetric(symbol);
+          
           return {
             name: token.name || getSymbolFromMint(token.mint),
             symbol: token.symbol || getSymbolFromMint(token.mint),
             price: token.price || 0,
             change24h: token.priceChange24h || 0,
             volume24h: token.volume24h || 0,
-            marketCap: estimatedMarketCap // Add market cap
+            marketCap: estimatedMarketCap,
+            launchTime,
+            liquidityScore,
+            riskScore,
+            smartMoneyActivity
           };
         }).slice(0, limit);
       }
@@ -86,16 +106,148 @@ export const getMarketOverview = async (limit = 5) => {
     // Fallback to mock data if both APIs failed
     console.log('Using mock market data as final fallback');
     return [
-      { name: "Solana", symbol: "SOL", price: 149.87, change24h: 3.24, volume24h: 2354657890, marketCap: 57892345680 },
-      { name: "SellYourSOL", symbol: "SYS", price: 0.057, change24h: 5.12, volume24h: 9874560, marketCap: 4567890 },
-      { name: "Raydium", symbol: "RAY", price: 1.35, change24h: -0.87, volume24h: 53487690, marketCap: 134567890 },
-      { name: "Serum", symbol: "SRM", price: 0.82, change24h: 1.23, volume24h: 28546789, marketCap: 82456789 },
-      { name: "Marinade SOL", symbol: "mSOL", price: 165.24, change24h: 3.12, volume24h: 456789230, marketCap: 5234567890 }
+      { 
+        name: "Solana", 
+        symbol: "SOL", 
+        price: 149.87, 
+        change24h: 3.24, 
+        volume24h: 2354657890, 
+        marketCap: 57892345680,
+        launchTime: Date.now() - (86400000 * 1000), // Old token
+        liquidityScore: 95,
+        riskScore: 12,
+        smartMoneyActivity: 85
+      },
+      { 
+        name: "SellYourSOL", 
+        symbol: "SYS", 
+        price: 0.057, 
+        change24h: 5.12, 
+        volume24h: 9874560, 
+        marketCap: 4567890,
+        launchTime: Date.now() - (3600000 * 12), // 12 hours ago
+        liquidityScore: 65,
+        riskScore: 45,
+        smartMoneyActivity: 75
+      },
+      { 
+        name: "Raydium", 
+        symbol: "RAY", 
+        price: 1.35, 
+        change24h: -0.87, 
+        volume24h: 53487690, 
+        marketCap: 134567890,
+        launchTime: Date.now() - (86400000 * 180), // Old token
+        liquidityScore: 88,
+        riskScore: 18,
+        smartMoneyActivity: 40
+      },
+      { 
+        name: "Serum", 
+        symbol: "SRM", 
+        price: 0.82, 
+        change24h: 1.23, 
+        volume24h: 28546789, 
+        marketCap: 82456789,
+        launchTime: Date.now() - (86400000 * 365), // Old token
+        liquidityScore: 75,
+        riskScore: 35,
+        smartMoneyActivity: 35
+      },
+      { 
+        name: "Marinade SOL", 
+        symbol: "mSOL", 
+        price: 165.24, 
+        change24h: 3.12, 
+        volume24h: 456789230, 
+        marketCap: 5234567890,
+        launchTime: Date.now() - (86400000 * 400), // Old token
+        liquidityScore: 90,
+        riskScore: 15,
+        smartMoneyActivity: 60
+      },
+      {
+        name: "Drako Token", 
+        symbol: "DRAKO", 
+        price: 0.0023, 
+        change24h: 125.87, 
+        volume24h: 3487690, 
+        marketCap: 980000,
+        launchTime: Date.now() - (3600000 * 4), // 4 hours ago - brand new!
+        liquidityScore: 45,
+        riskScore: 75,
+        smartMoneyActivity: 92 // High smart money interest
+      },
+      {
+        name: "AI Trading Bot", 
+        symbol: "AIBOT", 
+        price: 0.0187, 
+        change24h: 32.45, 
+        volume24h: 1245670, 
+        marketCap: 2150000,
+        launchTime: Date.now() - (86400000 * 2), // 2 days ago
+        liquidityScore: 58,
+        riskScore: 62,
+        smartMoneyActivity: 78
+      },
     ].slice(0, limit);
   } catch (error) {
     console.error('Error fetching market overview:', error);
     return [];
   }
+};
+
+// Generate deterministic but random-looking values for demo purposes
+const getRandomMetric = (seed: string, min: number, max: number): number => {
+  // Simple hash function to generate a deterministic value from a string
+  let hash = 0;
+  for (let i = 0; i < seed.length; i++) {
+    const char = seed.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash;
+  }
+  
+  // Scale to min-max range
+  return Math.floor(Math.abs(hash % (max - min)) + min);
+};
+
+// Create a "realistic" launch time distribution
+const getRandomLaunchTime = (symbol: string): number => {
+  // Well-known tokens are older
+  if (["SOL", "SRM", "RAY", "mSOL"].includes(symbol)) {
+    // 6 months to 2 years ago
+    const daysAgo = getRandomMetric(symbol, 180, 730);
+    return Date.now() - (86400000 * daysAgo);
+  }
+  
+  // Custom demo token (new and interesting)
+  if (symbol === "DRAKO") {
+    // 2-6 hours ago
+    const hoursAgo = getRandomMetric(symbol, 2, 6);
+    return Date.now() - (3600000 * hoursAgo);
+  }
+  
+  if (symbol === "AIBOT" || symbol === "SYS") {
+    // 1-3 days ago
+    const daysAgo = getRandomMetric(symbol, 1, 3);
+    return Date.now() - (86400000 * daysAgo);
+  }
+  
+  // Random value - between 1 day and 3 months ago
+  const daysAgo = getRandomMetric(symbol, 1, 90);
+  return Date.now() - (86400000 * daysAgo);
+};
+
+// Smart money is watching tokens with certain patterns
+const getSmartMoneyMetric = (symbol: string): number => {
+  // Demo cases for interesting tokens with smart money
+  if (symbol === "DRAKO") return 92; // High smart money interest
+  if (symbol === "AIBOT") return 78;
+  if (symbol === "SYS") return 75;
+  if (symbol === "SOL") return 85; // SOL always has smart money
+
+  // Other tokens have varying levels
+  return getRandomMetric(symbol, 0, 60);
 };
 
 /**
