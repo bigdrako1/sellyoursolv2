@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -133,7 +134,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           id: walletAddress,
           wallet_address: walletAddress,
           auth_method: "wallet_signature",
-          signature: signResult.signature,
+          signature: Array.from(signResult.signature),
           timestamp: timestamp,
           nonce: nonce
         };

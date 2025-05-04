@@ -47,6 +47,13 @@ export interface UserSettings {
   helius_api_key: string | null;
 }
 
+export interface ScaleOutHistory {
+  amount: number;
+  price: number;
+  timestamp: string;
+  reason: string;
+}
+
 export interface TradingPositionData {
   contract_address: string;
   entry_price: number;
@@ -56,12 +63,7 @@ export interface TradingPositionData {
   current_price: number;
   last_update_time: string;
   secured_initial: boolean;
-  scale_out_history: Array<{
-    amount: number;
-    price: number;
-    timestamp: string;
-    reason: string;
-  }>;
+  scale_out_history: ScaleOutHistory[];
   source: string;
   status: 'active' | 'closed' | 'failed';
   pnl: number;
@@ -69,4 +71,125 @@ export interface TradingPositionData {
   notes: string;
   token_name: string;
   token_symbol: string;
+}
+
+export interface TokenMetadata {
+  name: string;
+  symbol: string;
+  decimals: number;
+  image?: string;
+  address: string;
+  verified?: boolean;
+}
+
+export interface TokenPrice {
+  current: number;
+  change24h?: number;
+  change1h?: number;
+}
+
+export interface TokenLiquidity {
+  usd: number;
+  sol?: number;
+}
+
+export interface TokenHolder {
+  address: string;
+  amount: number;
+  percentage: number;
+}
+
+export interface TokenInfo {
+  metadata: TokenMetadata;
+  price: TokenPrice;
+  liquidity: TokenLiquidity;
+  holders: {
+    count: number;
+    top?: TokenHolder[];
+  };
+  volume24h?: number;
+  marketCap?: number;
+  created?: string;
+  isVerified?: boolean;
+  isTrending?: boolean;
+  isPumpFunToken?: boolean;
+  quality?: {
+    score: number;
+    label: string;
+    risk: number;
+  };
+}
+
+export interface SmartMoneyAlert {
+  id: string;
+  walletAddress: string;
+  tokenAddress: string;
+  tokenName?: string;
+  tokenSymbol?: string;
+  amount: number;
+  value: number;
+  timestamp: string;
+  transactionHash: string;
+  type: 'buy' | 'sell';
+}
+
+export interface HeliusTokenData {
+  address: string;
+  name: string;
+  symbol: string;
+  decimals: number;
+  onChainData?: {
+    mint: string;
+    name?: string;
+    symbol?: string;
+    decimals?: number;
+  };
+  offChainData?: {
+    name?: string;
+    symbol?: string;
+    description?: string;
+    image?: string;
+    externalUrl?: string;
+  };
+}
+
+export interface WalletActivity {
+  id: string;
+  walletAddress: string;
+  tokenAddress?: string;
+  tokenName?: string;
+  tokenSymbol?: string;
+  activityType: 'send' | 'receive' | 'swap' | 'mint' | 'burn' | 'create';
+  amount?: number;
+  value?: number;
+  timestamp: string;
+  transactionHash: string;
+  counterparty?: string;
+}
+
+export interface TelegramChannel {
+  id: string;
+  name: string;
+  channelId: string;
+  enabled: boolean;
+  lastChecked: string;
+  messageCount: number;
+}
+
+export interface TokenAlert {
+  id: string;
+  tokenAddress: string;
+  tokenName: string;
+  tokenSymbol: string;
+  price: number;
+  marketCap?: number;
+  liquidity: number;
+  holdersCount: number;
+  qualityScore: number;
+  riskLevel: string;
+  source: string;
+  timestamp: string;
+  isSmartMoneyBuy?: boolean;
+  isPumpFunToken?: boolean;
+  isTrending?: boolean;
 }

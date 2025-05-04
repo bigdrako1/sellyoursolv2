@@ -1,17 +1,12 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Wallet, RotateCw, LogOut, ArrowUpRight, Copy } from "lucide-react";
-import { getConnectedWallet, connectPhantomWallet, disconnectWallet } from "@/utils/phantomUtils";
+import { Wallet, RotateCw, LogOut, ArrowUpRight, Copy, ExternalLink } from "lucide-react";
+import { connectPhantomWallet, disconnectWallet, formatWalletAddress } from "@/utils/phantomUtils";
 import { useToast } from "@/hooks/use-toast";
 import { useCurrencyStore } from "@/store/currencyStore";
 import { useAuth } from "@/contexts/AuthContext";
-
-// Add necessary wallet utility functions
-const formatWalletAddress = (address: string): string => {
-  if (!address) return '';
-  return `${address.slice(0, 4)}...${address.slice(-4)}`;
-};
 
 const getWalletBalances = async (address: string) => {
   try {
@@ -41,7 +36,7 @@ const WalletConnect = ({ onConnect, onDisconnect }: WalletConnectProps) => {
   const [walletBalances, setWalletBalances] = useState<any>(null);
   const { toast } = useToast();
   const { currency, currencySymbol } = useCurrencyStore();
-  const { walletAddress, isAuthenticated } = useAuth();
+  const { walletAddress, isAuthenticated, signIn, signOut } = useAuth();
 
   // Fetch wallet balances when wallet is connected
   useEffect(() => {
@@ -54,20 +49,25 @@ const WalletConnect = ({ onConnect, onDisconnect }: WalletConnectProps) => {
     setConnecting(true);
     
     try {
-      const result = await connectPhantomWallet();
-      if (result.success) {
-        onConnect(result.address);
-        
-        toast({
-          title: "Wallet Connected",
-          description: "Successfully connected to wallet address: " + formatWalletAddress(result.address),
-          variant: "default",
-        });
-        
-        // Fetch wallet balances after connection
-        fetchWalletBalances(result.address);
-      } else {
-        throw new Error(result.error || "Failed to connect");
+      if (!walletAddress) {
+        const result = await connectPhantomWallet();
+        if (result.success && result.address) {
+          onConnect(result.address);
+          
+          toast({
+            title: "Wallet Connected",
+            description: "Successfully connected to wallet address: " + formatWalletAddress(result.address),
+            variant: "default",
+          });
+          
+          // Fetch wallet balances after connection
+          fetchWalletBalances(result.address);
+        } else {
+          throw new Error(result.error || "Failed to connect");
+        }
+      } else if (!isAuthenticated) {
+        // If wallet is connected but not authenticated, proceed with authentication
+        await signIn();
       }
     } catch (error) {
       toast({
@@ -84,21 +84,18 @@ const WalletConnect = ({ onConnect, onDisconnect }: WalletConnectProps) => {
     setDisconnecting(true);
     
     try {
-      const success = await disconnectWallet();
+      // Use signOut from auth context to ensure both wallet disconnection and auth state reset
+      await signOut();
       
-      if (success) {
-        setWalletBalances(null);
-        setShowBalances(false);
-        if (onDisconnect) onDisconnect();
-        
-        toast({
-          title: "Wallet Disconnected",
-          description: "Your wallet has been disconnected successfully.",
-          variant: "default",
-        });
-      } else {
-        throw new Error("Failed to disconnect");
-      }
+      setWalletBalances(null);
+      setShowBalances(false);
+      if (onDisconnect) onDisconnect();
+      
+      toast({
+        title: "Wallet Disconnected",
+        description: "Your wallet has been disconnected successfully.",
+        variant: "default",
+      });
     } catch (error) {
       toast({
         title: "Disconnection Failed",
@@ -152,6 +149,10 @@ const WalletConnect = ({ onConnect, onDisconnect }: WalletConnectProps) => {
     
     return value * (rates[currency as keyof typeof rates] || 1);
   };
+  
+  const goToPhantomWebsite = () => {
+    window.open('https://phantom.app/', '_blank', 'noopener,noreferrer');
+  };
 
   return (
     <Card className="trading-card card-with-border">
@@ -187,7 +188,19 @@ const WalletConnect = ({ onConnect, onDisconnect }: WalletConnectProps) => {
                 )}
               </div>
             ) : (
-              <span className="font-medium">Connect Wallet</span>
+              <div className="flex flex-col">
+                <span className="font-medium">Connect Wallet</span>
+                <span className="text-xs text-gray-400">
+                  Sign in with <Button 
+                    variant="link" 
+                    className="text-trading-highlight p-0 h-auto" 
+                    onClick={goToPhantomWebsite} 
+                    size="sm"
+                  >
+                    Phantom <ExternalLink className="ml-1 h-3 w-3" />
+                  </Button>
+                </span>
+              </div>
             )}
           </div>
         </div>

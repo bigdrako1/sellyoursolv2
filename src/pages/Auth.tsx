@@ -3,13 +3,15 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, Wallet, Key, Lock, AlertCircle } from "lucide-react";
+import { Loader2, Wallet, Key, Lock, AlertCircle, ExternalLink } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { APP_CONFIG } from "@/config/appDefinition";
+import { formatWalletAddress } from "@/utils/phantomUtils";
 
 const Auth = () => {
   const [isConnecting, setIsConnecting] = useState(false);
+  const [isSigning, setIsSigning] = useState(false);
   const { toast } = useToast();
   const { signIn, isAuthenticated, walletAddress, isPhantomInstalled } = useAuth();
   const navigate = useNavigate();
@@ -43,9 +45,14 @@ const Auth = () => {
       navigate('/');
     } catch (error) {
       // Error is handled in the signIn function
+      console.error("Authentication failed:", error);
     } finally {
       setIsConnecting(false);
     }
+  };
+
+  const openPhantomWebsite = () => {
+    window.open('https://phantom.app/', '_blank', 'noopener,noreferrer');
   };
   
   return (
@@ -76,10 +83,11 @@ const Auth = () => {
                     </p>
                     <Button 
                       variant="link" 
-                      className="text-red-400 p-0 h-auto mt-2" 
-                      onClick={() => window.open('https://phantom.app/', '_blank')}
+                      className="text-red-400 p-0 h-auto mt-2 flex items-center" 
+                      onClick={openPhantomWebsite}
                     >
                       Download Phantom Wallet
+                      <ExternalLink className="ml-1 h-3 w-3" />
                     </Button>
                   </div>
                 </div>
@@ -88,8 +96,11 @@ const Auth = () => {
                   <div className="text-sm text-gray-400 mb-1">Connected Wallet</div>
                   <div className="font-mono text-trading-highlight flex items-center">
                     <Wallet className="h-4 w-4 mr-2" />
-                    {walletAddress}
+                    {formatWalletAddress(walletAddress, 6)}
                   </div>
+                  <p className="text-xs text-gray-400 mt-2">
+                    Sign a secure message to complete authentication
+                  </p>
                 </div>
               ) : null}
               
@@ -101,7 +112,7 @@ const Auth = () => {
                 {isConnecting ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin mr-2" /> 
-                    Authenticating...
+                    {walletAddress ? "Signing Message..." : "Connecting..."}
                   </>
                 ) : (
                   <>
@@ -120,6 +131,17 @@ const Auth = () => {
                 )}
               </Button>
             </div>
+            
+            {/* Added security explanation */}
+            {walletAddress && !isAuthenticated && (
+              <div className="bg-trading-highlight/10 border border-trading-highlight/20 rounded-md p-3 text-sm">
+                <h4 className="font-medium text-trading-highlight mb-1">Secure Authentication</h4>
+                <p className="text-gray-300 text-xs">
+                  We use wallet signatures for secure, passwordless authentication. This doesn't 
+                  grant any transaction permissions — we only verify you own this wallet.
+                </p>
+              </div>
+            )}
           </CardContent>
           
           <CardFooter className="flex flex-col space-y-2 pt-0">

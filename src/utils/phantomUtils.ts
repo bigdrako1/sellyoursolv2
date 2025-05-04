@@ -41,6 +41,8 @@ export const connectPhantomWallet = async (): Promise<{ success: boolean; addres
     localStorage.setItem('walletAddress', address);
     localStorage.setItem('walletProvider', 'phantom');
     
+    console.log('Successfully connected to Phantom wallet:', address);
+    
     return {
       success: true,
       address
@@ -108,6 +110,7 @@ export const disconnectWallet = async (): Promise<boolean> => {
       }
     }
     
+    console.log('Wallet disconnected successfully');
     return true;
   } catch (error) {
     console.error('Error disconnecting wallet:', error);
@@ -134,6 +137,8 @@ export const signWithPhantom = async (message: string): Promise<{ success: boole
     
     // Request signature
     const { signature } = await provider.signMessage(encodedMessage, 'utf8');
+    
+    console.log('Message signed successfully with Phantom wallet');
     
     return {
       success: true,
@@ -177,13 +182,37 @@ export const verifyWalletSignature = async (
     const pubKey = new PublicKey(publicKey);
     
     // Verify signature
-    return nacl.sign.detached.verify(
+    const isValid = nacl.sign.detached.verify(
       encodedMessage,
       signature,
       pubKey.toBytes()
     );
+    
+    console.log('Signature verification result:', isValid);
+    
+    return isValid;
   } catch (error) {
     console.error('Error verifying wallet signature:', error);
     return false;
   }
 };
+
+/**
+ * Check if wallet is connected
+ * @returns boolean - True if wallet is connected
+ */
+export const isWalletConnected = (): boolean => {
+  return getConnectedWallet() !== null;
+};
+
+/**
+ * Format wallet address for display
+ * @param address Full wallet address
+ * @param length Number of characters to show at start and end
+ * @returns Formatted wallet address (e.g. "Ax12...3Bcd")
+ */
+export const formatWalletAddress = (address: string | null, length = 4): string => {
+  if (!address) return '';
+  return `${address.slice(0, length)}...${address.slice(-length)}`;
+};
+
