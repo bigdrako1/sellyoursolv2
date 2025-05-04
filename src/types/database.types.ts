@@ -151,6 +151,11 @@ export interface HeliusTokenData {
     image?: string;
     externalUrl?: string;
   };
+  supply?: {
+    circulating?: string;
+    total?: string;
+    max?: string;
+  };
 }
 
 export interface WalletActivity {

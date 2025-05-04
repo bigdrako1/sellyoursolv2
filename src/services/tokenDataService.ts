@@ -218,7 +218,7 @@ export const getTokenInfo = async (tokenAddress: string): Promise<TokenInfo | nu
         tokenInfo.price.current = price;
         
         // Calculate estimated market cap if we have supply info
-        if (metadata.supply?.circulating) {
+        if (metadata.supply && metadata.supply.circulating) {
           const circulatingSupply = Number(metadata.supply.circulating) / Math.pow(10, metadata.decimals || 9);
           tokenInfo.marketCap = circulatingSupply * price;
         }
