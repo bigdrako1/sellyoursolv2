@@ -10,7 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { BarChart, Activity, Wallet, Search } from "lucide-react";
 import ApiUsageMonitor from "@/components/ApiUsageMonitor";
 import LivePriceTracker from "@/components/LivePriceTracker";
-import { getMarketOverview } from "@/utils/marketUtils";
+import { getTrendingTokens } from "@/utils/marketUtils";
 
 interface TokenData {
   name: string;
@@ -18,6 +18,7 @@ interface TokenData {
   price: number;
   change24h: number;
   volume24h: number;
+  source?: string;
 }
 
 const MarketAnalysis = () => {
@@ -31,18 +32,18 @@ const MarketAnalysis = () => {
   useEffect(() => {
     const checkApiConnection = async () => {
       try {
+        const startTime = Date.now();
         const connected = await testHeliusConnection();
+        const latency = Date.now() - startTime;
+        
         setApiConnected(connected);
+        setSystemLatency(latency);
+        
         if (!connected) {
           toast({
             title: "API Connection Failed",
             description: "Could not connect to Helius API. Some features may be limited.",
             variant: "destructive",
-          });
-        } else {
-          toast({
-            title: "API Connected",
-            description: "Successfully connected to Helius API.",
           });
         }
       } catch (error) {
@@ -54,61 +55,28 @@ const MarketAnalysis = () => {
     checkApiConnection();
   }, [toast]);
 
-  // Load real data using marketUtils
+  // Load real trending token data
   useEffect(() => {
-    const fetchMarketData = async () => {
+    const fetchTrendingTokens = async () => {
       setIsLoading(true);
       try {
-        // Fixed: Only pass the limit parameter to getMarketOverview
-        const marketData = await getMarketOverview(5);
-        
-        // Transform the data into the format our component expects
-        const transformedData: TokenData[] = marketData.map((token: any) => ({
-          name: token.name,
-          symbol: token.symbol,
-          price: token.price,
-          change24h: token.change24h,
-          volume24h: token.volume24h,
-        }));
-        
-        setTopTokens(transformedData);
-        setIsLoading(false);
+        // Use the getTrendingTokens function to get trending tokens from all Solana DEXs
+        const trendingTokens = await getTrendingTokens(5);
+        setTopTokens(trendingTokens);
       } catch (error) {
-        console.error("Failed to fetch market data:", error);
+        console.error("Failed to fetch trending tokens:", error);
         toast({
           title: "Data Fetch Failed",
-          description: "Could not load market data. Please try again later.",
+          description: "Could not load trending token data. Please try again later.",
           variant: "destructive",
         });
+      } finally {
         setIsLoading(false);
       }
     };
     
-    fetchMarketData();
+    fetchTrendingTokens();
   }, [toast]);
-
-  // Measure API latency
-  useEffect(() => {
-    const measureLatency = async () => {
-      try {
-        const startTime = Date.now();
-        await testHeliusConnection();
-        const latency = Date.now() - startTime;
-        setSystemLatency(latency);
-      } catch (error) {
-        console.error("Latency measurement failed:", error);
-      }
-    };
-    
-    if (apiConnected) {
-      measureLatency();
-      
-      // Set up interval to check latency periodically
-      const latencyInterval = setInterval(measureLatency, 60000); // Every minute
-      
-      return () => clearInterval(latencyInterval);
-    }
-  }, [apiConnected]);
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -145,7 +113,7 @@ const MarketAnalysis = () => {
               <TabsContent value="overview">
                 <Card>
                   <CardHeader>
-                    <CardTitle>Top Solana Tokens</CardTitle>
+                    <CardTitle>Trending Solana Tokens</CardTitle>
                   </CardHeader>
                   <CardContent>
                     {isLoading ? (
@@ -177,7 +145,9 @@ const MarketAnalysis = () => {
                                 </div>
                                 <div>
                                   <div className="font-medium">{token.name}</div>
-                                  <div className="text-sm text-gray-400">{token.symbol}</div>
+                                  <div className="text-sm text-gray-400">
+                                    {token.symbol} {token.source && <span className="text-xs">• {token.source}</span>}
+                                  </div>
                                 </div>
                               </div>
                               <div className="text-right">
@@ -193,7 +163,7 @@ const MarketAnalysis = () => {
                           ))
                         ) : (
                           <div className="text-center py-6 text-gray-400">
-                            No token data available
+                            No trending token data available
                           </div>
                         )}
                       </div>

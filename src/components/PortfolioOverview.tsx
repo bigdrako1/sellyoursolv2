@@ -3,6 +3,9 @@ import { Card } from "@/components/ui/card";
 import { ArrowUpRight, ArrowDownRight, ChevronDown, ChevronUp } from "lucide-react";
 import { formatWalletAddress } from "@/utils/walletUtils";
 import { useCurrencyStore } from "@/store/currencyStore";
+import { useEffect, useState } from "react";
+import { getConnectedWallet } from "@/utils/walletUtils";
+import { heliusApiCall } from "@/utils/apiUtils";
 
 interface PortfolioOverviewProps {
   walletData: any;
@@ -10,6 +13,93 @@ interface PortfolioOverviewProps {
 
 const PortfolioOverview = ({ walletData }: PortfolioOverviewProps) => {
   const { currency, currencySymbol } = useCurrencyStore();
+  const [portfolioData, setPortfolioData] = useState({
+    totalValue: 0,
+    change24h: 0,
+    changePercentage: 0,
+    allocation: [] as any[]
+  });
+  
+  useEffect(() => {
+    const fetchPortfolioData = async () => {
+      const walletAddress = getConnectedWallet();
+      
+      if (walletAddress) {
+        try {
+          // Fetch wallet token balances from Helius
+          const balanceResponse = await heliusApiCall("getTokenBalances", [walletAddress]);
+          
+          if (balanceResponse) {
+            // Calculate total value from token balances
+            let totalValue = 0;
+            let solanaValue = 0;
+            
+            // Calculate native SOL value
+            if (balanceResponse.nativeBalance) {
+              const solBalance = balanceResponse.nativeBalance / 1e9; // lamports to SOL
+              
+              try {
+                // Get SOL price
+                const solPriceResponse = await fetch("https://price.jup.ag/v4/price?ids=SOL");
+                if (solPriceResponse.ok) {
+                  const solPriceData = await solPriceResponse.json();
+                  const solPrice = solPriceData?.data?.SOL?.price || 0;
+                  const solValue = solBalance * solPrice;
+                  
+                  totalValue += solValue;
+                  solanaValue += solValue;
+                }
+              } catch (error) {
+                console.error("Failed to fetch SOL price:", error);
+              }
+            }
+            
+            // Calculate token values
+            if (balanceResponse.tokens && Array.isArray(balanceResponse.tokens)) {
+              for (const token of balanceResponse.tokens) {
+                try {
+                  const priceResponse = await fetch(`https://price.jup.ag/v4/price?ids=${token.mint}`);
+                  if (priceResponse.ok) {
+                    const priceData = await priceResponse.json();
+                    const price = priceData?.data?.[token.mint]?.price || 0;
+                    
+                    const balance = token.amount / Math.pow(10, token.decimals);
+                    const value = balance * price;
+                    
+                    totalValue += value;
+                    solanaValue += value;
+                  }
+                } catch (error) {
+                  console.error(`Failed to fetch price for token ${token.mint}:`, error);
+                }
+              }
+            }
+            
+            // Create portfolio data object
+            const newPortfolioData = {
+              totalValue,
+              change24h: 0, // We'd need historical data to calculate this accurately
+              changePercentage: 0,
+              allocation: [
+                {
+                  chain: "solana",
+                  value: solanaValue,
+                  percentage: solanaValue > 0 ? 100 : 0,
+                  change24h: 0 // We'd need historical data to calculate this accurately
+                }
+              ]
+            };
+            
+            setPortfolioData(newPortfolioData);
+          }
+        } catch (error) {
+          console.error("Error fetching portfolio data:", error);
+        }
+      }
+    };
+    
+    fetchPortfolioData();
+  }, []);
 
   // Convert USD values to the selected currency
   const convertToCurrency = (value: number): number => {
@@ -21,16 +111,6 @@ const PortfolioOverview = ({ walletData }: PortfolioOverviewProps) => {
     };
     
     return value * (rates[currency as keyof typeof rates] || 1);
-  };
-
-  // Sample portfolio data if real data isn't available
-  const portfolioData = walletData || {
-    totalValue: 4825.92,
-    change24h: 328.76,
-    changePercentage: 7.3,
-    allocation: [
-      { chain: "solana", value: 2937.48, percentage: 100, change24h: 8.2 }
-    ]
   };
 
   const positive = portfolioData.change24h >= 0;
@@ -73,6 +153,14 @@ const PortfolioOverview = ({ walletData }: PortfolioOverviewProps) => {
                 </div>
               </Card>
             ))}
+            {portfolioData.allocation.length === 0 && (
+              <Card className="p-4 bg-black/20 border-white/5">
+                <div className="text-center text-gray-400 py-2">
+                  <p>No portfolio data</p>
+                  <p className="text-sm mt-1">Connect your wallet to view your portfolio</p>
+                </div>
+              </Card>
+            )}
           </div>
         </div>
       </Card>

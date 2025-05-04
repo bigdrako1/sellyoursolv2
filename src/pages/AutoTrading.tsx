@@ -78,7 +78,7 @@ const AutoTrading = () => {
                 <Button 
                   variant="outline" 
                   size="sm"
-                  className="flex items-center gap-1 bg-trading-success/10 text-trading-success border-trading-success/30"
+                  className="flex items-center gap-1 bg-trading-success/10 text-trading-success border-trading-success/30 hover:bg-trading-success/20"
                   onClick={handleSecureAll}
                 >
                   <Shield size={14} />

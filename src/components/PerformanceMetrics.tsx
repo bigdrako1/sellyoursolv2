@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
@@ -38,53 +38,24 @@ const PerformanceMetrics = () => {
     sharpeRatio: 0
   });
   
-  useEffect(() => {
-    const fetchPerformanceData = async () => {
-      setLoading(true);
-      
-      try {
-        // In a production app, we would fetch real performance data from an API
-        // For now, we're just showing an empty state
-        setPerformanceData([]);
-        setPerformanceStats({
-          totalGrowth: 0,
-          averageDailyReturn: 0,
-          winRate: 0,
-          sharpeRatio: 0
-        });
-        
-        // Example code to fetch real performance data when API is available:
-        /*
-        const walletAddress = localStorage.getItem('walletAddress');
-        if (walletAddress) {
-          const days = 
-            timeframe === "1w" ? 7 : 
-            timeframe === "1m" ? 30 : 
-            timeframe === "3m" ? 90 : 365;
-            
-          const response = await fetch(`/api/performance?wallet=${walletAddress}&timeframe=${timeframe}&days=${days}`);
-          const data = await response.json();
-          
-          if (data && data.performanceData) {
-            setPerformanceData(data.performanceData);
-            setPerformanceStats({
-              totalGrowth: data.metrics.totalGrowth || 0,
-              averageDailyReturn: data.metrics.averageDailyReturn || 0,
-              winRate: data.metrics.winRate || 0,
-              sharpeRatio: data.metrics.sharpeRatio || 0
-            });
-          }
-        }
-        */
-      } catch (error) {
-        console.error('Error fetching performance data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
+  // Handle timeframe change
+  const fetchPerformanceData = (newTimeframe: string) => {
+    setTimeframe(newTimeframe);
+    setLoading(true);
     
-    fetchPerformanceData();
-  }, [timeframe]);
+    // In a real app, this would fetch data from an API
+    // For now, just show empty state after loading
+    setTimeout(() => {
+      setPerformanceData([]);
+      setPerformanceStats({
+        totalGrowth: 0,
+        averageDailyReturn: 0,
+        winRate: 0,
+        sharpeRatio: 0
+      });
+      setLoading(false);
+    }, 500);
+  };
   
   return (
     <Card className="trading-card">
@@ -93,10 +64,10 @@ const PerformanceMetrics = () => {
           <h3 className="font-bold text-lg">Performance Metrics</h3>
           <Tabs defaultValue="1m" className="w-auto">
             <TabsList className="bg-trading-dark">
-              <TabsTrigger value="1w" onClick={() => setTimeframe("1w")}>1W</TabsTrigger>
-              <TabsTrigger value="1m" onClick={() => setTimeframe("1m")}>1M</TabsTrigger>
-              <TabsTrigger value="3m" onClick={() => setTimeframe("3m")}>3M</TabsTrigger>
-              <TabsTrigger value="1y" onClick={() => setTimeframe("1y")}>1Y</TabsTrigger>
+              <TabsTrigger value="1w" onClick={() => fetchPerformanceData("1w")}>1W</TabsTrigger>
+              <TabsTrigger value="1m" onClick={() => fetchPerformanceData("1m")}>1M</TabsTrigger>
+              <TabsTrigger value="3m" onClick={() => fetchPerformanceData("3m")}>3M</TabsTrigger>
+              <TabsTrigger value="1y" onClick={() => fetchPerformanceData("1y")}>1Y</TabsTrigger>
             </TabsList>
           </Tabs>
         </div>

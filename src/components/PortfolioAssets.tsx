@@ -35,63 +35,57 @@ const PortfolioAssets = () => {
         const walletAddress = getConnectedWallet();
         
         if (walletAddress) {
-          // In a production app, we would fetch real wallet assets from Helius API
-          // For now, we're just showing an empty state
-          setAssets([]);
-          
-          // Example code to fetch real assets when API is available:
-          /*
-          const response = await heliusApiCall("getTokenBalances", [walletAddress]);
-          
-          if (response && response.tokens) {
-            // Process token data and fetch prices
-            const processedAssets = await Promise.all(response.tokens.map(async (token: any) => {
-              // Get price data from Jupiter or other price API
-              const priceResponse = await fetch(`https://price.jup.ag/v4/price?ids=${token.mint}`);
-              const priceData = await priceResponse.json();
-              const price = priceData?.data?.[token.mint]?.price || 0;
-              
-              // Calculate value
-              const balance = token.amount / Math.pow(10, token.decimals);
-              const value = balance * price;
-              
-              return {
-                name: token.name || "Unknown Token",
-                symbol: token.symbol || token.mint.substring(0, 4),
-                type: "token",
-                chain: "solana",
-                balance,
-                price,
-                value,
-                change24h: priceData?.data?.[token.mint]?.change24h || 0
-              };
-            }));
+          // In a production app, fetch real wallet assets from Helius API
+          try {
+            const response = await heliusApiCall("getTokenBalances", [walletAddress]);
             
-            // Add SOL balance if present
-            if (response.nativeBalance) {
-              const solBalance = response.nativeBalance / 1e9; // Convert lamports to SOL
-              const solPrice = await fetch("https://price.jup.ag/v4/price?ids=SOL");
-              const solPriceData = await solPrice.json();
-              const solUsdPrice = solPriceData?.data?.SOL?.price || 0;
+            if (response && response.tokens) {
+              // Process token data
+              const processedAssets = await Promise.all(response.tokens.map(async (token: any) => {
+                // Get price data from Jupiter
+                try {
+                  const priceResponse = await fetch(`https://price.jup.ag/v4/price?ids=${token.mint}`);
+                  const priceData = await priceResponse.json();
+                  const price = priceData?.data?.[token.mint]?.price || 0;
+                  const change24h = priceData?.data?.[token.mint]?.priceChange24h || 0;
+                  
+                  // Calculate value
+                  const balance = token.amount / Math.pow(10, token.decimals);
+                  const value = balance * price;
+                  
+                  return {
+                    name: token.name || "Unknown Token",
+                    symbol: token.symbol || token.mint.substring(0, 4),
+                    type: "token",
+                    chain: "solana",
+                    balance,
+                    price,
+                    value,
+                    change24h
+                  };
+                } catch (error) {
+                  console.error(`Error fetching price for token ${token.mint}:`, error);
+                  return null;
+                }
+              }));
               
-              processedAssets.unshift({
-                name: "Solana",
-                symbol: "SOL",
-                type: "token",
-                chain: "solana",
-                balance: solBalance,
-                price: solUsdPrice,
-                value: solBalance * solUsdPrice,
-                change24h: solPriceData?.data?.SOL?.change24h || 0
-              });
+              // Filter out null values (failed price fetches)
+              const validAssets = processedAssets.filter(asset => asset !== null);
+              setAssets(validAssets as AssetData[]);
+            } else {
+              setAssets([]);
             }
-            
-            setAssets(processedAssets);
+          } catch (error) {
+            console.error("Error fetching tokens from Helius:", error);
+            setAssets([]);
           }
-          */
+        } else {
+          // No wallet connected
+          setAssets([]);
         }
       } catch (error) {
         console.error("Error fetching portfolio assets:", error);
+        setAssets([]);
       } finally {
         setLoading(false);
       }
@@ -208,8 +202,8 @@ const PortfolioAssets = () => {
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredAssets.map((asset) => (
-                  <TableRow key={asset.symbol} className="border-white/5 hover:bg-white/5">
+                filteredAssets.map((asset, index) => (
+                  <TableRow key={`${asset.symbol}-${index}`} className="border-white/5 hover:bg-white/5">
                     <TableCell>
                       <div className="font-medium">{asset.name}</div>
                       <div className="text-xs text-gray-400">{asset.symbol}</div>

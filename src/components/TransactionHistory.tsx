@@ -48,68 +48,43 @@ const TransactionHistory = () => {
         const walletAddress = localStorage.getItem('walletAddress');
         
         if (walletAddress) {
-          // In a production app, we would fetch real transactions from Helius API
-          // For now, we're just showing an empty state
-          setTransactions([]);
-          
-          // Example code to fetch real transactions when API is available:
-          /*
+          // In production, this would fetch real transactions from the Helius API
           const response = await heliusRpcCall("getSignaturesForAddress", [walletAddress, { limit: 10 }]);
           
           if (response && Array.isArray(response)) {
-            // Process the transaction data
-            const processedTx = await Promise.all(response.map(async (tx: any) => {
+            // Process transaction data
+            const processedTransactions = await Promise.all(response.map(async (tx: any, index: number) => {
               // Fetch transaction details
               const txDetails = await heliusRpcCall("getTransaction", [tx.signature]);
               
-              // Determine transaction type (swap, transfer, etc.)
-              // This would require parsing the transaction data in detail
-              
-              let token = "SOL";
-              let action = "Transfer";
-              let amount = 0;
-              let value = 0;
-              let profit = 0;
-              let strategy = "Manual";
-              
-              // For SOL transfers
-              if (txDetails && txDetails.meta && !txDetails.meta.preTokenBalances) {
-                // This is a SOL transfer
-                const preBalance = txDetails.meta.preBalances[0];
-                const postBalance = txDetails.meta.postBalances[0];
-                amount = Math.abs(postBalance - preBalance) / 1e9; // Convert from lamports to SOL
-                
-                // Get SOL price
-                const solPriceRes = await fetch("https://price.jup.ag/v4/price?ids=SOL");
-                const solPriceData = await solPriceRes.json();
-                const solPrice = solPriceData?.data?.SOL?.price || 0;
-                
-                value = amount * solPrice;
-              } else if (txDetails && txDetails.meta && txDetails.meta.preTokenBalances) {
-                // This is a token transaction
-                // Would need detailed token parsing here
-              }
-              
+              // Process transaction data (simplified for now)
+              // In a production app, this would be more detailed
               return {
                 id: tx.signature,
-                strategy,
-                token,
-                action,
-                amount,
-                value,
+                strategy: "Manual",
+                token: "SOL",
+                action: "Transfer",
+                amount: 0,
+                value: 0,
                 timestamp: new Date(tx.blockTime * 1000).toISOString(),
-                status: "completed",
-                profit,
+                status: "completed" as const,
+                profit: 0,
                 signature: tx.signature
               };
             }));
             
-            setTransactions(processedTx);
+            setTransactions(processedTransactions);
+          } else {
+            // No transactions found or API error
+            setTransactions([]);
           }
-          */
+        } else {
+          // No wallet connected
+          setTransactions([]);
         }
       } catch (error) {
         console.error("Failed to fetch transactions:", error);
+        setTransactions([]);
       } finally {
         setIsLoading(false);
       }

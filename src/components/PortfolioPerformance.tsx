@@ -31,8 +31,8 @@ const PortfolioPerformance = () => {
     setTimeframe(newTimeframe);
     setIsLoading(true);
     
-    // In a real app, we would fetch data here from the API
-    // For now, just show empty state
+    // In a real app, we would fetch data from an API
+    // For now, just show loading and then empty state
     setTimeout(() => {
       setPerformanceData([]);
       setIsLoading(false);
@@ -129,12 +129,11 @@ const PortfolioPerformance = () => {
                 <Area 
                   type="monotone" 
                   dataKey="value" 
-                  name="Total Value" 
+                  name="Portfolio Value" 
                   stroke="#6366f1" 
                   fill="url(#totalGradient)"
                   strokeWidth={2}
                   activeDot={{ r: 4, fill: '#6366f1', stroke: 'white', strokeWidth: 1 }}
-                  stackId="1"
                 />
               </AreaChart>
             </ResponsiveContainer>

@@ -1,4 +1,3 @@
-
 /**
  * Market utilities for SellYourSOL V2 AI trading platform
  * Functions to interact with market data from Solana ecosystem
@@ -93,11 +92,110 @@ export const getMarketOverview = async (limit = 5) => {
       console.error('Error fetching market data from Helius:', error);
     }
 
-    // If all APIs failed, return empty array
-    console.log('All APIs failed, returning empty array');
     return [];
   } catch (error) {
     console.error('Error fetching market overview:', error);
+    return [];
+  }
+};
+
+/**
+ * Get trending tokens across multiple Solana DEXes
+ * @param limit Number of tokens to return
+ * @returns Array of trending token data
+ */
+export const getTrendingTokens = async (limit = 5) => {
+  try {
+    // Try to get trending tokens from multiple sources
+    const trendingTokens: any[] = [];
+    
+    // Try Jupiter trending tokens
+    try {
+      const response = await fetch('https://station.jup.ag/api/trending-tokens');
+      if (response.ok) {
+        const data = await response.json();
+        if (data && Array.isArray(data)) {
+          for (const token of data.slice(0, limit)) {
+            if (token.address) {
+              // Get price data
+              const priceResponse = await fetch(`https://price.jup.ag/v4/price?ids=${token.address}`);
+              const priceData = await priceResponse.json();
+              const price = priceData?.data?.[token.address]?.price || 0;
+              const change24h = priceData?.data?.[token.address]?.priceChange24h || 0;
+              
+              trendingTokens.push({
+                name: token.name || 'Unknown Token',
+                symbol: token.symbol || token.address.substring(0, 4),
+                price: price,
+                change24h: change24h,
+                volume24h: 0, // Jupiter doesn't provide volume data in the trending endpoint
+                source: 'Jupiter'
+              });
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching trending tokens from Jupiter:', error);
+    }
+    
+    // Try Raydium trending tokens
+    try {
+      const response = await fetch('https://api.raydium.io/v2/main/trending-tokens');
+      if (response.ok) {
+        const data = await response.json();
+        if (data && data.data && Array.isArray(data.data)) {
+          for (const token of data.data.slice(0, limit)) {
+            // Check if token is already added from Jupiter
+            if (!trendingTokens.some(t => t.symbol === token.symbol)) {
+              trendingTokens.push({
+                name: token.name || 'Unknown Token',
+                symbol: token.symbol,
+                price: token.price || 0,
+                change24h: token.priceChange24h || 0,
+                volume24h: token.volume24h || 0,
+                source: 'Raydium'
+              });
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching trending tokens from Raydium:', error);
+    }
+    
+    // Try DexScreener trending
+    try {
+      const response = await fetch('https://api.dexscreener.com/latest/dex/search?q=trending');
+      if (response.ok) {
+        const data = await response.json();
+        if (data && data.pairs && Array.isArray(data.pairs)) {
+          // Filter for Solana pairs only
+          const solanaPairs = data.pairs.filter((pair: any) => pair.chainId === 'solana');
+          
+          for (const pair of solanaPairs.slice(0, limit)) {
+            // Check if token is already added from Jupiter or Raydium
+            if (!trendingTokens.some(t => t.symbol === pair.baseToken.symbol)) {
+              trendingTokens.push({
+                name: pair.baseToken.name || 'Unknown Token',
+                symbol: pair.baseToken.symbol,
+                price: parseFloat(pair.priceUsd) || 0,
+                change24h: pair.priceChange.h24 || 0,
+                volume24h: pair.volume.h24 || 0,
+                source: 'DexScreener'
+              });
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching trending tokens from DexScreener:', error);
+    }
+    
+    // Ensure we only return the requested limit
+    return trendingTokens.slice(0, limit);
+  } catch (error) {
+    console.error('Failed to get trending tokens:', error);
     return [];
   }
 };

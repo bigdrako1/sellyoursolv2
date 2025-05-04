@@ -7,6 +7,7 @@ import { StrategySettings } from "@/components/StrategyConfig";
 import { useToast } from "@/hooks/use-toast";
 import { secureInitialInvestment } from "@/utils/tradingUtils";
 import { Button } from "@/components/ui/button";
+import { Shield } from "lucide-react";
 
 const TradingTab = () => {
   const { toast } = useToast();
@@ -120,10 +121,12 @@ const TradingTab = () => {
           <div className="flex justify-end">
             <Button 
               variant="outline" 
-              className="text-sm bg-trading-darkAccent hover:bg-trading-highlight/30"
+              size="sm"
+              className="bg-trading-success/10 text-trading-success border-trading-success/30 flex items-center gap-1 hover:bg-trading-success/20"
               onClick={handleSecureAll}
             >
-              Secure All Initial Investments
+              <Shield size={14} />
+              <span>Secure All Initial Investments</span>
             </Button>
           </div>
         )}

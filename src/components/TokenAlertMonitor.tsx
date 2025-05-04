@@ -34,15 +34,12 @@ const TokenAlertMonitor: React.FC = () => {
       
       setLoading(true);
       try {
-        // In a production app, we would fetch real token data from Helius
-        // For now, we keep the UI clean with no mock data
-        setTokens([]);
-        
-        // In a production environment, uncomment this code to fetch real token data:
-        /*
+        // Fetch real token data from Helius
         const response = await heliusApiCall("getRecentTokenActivity", []);
+        
         if (response && Array.isArray(response)) {
-          const tokenData = response.map(token => ({
+          // Process token data
+          const tokenData: Token[] = response.map((token: any) => ({
             name: token.name || "Unknown Token",
             symbol: token.symbol || "???",
             address: token.address,
@@ -54,11 +51,22 @@ const TokenAlertMonitor: React.FC = () => {
             source: token.source || "Helius",
             createdAt: new Date(token.timestamp || Date.now())
           }));
+          
           setTokens(tokenData);
+          
+          // Play sound notification for new tokens
+          if (tokenData.length > 0 && tokens.length > 0) {
+            if (tokenData[0].address !== tokens[0].address) {
+              playSound('newToken');
+            }
+          }
+        } else {
+          // No tokens found or API error
+          setTokens([]);
         }
-        */
       } catch (error) {
         console.error("Error fetching token alerts:", error);
+        setTokens([]);
       } finally {
         setLoading(false);
       }
@@ -69,7 +77,7 @@ const TokenAlertMonitor: React.FC = () => {
     // Set up polling for new tokens
     const intervalId = setInterval(fetchTokens, 60000);
     return () => clearInterval(intervalId);
-  }, [alertsEnabled]);
+  }, [alertsEnabled, tokens]);
 
   const toggleAlerts = () => {
     setAlertsEnabled(!alertsEnabled);
@@ -125,7 +133,7 @@ const TokenAlertMonitor: React.FC = () => {
         ) : (
           <div className="space-y-4">
             {tokens.map((token, index) => (
-              <Alert key={index} className="bg-trading-darkAccent border-l-4 border-l-trading-highlight">
+              <Alert key={token.address} className="bg-trading-darkAccent border-l-4 border-l-trading-highlight">
                 <div className="flex justify-between">
                   <div>
                     <AlertTitle className="flex items-center font-bold">
