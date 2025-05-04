@@ -1,4 +1,3 @@
-
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
@@ -20,9 +19,10 @@ import {
 } from 'recharts';
 import { calculateStrategyProfitability } from "@/utils/tradingUtils";
 import { Button } from "@/components/ui/button";
-import { Download, Filter, SlidersHorizontal, Share2 } from "lucide-react";
+import { Download, Filter, SlidersHorizontal, Share2, Plus } from "lucide-react";
 import { useState, useCallback } from "react";
 import TradePerformanceGrade from "@/components/TradePerformanceGrade";
+import ShareablePnLCard from "@/components/ShareablePnLCard";
 
 // Sample data for analytics
 const STRATEGY_DATA = [
@@ -69,9 +69,41 @@ const PERFORMANCE_METRICS = {
   sharpeRatio: 1.32
 };
 
+// Sample PNL data for shareable cards
+const SAMPLE_PNL_DATA = [
+  {
+    tokenSymbol: "SOL",
+    entryMarketCap: 42580000000,
+    exitMarketCap: 46870000000,
+    profit: 245.32,
+    profitPercentage: 18.7,
+    date: "May 2-5, 2025",
+    backgroundGradient: "from-solana to-purple-500"
+  },
+  {
+    tokenSymbol: "SRUN",
+    entryMarketCap: 15700000,
+    exitMarketCap: 22400000,
+    profit: 127.85,
+    profitPercentage: 32.4,
+    date: "Apr 28-29, 2025",
+    backgroundGradient: "from-trading-highlight to-indigo-600"
+  },
+  {
+    tokenSymbol: "FBOT",
+    entryMarketCap: 8300000,
+    exitMarketCap: 7100000,
+    profit: -42.18,
+    profitPercentage: -12.8,
+    date: "Apr 25-27, 2025",
+    backgroundGradient: "from-gray-700 to-gray-900"
+  }
+];
+
 const TradingAnalytics = () => {
   const [timeframe, setTimeframe] = useState("1w");
   const [activeTab, setActiveTab] = useState("performance");
+  const [showPnlCards, setShowPnlCards] = useState(false);
   
   // Array of colors for charts
   const COLORS = ['#6366f1', '#8b5cf6', '#3b82f6', '#10b981', '#f97316'];
@@ -84,6 +116,11 @@ const TradingAnalytics = () => {
   // Handle tab change
   const handleTabChange = useCallback((newTab: string) => {
     setActiveTab(newTab);
+  }, []);
+
+  // Toggle PNL cards display
+  const togglePnlCards = useCallback(() => {
+    setShowPnlCards(prev => !prev);
   }, []);
   
   return (
@@ -102,11 +139,49 @@ const TradingAnalytics = () => {
           <Button variant="outline" size="sm" className="gap-1 bg-trading-darkAccent border-white/10 hover:bg-white/10">
             <Download size={14} />
           </Button>
-          <Button variant="outline" size="sm" className="gap-1 bg-trading-darkAccent border-white/10 hover:bg-white/10">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="gap-1 bg-trading-darkAccent border-white/10 hover:bg-white/10"
+            onClick={togglePnlCards}
+          >
             <Share2 size={14} />
           </Button>
         </div>
       </div>
+      
+      {/* PNL Shareable Cards Section */}
+      {showPnlCards && (
+        <div className="mb-6">
+          <div className="flex justify-between items-center mb-3">
+            <h3 className="text-lg font-semibold">Shareable PNL Cards</h3>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="gap-1 bg-trading-darkAccent border-white/10 hover:bg-white/10"
+              onClick={() => {/* We would add a modal to create new card here */}}
+            >
+              <Plus size={14} />
+              <span>Create New</span>
+            </Button>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {SAMPLE_PNL_DATA.map((card, index) => (
+              <ShareablePnLCard
+                key={index}
+                tokenSymbol={card.tokenSymbol}
+                entryMarketCap={card.entryMarketCap}
+                exitMarketCap={card.exitMarketCap}
+                profit={card.profit}
+                profitPercentage={card.profitPercentage}
+                date={card.date}
+                backgroundGradient={card.backgroundGradient}
+              />
+            ))}
+          </div>
+        </div>
+      )}
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card className="trading-card p-4">
@@ -132,7 +207,7 @@ const TradingAnalytics = () => {
         </Card>
       </div>
       
-      {/* New Performance Grade Component */}
+      {/* Performance Grade Component */}
       <TradePerformanceGrade metrics={PERFORMANCE_METRICS} />
       
       <Tabs defaultValue="performance" value={activeTab} onValueChange={handleTabChange} className="w-full">
