@@ -9,7 +9,6 @@ import { useQuery } from "@tanstack/react-query";
 import { getMarketOverview } from "@/utils/marketUtils";
 
 interface TokenData {
-  id?: number;
   name: string;
   symbol: string;
   chain?: string;
@@ -111,8 +110,8 @@ const TokenList = () => {
               </TableHeader>
               <TableBody>
                 {filteredTokens.length > 0 ? (
-                  filteredTokens.map((token) => (
-                    <TableRow key={`${token.symbol}-${token.id}`} className="border-white/5 hover:bg-white/5">
+                  filteredTokens.map((token, index) => (
+                    <TableRow key={`${token.symbol}-${index}`} className="border-white/5 hover:bg-white/5">
                       <TableCell>
                         <button onClick={() => toggleFavorite(token.symbol)} className="focus:outline-none">
                           <Star className={`h-4 w-4 ${favorites.includes(token.symbol) ? 'text-yellow-400 fill-yellow-400' : 'text-gray-500'}`} />

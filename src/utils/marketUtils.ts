@@ -40,12 +40,16 @@ export const getMarketOverview = async (limit = 5) => {
               key => SOLANA_TOKEN_MINTS[key as keyof typeof SOLANA_TOKEN_MINTS] === mint
             ) || "UNKNOWN";
             
+            // Calculate an estimated market cap based on available data
+            const estimatedMarketCap = data.price * (data.volume24h / (data.price * 0.05) || 1000000);
+            
             return {
               name: data.name || symbol,
               symbol: symbol,
               price: data.price || 0,
               change24h: data.priceChange24h || 0,
-              volume24h: data.volume24h || 0
+              volume24h: data.volume24h || 0,
+              marketCap: estimatedMarketCap // Add market cap
             };
           });
           
@@ -61,13 +65,19 @@ export const getMarketOverview = async (limit = 5) => {
       const tokenPrices = await getTokenPrices(tokenMints.slice(0, limit));
 
       if (tokenPrices && tokenPrices.length > 0) {
-        return tokenPrices.map((token: any) => ({
-          name: token.name || getSymbolFromMint(token.mint),
-          symbol: token.symbol || getSymbolFromMint(token.mint),
-          price: token.price || 0,
-          change24h: token.priceChange24h || 0,
-          volume24h: token.volume24h || 0
-        })).slice(0, limit);
+        return tokenPrices.map((token: any) => {
+          // Calculate an estimated market cap based on available data
+          const estimatedMarketCap = token.price * (token.volume24h / (token.price * 0.05) || 1000000);
+          
+          return {
+            name: token.name || getSymbolFromMint(token.mint),
+            symbol: token.symbol || getSymbolFromMint(token.mint),
+            price: token.price || 0,
+            change24h: token.priceChange24h || 0,
+            volume24h: token.volume24h || 0,
+            marketCap: estimatedMarketCap // Add market cap
+          };
+        }).slice(0, limit);
       }
     } catch (error) {
       console.error('Error fetching market data from Helius:', error);
@@ -76,11 +86,11 @@ export const getMarketOverview = async (limit = 5) => {
     // Fallback to mock data if both APIs failed
     console.log('Using mock market data as final fallback');
     return [
-      { name: "Solana", symbol: "SOL", price: 149.87, change24h: 3.24, volume24h: 2354657890 },
-      { name: "SellYourSOL", symbol: "SYS", price: 0.057, change24h: 5.12, volume24h: 9874560 },
-      { name: "Raydium", symbol: "RAY", price: 1.35, change24h: -0.87, volume24h: 53487690 },
-      { name: "Serum", symbol: "SRM", price: 0.82, change24h: 1.23, volume24h: 28546789 },
-      { name: "Marinade SOL", symbol: "mSOL", price: 165.24, change24h: 3.12, volume24h: 456789230 }
+      { name: "Solana", symbol: "SOL", price: 149.87, change24h: 3.24, volume24h: 2354657890, marketCap: 57892345680 },
+      { name: "SellYourSOL", symbol: "SYS", price: 0.057, change24h: 5.12, volume24h: 9874560, marketCap: 4567890 },
+      { name: "Raydium", symbol: "RAY", price: 1.35, change24h: -0.87, volume24h: 53487690, marketCap: 134567890 },
+      { name: "Serum", symbol: "SRM", price: 0.82, change24h: 1.23, volume24h: 28546789, marketCap: 82456789 },
+      { name: "Marinade SOL", symbol: "mSOL", price: 165.24, change24h: 3.12, volume24h: 456789230, marketCap: 5234567890 }
     ].slice(0, limit);
   } catch (error) {
     console.error('Error fetching market overview:', error);
