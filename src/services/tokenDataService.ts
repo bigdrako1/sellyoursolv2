@@ -16,6 +16,47 @@ export const isPumpFunToken = (tokenAddress: string): boolean => {
 };
 
 /**
+ * Convert TokenInfo to a simplified Token interface for UI
+ */
+export interface Token {
+  name: string;
+  symbol: string;
+  address: string;
+  price: number;
+  marketCap: number;
+  liquidity: number;
+  holders: number;
+  qualityScore: number;
+  source: string;
+  createdAt: Date;
+  change24h?: number;
+  trendingScore?: number;
+  trendingSources?: string[];
+  isPumpFun?: boolean;
+}
+
+/**
+ * Helper function to convert TokenInfo to Token interface
+ */
+export const tokenInfoToToken = (tokenInfo: TokenInfo): Token => {
+  return {
+    name: tokenInfo.metadata.name,
+    symbol: tokenInfo.metadata.symbol,
+    address: tokenInfo.metadata.address,
+    price: tokenInfo.price.current || 0,
+    marketCap: tokenInfo.marketCap || 0,
+    liquidity: tokenInfo.liquidity.usd || 0,
+    holders: tokenInfo.holders.count || 0,
+    qualityScore: tokenInfo.quality?.score || 50,
+    source: tokenInfo.isPumpFunToken ? "Pump.fun" : "DEX",
+    createdAt: tokenInfo.created ? new Date(tokenInfo.created) : new Date(),
+    change24h: tokenInfo.price.change24h,
+    trendingScore: tokenInfo.isTrending ? 3 : undefined,
+    isPumpFun: tokenInfo.isPumpFunToken
+  };
+};
+
+/**
  * Test Helius API connection
  * @returns Promise<boolean>
  */
@@ -147,6 +188,15 @@ export const getTokenInfo = async (tokenAddress: string): Promise<TokenInfo | nu
  */
 export const getRecentTokenActivity = async (): Promise<TokenInfo[]> => {
   // This would typically fetch from a backend API or local storage
+  // For now, return a mock empty array
+  return [];
+};
+
+/**
+ * Get trending tokens from various DEXes
+ */
+export const getTrendingTokens = async (): Promise<TokenInfo[]> => {
+  // This would fetch trending tokens from various DEXes
   // For now, return a mock empty array
   return [];
 };

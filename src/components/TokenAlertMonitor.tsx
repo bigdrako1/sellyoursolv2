@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowUpRight, Bell, BellOff, Loader2, TrendingUp, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { playSound } from "@/utils/soundUtils";
-import { getRecentTokenActivity, getTrendingTokens, getPumpFunTokens } from "@/services/tokenDataService";
+import { getRecentTokenActivity, getTrendingTokens, getPumpFunTokens, TokenInfo } from "@/services/tokenDataService";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -26,6 +26,25 @@ interface Token {
   trendingSources?: string[];
   isPumpFun?: boolean;
 }
+
+// Function to convert TokenInfo to Token interface
+const tokenInfoToToken = (tokenInfo: TokenInfo): Token => {
+  return {
+    name: tokenInfo.metadata.name,
+    symbol: tokenInfo.metadata.symbol,
+    address: tokenInfo.metadata.address,
+    price: tokenInfo.price.current || 0,
+    marketCap: tokenInfo.marketCap || 0,
+    liquidity: tokenInfo.liquidity.usd || 0,
+    holders: tokenInfo.holders.count || 0,
+    qualityScore: tokenInfo.quality?.score || 50,
+    source: tokenInfo.isPumpFunToken ? "Pump.fun" : "DEX",
+    createdAt: tokenInfo.created ? new Date(tokenInfo.created) : new Date(),
+    change24h: tokenInfo.price.change24h,
+    trendingScore: tokenInfo.isTrending ? 3 : undefined,
+    isPumpFun: tokenInfo.isPumpFunToken
+  };
+};
 
 const TokenAlertMonitor: React.FC = () => {
   const [tokens, setTokens] = useState<Token[]>([]);
@@ -51,8 +70,8 @@ const TokenAlertMonitor: React.FC = () => {
         const tokenActivity = await getRecentTokenActivity();
         
         if (tokenActivity && Array.isArray(tokenActivity) && tokenActivity.length > 0) {
-          // Process token data
-          const tokenData: Token[] = tokenActivity;
+          // Process token data - convert TokenInfo to Token
+          const tokenData: Token[] = tokenActivity.map(tokenInfoToToken);
           
           setTokens(tokenData);
           
@@ -91,7 +110,9 @@ const TokenAlertMonitor: React.FC = () => {
         console.log("Fetched trending tokens:", trending);
         
         if (trending && Array.isArray(trending)) {
-          setTrendingTokens(trending);
+          // Convert TokenInfo to Token
+          const trendingTokenData = trending.map(tokenInfoToToken);
+          setTrendingTokens(trendingTokenData);
         }
       } catch (error) {
         console.error("Error fetching trending tokens:", error);
@@ -116,7 +137,9 @@ const TokenAlertMonitor: React.FC = () => {
         console.log("Fetched pump.fun tokens:", pumpTokens);
         
         if (pumpTokens && Array.isArray(pumpTokens)) {
-          setPumpFunTokens(pumpTokens);
+          // Convert TokenInfo to Token
+          const pumpTokenData = pumpTokens.map(tokenInfoToToken);
+          setPumpFunTokens(pumpTokenData);
         }
       } catch (error) {
         console.error("Error fetching pump.fun tokens:", error);
