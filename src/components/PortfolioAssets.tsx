@@ -6,17 +6,15 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Search, Filter, SlidersHorizontal } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { useCurrencyStore } from "@/store/currencyStore";
 
 // Generate sample assets data
 const generateAssets = () => {
   const assets = [
     { name: "Solana", symbol: "SOL", type: "token", chain: "solana", balance: 14.8, price: 158.32, value: 2343.14, change24h: 9.8 },
     { name: "SOL Runner", symbol: "SRUN", type: "token", chain: "solana", balance: 2450, price: 0.243, value: 594.34, change24h: 3.2 },
-    { name: "Binance Coin", symbol: "BNB", type: "token", chain: "binance", balance: 4.32, price: 354.26, value: 1530.40, change24h: 5.7 },
-    { name: "Front Bot", symbol: "FBOT", type: "token", chain: "binance", balance: 1280, price: 0.28, value: 358.04, change24h: 7.1 },
     { name: "Trading X", symbol: "TDX", type: "token", chain: "solana", balance: 455, price: 0.34, value: 154.7, change24h: -2.3 },
-    { name: "Auto", symbol: "AUTO", type: "token", chain: "solana", balance: 28.5, price: 16.73, value: 476.80, change24h: 1.8 },
-    { name: "BNX", symbol: "BNX", type: "token", chain: "binance", balance: 10.4, price: 9.82, value: 102.13, change24h: -4.2 }
+    { name: "Auto", symbol: "AUTO", type: "token", chain: "solana", balance: 28.5, price: 16.73, value: 476.80, change24h: 1.8 }
   ];
 
   // Sort by value descending
@@ -27,6 +25,7 @@ const PortfolioAssets = () => {
   const [assets] = useState(generateAssets());
   const [filter, setFilter] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
+  const { currency, currencySymbol } = useCurrencyStore();
   
   // Apply filters
   const filteredAssets = assets.filter(asset => {
@@ -41,6 +40,19 @@ const PortfolioAssets = () => {
   
   // Calculate total value
   const totalValue = filteredAssets.reduce((sum, asset) => sum + asset.value, 0);
+  
+  // Convert USD values to the selected currency
+  const convertToCurrency = (value: number): number => {
+    const rates = {
+      USD: 1,
+      EUR: 0.92,
+      GBP: 0.79,
+      JPY: 150.56,
+      KES: 129.45
+    };
+    
+    return value * (rates[currency as keyof typeof rates] || 1);
+  };
   
   return (
     <Card className="trading-card">
@@ -86,14 +98,6 @@ const PortfolioAssets = () => {
           >
             Solana
           </Button>
-          <Button 
-            variant={filter === "binance" ? "secondary" : "outline"} 
-            size="sm" 
-            className={filter !== "binance" ? "bg-trading-darkAccent border-white/10" : ""}
-            onClick={() => setFilter("binance")}
-          >
-            Binance
-          </Button>
         </div>
         
         <div className="overflow-x-auto">
@@ -117,13 +121,13 @@ const PortfolioAssets = () => {
                     <div className="text-xs text-gray-400">{asset.symbol}</div>
                   </TableCell>
                   <TableCell>
-                    <Badge variant="outline" className={`${asset.chain === 'solana' ? 'bg-solana/20 text-solana-foreground' : 'bg-binance/20 text-binance-foreground'}`}>
-                      {asset.chain === 'solana' ? 'Solana' : 'BSC'}
+                    <Badge variant="outline" className="bg-solana/20 text-solana-foreground">
+                      Solana
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">{asset.balance.toLocaleString()}</TableCell>
-                  <TableCell className="text-right">${asset.price.toFixed(asset.price < 1 ? 3 : 2)}</TableCell>
-                  <TableCell className="text-right font-medium">${asset.value.toLocaleString()}</TableCell>
+                  <TableCell className="text-right">{currencySymbol}{convertToCurrency(asset.price).toFixed(asset.price < 1 ? 3 : 2)}</TableCell>
+                  <TableCell className="text-right font-medium">{currencySymbol}{convertToCurrency(asset.value).toLocaleString()}</TableCell>
                   <TableCell className={`text-right ${asset.change24h >= 0 ? 'text-trading-success' : 'text-trading-danger'}`}>
                     {asset.change24h >= 0 ? '+' : ''}{asset.change24h}%
                   </TableCell>
@@ -144,7 +148,7 @@ const PortfolioAssets = () => {
             Showing {filteredAssets.length} of {assets.length} assets
           </div>
           <div className="text-sm">
-            Total Value: <span className="font-bold">${totalValue.toLocaleString()}</span>
+            Total Value: <span className="font-bold">{currencySymbol}{convertToCurrency(totalValue).toFixed(2)}</span>
           </div>
         </div>
       </div>
