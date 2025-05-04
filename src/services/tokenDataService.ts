@@ -1,10 +1,38 @@
-
 import { getActiveApiConfig } from '@/config/appDefinition';
-import { TradingPosition, ScaleOutEvent } from '@/utils/tradingUtils';
 
 // Cache for API responses
 const apiCache = new Map<string, { data: any, timestamp: number }>();
 const CACHE_TTL = 60000; // 1 minute cache
+
+// Position management interface - defined locally to avoid import conflict
+export interface TradingPosition {
+  contractAddress: string;
+  tokenName: string;
+  tokenSymbol: string;
+  entryPrice: number;
+  entryTime: string;
+  initialInvestment: number;
+  currentAmount: number;
+  currentPrice: number;
+  lastUpdateTime: string;
+  securedInitial: boolean;
+  scaleOutHistory: ScaleOutEvent[];
+  source: string;
+  status: 'active' | 'closed' | 'failed';
+  pnl: number;
+  roi: number;
+  notes: string;
+}
+
+// Scale out event interface
+export interface ScaleOutEvent {
+  time: string;
+  price: number;
+  amount: number;
+  tokens: number;
+  reason: string;
+  percentSecured: number;
+}
 
 /**
  * Tests connection to the Helius RPC API
@@ -374,7 +402,7 @@ export const getSolPrice = async (): Promise<number> => {
 };
 
 /**
- * Get trending tokens from various sources
+ * Get trending tokens from various DEX sources
  * @param limit Number of tokens to return
  * @returns Array of trending token data
  */
@@ -387,46 +415,60 @@ export const getTrendingTokens = async (limit: number = 10): Promise<any[]> => {
   }
   
   try {
+    console.log('Fetching trending tokens from multiple DEX sources...');
+    
     // Try to fetch from Jupiter trending API
-    const jupiterResponse = await fetch('https://station.jup.ag/api/trending-tokens');
-    const jupiterData = await jupiterResponse.json();
+    const jupiterResponse = await fetch('https://station.jup.ag/api/trending-tokens')
+      .then(res => res.json())
+      .catch(() => null);
     
     // Try to fetch from Raydium trending API
-    const raydiumResponse = await fetch('https://api.raydium.io/v2/main/trending-tokens');
-    const raydiumData = await raydiumResponse.json();
+    const raydiumResponse = await fetch('https://api.raydium.io/v2/main/trending-tokens')
+      .then(res => res.json())
+      .catch(() => null);
+    
+    // Try to fetch from Pump.fun trending API
+    const pumpFunResponse = await fetch('https://api.pump.fun/trending')
+      .then(res => res.json())
+      .catch(() => null);
     
     // Try to fetch from BirdEye trending tokens
-    const birdEyeResponse = await birdEyeApiCall('defi/token_list?sort_by=v24hUSD&sort_type=desc&offset=0&limit=20');
+    const birdEyeResponse = await birdEyeApiCall('defi/token_list?sort_by=v24hUSD&sort_type=desc&offset=0&limit=20')
+      .catch(() => null);
+    
     const birdEyeData = birdEyeResponse?.data?.tokens || [];
     
     // Combine and deduplicate tokens from all sources
     const allTokens = new Map();
     
     // Process Jupiter tokens
-    if (jupiterData && Array.isArray(jupiterData)) {
-      for (const token of jupiterData) {
+    if (jupiterResponse && Array.isArray(jupiterResponse)) {
+      console.log(`Found ${jupiterResponse.length} trending tokens from Jupiter`);
+      for (const token of jupiterResponse) {
         if (token.address) {
           allTokens.set(token.address, {
             name: token.name,
             symbol: token.symbol,
             address: token.address,
-            price: 0,
-            change24h: 0,
+            price: token.price || 0,
+            change24h: token.change24h || 0,
             volume24h: 0,
             source: 'Jupiter',
-            isTrending: true
+            isTrending: true,
+            trendingSources: ['Jupiter']
           });
         }
       }
     }
     
     // Process Raydium tokens
-    if (raydiumData && Array.isArray(raydiumData)) {
-      for (const token of raydiumData) {
+    if (raydiumResponse && Array.isArray(raydiumResponse)) {
+      console.log(`Found ${raydiumResponse.length} trending tokens from Raydium`);
+      for (const token of raydiumResponse) {
         if (token.mint) {
           const existingToken = allTokens.get(token.mint);
           if (existingToken) {
-            existingToken.source = `${existingToken.source}, Raydium`;
+            existingToken.trendingSources = [...existingToken.trendingSources, 'Raydium'];
           } else {
             allTokens.set(token.mint, {
               name: token.name,
@@ -436,7 +478,33 @@ export const getTrendingTokens = async (limit: number = 10): Promise<any[]> => {
               change24h: 0,
               volume24h: 0,
               source: 'Raydium',
-              isTrending: true
+              isTrending: true,
+              trendingSources: ['Raydium']
+            });
+          }
+        }
+      }
+    }
+    
+    // Process Pump.fun tokens
+    if (pumpFunResponse && pumpFunResponse.tokens && Array.isArray(pumpFunResponse.tokens)) {
+      console.log(`Found ${pumpFunResponse.tokens.length} trending tokens from Pump.fun`);
+      for (const token of pumpFunResponse.tokens) {
+        if (token.mint) {
+          const existingToken = allTokens.get(token.mint);
+          if (existingToken) {
+            existingToken.trendingSources = [...existingToken.trendingSources, 'Pump.fun'];
+          } else {
+            allTokens.set(token.mint, {
+              name: token.name || "Unknown",
+              symbol: token.symbol || token.mint.substring(0, 4),
+              address: token.mint,
+              price: 0,
+              change24h: 0,
+              volume24h: 0,
+              source: 'Pump.fun',
+              isTrending: true,
+              trendingSources: ['Pump.fun']
             });
           }
         }
@@ -445,14 +513,15 @@ export const getTrendingTokens = async (limit: number = 10): Promise<any[]> => {
     
     // Process BirdEye tokens
     if (birdEyeData && Array.isArray(birdEyeData)) {
+      console.log(`Found ${birdEyeData.length} trending tokens from BirdEye`);
       for (const token of birdEyeData) {
         if (token.address) {
           const existingToken = allTokens.get(token.address);
           if (existingToken) {
-            existingToken.price = token.price || 0;
-            existingToken.change24h = token.priceChange24h || 0;
-            existingToken.volume24h = token.volume24h || 0;
-            existingToken.source = `${existingToken.source}, BirdEye`;
+            existingToken.price = token.price || existingToken.price;
+            existingToken.change24h = token.priceChange24h || existingToken.change24h;
+            existingToken.volume24h = token.volume24h || existingToken.volume24h;
+            existingToken.trendingSources = [...existingToken.trendingSources, 'BirdEye'];
           } else {
             allTokens.set(token.address, {
               name: token.name,
@@ -462,7 +531,8 @@ export const getTrendingTokens = async (limit: number = 10): Promise<any[]> => {
               change24h: token.priceChange24h || 0,
               volume24h: token.volume24h || 0,
               source: 'BirdEye',
-              isTrending: true
+              isTrending: true,
+              trendingSources: ['BirdEye']
             });
           }
         }
@@ -470,7 +540,16 @@ export const getTrendingTokens = async (limit: number = 10): Promise<any[]> => {
     }
     
     // Convert map to array
-    const trendingTokens = Array.from(allTokens.values());
+    let trendingTokens = Array.from(allTokens.values());
+    
+    // Add trending score based on presence across multiple platforms
+    trendingTokens = trendingTokens.map(token => {
+      return {
+        ...token,
+        trendingScore: token.trendingSources.length,
+        source: token.trendingSources.join(', ')
+      };
+    });
     
     // Get additional data for tokens if needed
     const enrichedTokens = await Promise.all(
@@ -492,8 +571,18 @@ export const getTrendingTokens = async (limit: number = 10): Promise<any[]> => {
       })
     );
     
-    // Sort by volume
-    const sortedTokens = enrichedTokens.sort((a, b) => b.volume24h - a.volume24h);
+    console.log(`Successfully aggregated ${enrichedTokens.length} trending tokens from all DEXes`);
+    
+    // Sort by trending score (appear on most platforms) and then by volume
+    const sortedTokens = enrichedTokens
+      .sort((a, b) => {
+        // First sort by trending score (higher is better)
+        if (b.trendingScore !== a.trendingScore) {
+          return b.trendingScore - a.trendingScore;
+        }
+        // Then by volume (higher is better)
+        return b.volume24h - a.volume24h;
+      });
     
     // Cache the results
     apiCache.set(cacheKey, {
@@ -602,28 +691,6 @@ export const saveTradingPositions = (positions: TradingPosition[]): void => {
     console.error("Error saving trading positions:", error);
   }
 };
-
-/**
- * Position management interface (moved from tradingUtils)
- */
-export interface TradingPosition {
-  contractAddress: string;
-  tokenName: string;
-  tokenSymbol: string;
-  entryPrice: number;
-  entryTime: string;
-  initialInvestment: number;
-  currentAmount: number;
-  currentPrice: number;
-  lastUpdateTime: string;
-  securedInitial: boolean;
-  scaleOutHistory: ScaleOutEvent[];
-  source: string;
-  status: 'active' | 'closed' | 'failed';
-  pnl: number;
-  roi: number;
-  notes: string;
-}
 
 /**
  * Clean up the API cache periodically

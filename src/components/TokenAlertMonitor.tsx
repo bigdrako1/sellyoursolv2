@@ -4,10 +4,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { ArrowUpRight, Bell, BellOff, Loader2 } from "lucide-react";
+import { ArrowUpRight, Bell, BellOff, Loader2, TrendingUp } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { playSound } from "@/utils/soundUtils";
-import { getRecentTokenActivity } from "@/services/tokenDataService";
+import { getRecentTokenActivity, getTrendingTokens } from "@/services/tokenDataService";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface Token {
   name: string;
@@ -20,12 +21,18 @@ interface Token {
   qualityScore: number;
   source: string;
   createdAt: Date;
+  change24h?: number;
+  trendingScore?: number;
+  trendingSources?: string[];
 }
 
 const TokenAlertMonitor: React.FC = () => {
   const [tokens, setTokens] = useState<Token[]>([]);
+  const [trendingTokens, setTrendingTokens] = useState<Token[]>([]);
   const [alertsEnabled, setAlertsEnabled] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [trendingLoading, setTrendingLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState("alerts");
   const { toast } = useToast();
 
   useEffect(() => {
@@ -34,7 +41,7 @@ const TokenAlertMonitor: React.FC = () => {
       
       setLoading(true);
       try {
-        // Fetch real token data using our new service
+        // Fetch real token data using our service
         const tokenActivity = await getRecentTokenActivity();
         
         if (tokenActivity && Array.isArray(tokenActivity) && tokenActivity.length > 0) {
@@ -49,7 +56,8 @@ const TokenAlertMonitor: React.FC = () => {
             holders: token.holders || 0,
             qualityScore: token.qualityScore || 0,
             source: token.source || "Helius",
-            createdAt: new Date(token.createdAt || Date.now())
+            createdAt: new Date(token.createdAt || Date.now()),
+            change24h: token.change24h || 0
           }));
           
           setTokens(tokenData);
@@ -78,6 +86,31 @@ const TokenAlertMonitor: React.FC = () => {
     return () => clearInterval(intervalId);
   }, [alertsEnabled, tokens]);
 
+  // Fetch trending tokens from multiple DEXes
+  useEffect(() => {
+    const fetchTrendingTokens = async () => {
+      setTrendingLoading(true);
+      try {
+        const trending = await getTrendingTokens(10);
+        console.log("Fetched trending tokens:", trending);
+        
+        if (trending && Array.isArray(trending)) {
+          setTrendingTokens(trending);
+        }
+      } catch (error) {
+        console.error("Error fetching trending tokens:", error);
+      } finally {
+        setTrendingLoading(false);
+      }
+    };
+    
+    fetchTrendingTokens();
+    
+    // Refresh trending tokens every 5 minutes
+    const intervalId = setInterval(fetchTrendingTokens, 300000);
+    return () => clearInterval(intervalId);
+  }, []);
+
   const toggleAlerts = () => {
     setAlertsEnabled(!alertsEnabled);
     toast({
@@ -95,6 +128,12 @@ const TokenAlertMonitor: React.FC = () => {
     return <Badge className="bg-orange-500">Medium Quality</Badge>;
   };
 
+  const getTrendingBadge = (score: number = 1) => {
+    if (score >= 3) return <Badge className="bg-purple-500 flex items-center gap-1"><TrendingUp className="h-3 w-3" /> Hot</Badge>;
+    if (score >= 2) return <Badge className="bg-blue-500 flex items-center gap-1"><TrendingUp className="h-3 w-3" /> Trending</Badge>;
+    return <Badge className="bg-gray-500 flex items-center gap-1"><TrendingUp className="h-3 w-3" /> Active</Badge>;
+  };
+
   const formatTimeAgo = (date: Date) => {
     const minutes = Math.floor((new Date().getTime() - date.getTime()) / 60000);
     if (minutes < 60) return `${minutes}m ago`;
@@ -103,6 +142,10 @@ const TokenAlertMonitor: React.FC = () => {
   
   const handleViewToken = (address: string) => {
     window.open(`https://birdeye.so/token/${address}?chain=solana`, '_blank');
+  };
+
+  const handleSwapToken = (address: string) => {
+    window.open(`https://jup.ag/swap/SOL-${address}`, '_blank');
   };
 
   return (
@@ -120,48 +163,123 @@ const TokenAlertMonitor: React.FC = () => {
         </Button>
       </CardHeader>
       <CardContent>
-        {loading ? (
-          <div className="flex flex-col items-center justify-center py-8">
-            <Loader2 className="h-8 w-8 text-trading-highlight animate-spin mb-2" />
-            <p className="text-sm text-gray-400">Fetching token alerts...</p>
-          </div>
-        ) : tokens.length === 0 ? (
-          <div className="text-center py-6 text-gray-400">
-            {alertsEnabled ? "No token alerts yet. Waiting for new activity..." : "Alerts are disabled"}
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {tokens.map((token, index) => (
-              <Alert key={token.address} className="bg-trading-darkAccent border-l-4 border-l-trading-highlight">
-                <div className="flex justify-between">
-                  <div>
-                    <AlertTitle className="flex items-center font-bold">
-                      {token.name} ({token.symbol})
-                      {index === 0 && <Badge className="ml-2 bg-red-500">NEW</Badge>}
-                    </AlertTitle>
-                    <AlertDescription className="text-xs mt-1">
-                      Price: ${token.price.toFixed(8)} | MC: ${token.marketCap.toLocaleString()}
-                    </AlertDescription>
-                    <div className="flex items-center mt-1 text-xs text-gray-400">
-                      <span className="mr-1">Source: {token.source}</span>
-                      <span className="mx-2">•</span>
-                      <span>{formatTimeAgo(token.createdAt)}</span>
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="w-full mb-4">
+            <TabsTrigger value="alerts">New Tokens</TabsTrigger>
+            <TabsTrigger value="trending" className="flex items-center gap-1">
+              <TrendingUp className="h-4 w-4" />
+              Trending
+            </TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="alerts">
+            {loading ? (
+              <div className="flex flex-col items-center justify-center py-8">
+                <Loader2 className="h-8 w-8 text-trading-highlight animate-spin mb-2" />
+                <p className="text-sm text-gray-400">Fetching token alerts...</p>
+              </div>
+            ) : tokens.length === 0 ? (
+              <div className="text-center py-6 text-gray-400">
+                {alertsEnabled ? "No token alerts yet. Waiting for new activity..." : "Alerts are disabled"}
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {tokens.map((token, index) => (
+                  <Alert key={token.address} className="bg-trading-darkAccent border-l-4 border-l-trading-highlight">
+                    <div className="flex justify-between">
+                      <div>
+                        <AlertTitle className="flex items-center font-bold">
+                          {token.name} ({token.symbol})
+                          {index === 0 && <Badge className="ml-2 bg-red-500">NEW</Badge>}
+                        </AlertTitle>
+                        <AlertDescription className="text-xs mt-1">
+                          Price: ${token.price.toFixed(8)} | MC: ${token.marketCap.toLocaleString()}
+                        </AlertDescription>
+                        <div className="flex items-center mt-1 text-xs text-gray-400">
+                          <span className="mr-1">Source: {token.source}</span>
+                          <span className="mx-2">•</span>
+                          <span>{formatTimeAgo(token.createdAt)}</span>
+                        </div>
+                      </div>
+                      <div className="flex flex-col items-end">
+                        {getQualityBadge(token.qualityScore)}
+                        <div className="flex gap-2 mt-2">
+                          <button
+                            onClick={() => handleViewToken(token.address)}
+                            className="text-xs flex items-center text-blue-400 hover:underline"
+                          >
+                            Chart <ArrowUpRight className="h-3 w-3 ml-1" />
+                          </button>
+                          <button
+                            onClick={() => handleSwapToken(token.address)}
+                            className="text-xs flex items-center text-green-400 hover:underline"
+                          >
+                            Swap <ArrowUpRight className="h-3 w-3 ml-1" />
+                          </button>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex flex-col items-end">
-                    {getQualityBadge(token.qualityScore)}
-                    <button
-                      onClick={() => handleViewToken(token.address)}
-                      className="text-xs flex items-center text-trading-highlight mt-2 hover:underline"
-                    >
-                      View <ArrowUpRight className="h-3 w-3 ml-1" />
-                    </button>
-                  </div>
-                </div>
-              </Alert>
-            ))}
-          </div>
-        )}
+                  </Alert>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+          
+          <TabsContent value="trending">
+            {trendingLoading ? (
+              <div className="flex flex-col items-center justify-center py-8">
+                <Loader2 className="h-8 w-8 text-purple-500 animate-spin mb-2" />
+                <p className="text-sm text-gray-400">Fetching trending tokens from DEXes...</p>
+              </div>
+            ) : trendingTokens.length === 0 ? (
+              <div className="text-center py-6 text-gray-400">
+                No trending tokens found. Please try again later.
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {trendingTokens.map((token) => (
+                  <Alert key={token.address} className="bg-gray-800 border-l-4 border-l-purple-500">
+                    <div className="flex justify-between">
+                      <div>
+                        <AlertTitle className="flex items-center font-bold gap-2">
+                          {token.name} ({token.symbol})
+                          {getTrendingBadge(token.trendingScore)}
+                        </AlertTitle>
+                        <AlertDescription className="text-xs mt-1">
+                          Price: ${token.price.toFixed(token.price < 0.01 ? 8 : 4)} 
+                          {token.change24h !== undefined && (
+                            <span className={token.change24h >= 0 ? "text-green-400" : "text-red-400"}>
+                              {" "}({token.change24h >= 0 ? "+" : ""}{token.change24h.toFixed(2)}%)
+                            </span>
+                          )}
+                        </AlertDescription>
+                        <div className="flex items-center mt-1 text-xs text-gray-400">
+                          <span className="mr-1">Sources: {token.source}</span>
+                        </div>
+                      </div>
+                      <div className="flex flex-col items-end">
+                        <div className="flex gap-2 mt-2">
+                          <button
+                            onClick={() => handleViewToken(token.address)}
+                            className="text-xs flex items-center text-blue-400 hover:underline"
+                          >
+                            Chart <ArrowUpRight className="h-3 w-3 ml-1" />
+                          </button>
+                          <button
+                            onClick={() => handleSwapToken(token.address)}
+                            className="text-xs flex items-center text-green-400 hover:underline"
+                          >
+                            Swap <ArrowUpRight className="h-3 w-3 ml-1" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </Alert>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
       </CardContent>
     </Card>
   );
