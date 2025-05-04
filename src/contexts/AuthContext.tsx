@@ -4,11 +4,11 @@ import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { 
-  connectWallet,
+  connectPhantomWallet,
   disconnectWallet,
   getConnectedWallet,
-  signMessage
-} from '@/utils/walletUtils';
+  signWithPhantom
+} from '@/utils/phantomUtils';
 import { detectPhantomWallet, verifyWalletSignature } from '@/utils/phantomUtils';
 
 interface AuthContextType {
@@ -30,6 +30,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
   const [isPhantomInstalled, setIsPhantomInstalled] = useState<boolean>(false);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -62,9 +63,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setLoading(false);
   }, []);
 
-  // Store authenticated state in a local variable to avoid localStorage access on every render
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-
   const signIn = async () => {
     try {
       setLoading(true);
@@ -76,29 +74,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       // If the wallet is not connected yet, connect it using Phantom
       if (!walletAddress) {
-        // Use Phantom provider
-        const provider = (window as any).phantom?.solana;
-        if (!provider) {
-          throw new Error("Phantom wallet is not installed or not accessible");
-        }
-        
         try {
           // Connect to Phantom wallet
-          const response = await provider.connect();
-          const address = response.publicKey.toString();
+          const result = await connectPhantomWallet();
           
-          // Set the wallet address
-          setWalletAddress(address);
-          
-          // Store wallet address for persistence
-          localStorage.setItem('walletAddress', address);
-          localStorage.setItem('walletProvider', 'phantom');
-          
-          // Show toast notification that wallet was connected
-          toast({
-            title: "Wallet Connected",
-            description: `Connected to wallet: ${address.slice(0, 6)}...${address.slice(-4)}`,
-          });
+          if (result.success && result.address) {
+            // Set the wallet address
+            setWalletAddress(result.address);
+            
+            // Store wallet address for persistence
+            localStorage.setItem('walletAddress', result.address);
+            localStorage.setItem('walletProvider', 'phantom');
+            
+            // Show toast notification that wallet was connected
+            toast({
+              title: "Wallet Connected",
+              description: `Connected to wallet: ${result.address.slice(0, 6)}...${result.address.slice(-4)}`,
+            });
+          } else {
+            throw new Error(result.error || "Failed to connect to wallet");
+          }
         } catch (err) {
           if (err instanceof Error && err.message.includes('User rejected')) {
             throw new Error("Wallet connection was rejected by user");
@@ -114,24 +109,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Create a unique message for the user to sign with their wallet
       const message = `Sign this message to authenticate with Token Monitor: ${timestamp}-${nonce}`;
       
-      // Have the user sign the message with their wallet using Phantom
-      const provider = (window as any).phantom?.solana;
-      if (!provider) {
-        throw new Error("Phantom wallet is not installed or not accessible");
-      }
-      
       try {
-        // Convert message to uint8array for signing
-        const encodedMessage = new TextEncoder().encode(message);
+        // Have the user sign the message with their wallet
+        const signResult = await signWithPhantom(message);
         
-        // Request signature from wallet
-        const signatureResponse = await provider.signMessage(encodedMessage, 'utf8');
+        if (!signResult.success || !signResult.signature) {
+          throw new Error(signResult.error || "Failed to sign message");
+        }
         
         // Verify the signature
         const isValid = await verifyWalletSignature(
           walletAddress as string,
           message,
-          signatureResponse.signature
+          signResult.signature
         );
         
         if (!isValid) {
@@ -143,7 +133,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           id: walletAddress,
           wallet_address: walletAddress,
           auth_method: "wallet_signature",
-          signature: signatureResponse.signature,
+          signature: signResult.signature,
           timestamp: timestamp,
           nonce: nonce
         };

@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -42,43 +43,45 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 };
 
 const App: React.FC = () => (
-  <QueryClientProvider client={queryClient}>
-    <ThemeProvider>
-      <AuthProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/market-analysis" element={
-                <ProtectedRoute>
-                  <MarketAnalysis />
-                </ProtectedRoute>
-              } />
-              <Route path="/auto-trading" element={
-                <ProtectedRoute>
-                  <AutoTrading />
-                </ProtectedRoute>
-              } />
-              <Route path="/portfolio" element={
-                <ProtectedRoute>
-                  <Portfolio />
-                </ProtectedRoute>
-              } />
-              <Route path="/settings" element={
-                <ProtectedRoute>
-                  <Settings />
-                </ProtectedRoute>
-              } />
-              <Route path="/auth" element={<Auth />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
-        </TooltipProvider>
-      </AuthProvider>
-    </ThemeProvider>
-  </QueryClientProvider>
+  <React.StrictMode>
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider>
+        <BrowserRouter>
+          <TooltipProvider>
+            <AuthProvider>
+              <Toaster />
+              <Sonner />
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/market-analysis" element={
+                  <ProtectedRoute>
+                    <MarketAnalysis />
+                  </ProtectedRoute>
+                } />
+                <Route path="/auto-trading" element={
+                  <ProtectedRoute>
+                    <AutoTrading />
+                  </ProtectedRoute>
+                } />
+                <Route path="/portfolio" element={
+                  <ProtectedRoute>
+                    <Portfolio />
+                  </ProtectedRoute>
+                } />
+                <Route path="/settings" element={
+                  <ProtectedRoute>
+                    <Settings />
+                  </ProtectedRoute>
+                } />
+                <Route path="/auth" element={<Auth />} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </AuthProvider>
+          </TooltipProvider>
+        </BrowserRouter>
+      </ThemeProvider>
+    </QueryClientProvider>
+  </React.StrictMode>
 );
 
 export default App;

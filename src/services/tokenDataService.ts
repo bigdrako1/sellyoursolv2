@@ -1,812 +1,455 @@
-import { getActiveApiConfig } from '@/config/appDefinition';
-import { TradingPosition, ScaleOutEvent } from '@/utils/tradingUtils';
 
-// Cache for API responses
-const apiCache = new Map<string, { data: any, timestamp: number }>();
-const CACHE_TTL = 60000; // 1 minute cache
+import { TradingPositionData } from '@/types/database.types';
+import { rateLimit } from '@/utils/rateLimit';
 
-/**
- * Tests connection to the Helius RPC API
- * @returns Promise<boolean> - True if connection is successful
- */
-export const testHeliusConnection = async (): Promise<boolean> => {
-  try {
-    const apiConfig = getActiveApiConfig();
-    const response = await fetch(apiConfig.rpcUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        jsonrpc: '2.0',
-        id: 1,
-        method: 'getHealth'
-      })
-    });
-    
-    const data = await response.json();
-    return data && data.result === 'ok';
-  } catch (error) {
-    console.error('Error testing Helius connection:', error);
-    return false;
-  }
-};
+// Cache for token data to reduce API calls
+const tokenDataCache = new Map<string, { data: any; timestamp: number }>();
+const CACHE_EXPIRY = 15 * 60 * 1000; // 15 minutes
 
 /**
- * Makes an RPC call to Helius API
- * @param method RPC method name
- * @param params Method parameters
- * @returns Promise with the RPC response
+ * Clears expired entries from token data cache
  */
-export const heliusRpcCall = async (method: string, params: any[] = []): Promise<any> => {
-  try {
-    const apiConfig = getActiveApiConfig();
-    const response = await fetch(apiConfig.rpcUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        jsonrpc: '2.0',
-        id: Date.now(),
-        method,
-        params
-      }),
-      signal: AbortSignal.timeout(10000) // 10 second timeout
-    });
-    
-    if (!response.ok) {
-      throw new Error(`RPC call failed with status ${response.status}`);
-    }
-    
-    const data = await response.json();
-    if (data.error) {
-      throw new Error(`RPC error: ${JSON.stringify(data.error)}`);
-    }
-    
-    return data.result;
-  } catch (error) {
-    console.error(`Error in heliusRpcCall (${method}):`, error);
-    throw error;
-  }
-};
-
-/**
- * Makes an API call to Helius REST API
- * @param endpoint API endpoint path (without the base URL)
- * @param params Optional query parameters
- * @returns Promise with the API response
- */
-export const heliusApiCall = async (endpoint: string, params: Record<string, any> = {}): Promise<any> => {
-  try {
-    const apiConfig = getActiveApiConfig();
-    
-    // Add API key if not already in the params
-    if (!params.apiKey && !endpoint.includes('api-key')) {
-      params.apiKey = apiConfig.apiKey;
-    }
-    
-    // Build query string
-    const queryString = Object.keys(params).length 
-      ? '?' + new URLSearchParams(params).toString()
-      : '';
-    
-    const url = `${apiConfig.baseUrl}/${endpoint}${queryString}`;
-    
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      },
-      signal: AbortSignal.timeout(10000) // 10 second timeout
-    });
-    
-    if (!response.ok) {
-      throw new Error(`API call failed with status ${response.status}`);
-    }
-    
-    return await response.json();
-  } catch (error) {
-    console.error(`Error in heliusApiCall (${endpoint}):`, error);
-    throw error;
-  }
-};
-
-/**
- * Makes an API call to BirdEye API
- * @param endpoint API endpoint path
- * @param params Optional query parameters
- * @returns Promise with the API response
- */
-export const birdEyeApiCall = async (endpoint: string, params: Record<string, any> = {}): Promise<any> => {
-  try {
-    const API_KEY = '67f79318c29e4eda99c3184c2ac65116'; // BirdEye API key
-    const BASE_URL = 'https://public-api.birdeye.so';
-    
-    const url = `${BASE_URL}/${endpoint}`;
-    
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'x-api-key': API_KEY,
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      },
-      signal: AbortSignal.timeout(10000) // 10 second timeout
-    });
-    
-    if (!response.ok) {
-      throw new Error(`BirdEye API call failed with status ${response.status}`);
-    }
-    
-    return await response.json();
-  } catch (error) {
-    console.error(`Error in birdEyeApiCall (${endpoint}):`, error);
-    throw error;
-  }
-};
-
-/**
- * Get recent token activity from Helius API
- * @returns Promise with recent token activity data
- */
-export const getRecentTokenActivity = async (): Promise<any[]> => {
-  const cacheKey = 'recent_token_activity';
-  const cached = apiCache.get(cacheKey);
-  
-  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-    return cached.data;
-  }
-  
-  try {
-    // Since the direct endpoint is returning 404, we'll use a different approach
-    // Use parsedTransaction to get recent SPL token transactions
-    const response = await heliusRpcCall('getRecentTokenTransfers', []);
-    
-    if (!response || !Array.isArray(response)) {
-      throw new Error('Invalid response format');
-    }
-    
-    // Process the token data to match our expected format
-    const tokenActivity = await Promise.all(response.map(async (tx: any) => {
-      // Extract the token address from the transaction
-      const tokenAddress = tx.token?.address || tx.tokenAddress || '';
-      
-      if (!tokenAddress) return null;
-      
-      // Get token metadata
-      const tokenInfo = await getTokenMetadata(tokenAddress);
-      
-      // Check if it's a Pump.fun token
-      const isPumpFunToken = await isPumpFunToken(tokenAddress);
-      
-      return {
-        name: tokenInfo?.name || 'Unknown Token',
-        symbol: tokenInfo?.symbol || '???',
-        address: tokenAddress,
-        price: tokenInfo?.price || 0,
-        marketCap: tokenInfo?.marketCap || 0,
-        liquidity: tokenInfo?.liquidity || 0,
-        holders: tokenInfo?.holders || 0,
-        qualityScore: calculateTokenQuality(tokenInfo),
-        source: isPumpFunToken ? 'Pump.fun' : 'Helius',
-        createdAt: new Date(tx.blockTime * 1000 || Date.now()),
-        isPumpFun: isPumpFunToken
-      };
-    }));
-    
-    // Filter out null values and take only the first 10
-    const validTokens = tokenActivity.filter(token => token !== null).slice(0, 10);
-    
-    // Cache the results
-    apiCache.set(cacheKey, {
-      data: validTokens,
-      timestamp: Date.now()
-    });
-    
-    return validTokens;
-  } catch (error) {
-    console.error('Error fetching recent token activity:', error);
-    
-    // If real data fails, return an empty array rather than mock data
-    return [];
-  }
-};
-
-/**
- * Check if a token is a Pump.fun token
- * @param tokenAddress Token address to check
- * @returns Promise<boolean> - True if it's a Pump.fun token
- */
-export const isPumpFunToken = async (tokenAddress: string): Promise<boolean> => {
-  try {
-    // First check if the address has "pump" or "boop" suffix
-    if (tokenAddress.toLowerCase().endsWith('pump') || tokenAddress.toLowerCase().endsWith('boop')) {
-      return true;
-    }
-    
-    // Then try to fetch from pump.fun API
-    const response = await fetch(`https://api.pump.fun/token/${tokenAddress}`);
-    return response.ok;
-  } catch (error) {
-    return false;
-  }
-};
-
-/**
- * Get token metadata from Helius API
- * @param tokenAddress Token address
- * @returns Promise with token metadata
- */
-export const getTokenMetadata = async (tokenAddress: string): Promise<any> => {
-  const cacheKey = `token_metadata_${tokenAddress}`;
-  const cached = apiCache.get(cacheKey);
-  
-  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-    return cached.data;
-  }
-  
-  try {
-    // First try Helius API
-    const heliusResponse = await heliusApiCall('tokens/metadata', {
-      tokens: [tokenAddress]
-    });
-    
-    if (heliusResponse && Array.isArray(heliusResponse) && heliusResponse.length > 0) {
-      const tokenData = heliusResponse[0];
-      
-      // Cache the results
-      apiCache.set(cacheKey, {
-        data: tokenData,
-        timestamp: Date.now()
-      });
-      
-      return tokenData;
-    }
-    
-    // If Helius fails, try BirdEye
-    const birdEyeResponse = await birdEyeApiCall(`public/tokenInfo?address=${tokenAddress}`);
-    
-    if (birdEyeResponse && birdEyeResponse.data) {
-      const tokenData = {
-        ...birdEyeResponse.data,
-        name: birdEyeResponse.data.name || 'Unknown Token',
-        symbol: birdEyeResponse.data.symbol || '???',
-        address: tokenAddress,
-        price: birdEyeResponse.data.price || 0,
-        marketCap: birdEyeResponse.data.marketCap || 0,
-        liquidity: birdEyeResponse.data.liquidity || 0,
-        holders: birdEyeResponse.data.holders || 0
-      };
-      
-      // Cache the results
-      apiCache.set(cacheKey, {
-        data: tokenData,
-        timestamp: Date.now()
-      });
-      
-      return tokenData;
-    }
-    
-    // If all fails, try pump.fun API if it might be a pump token
-    if (tokenAddress.toLowerCase().endsWith('pump') || tokenAddress.toLowerCase().endsWith('boop')) {
-      try {
-        const pumpResponse = await fetch(`https://api.pump.fun/token/${tokenAddress}`);
-        if (pumpResponse.ok) {
-          const pumpData = await pumpResponse.json();
-          
-          const tokenData = {
-            name: pumpData.name || pumpData.symbol || 'Pump Token',
-            symbol: pumpData.symbol || tokenAddress.slice(0, 4).toUpperCase(),
-            address: tokenAddress,
-            price: pumpData.price || 0,
-            marketCap: pumpData.marketCap || 0,
-            liquidity: pumpData.liquidity || 0,
-            holders: pumpData.holders || 0,
-            isPumpFun: true
-          };
-          
-          // Cache the results
-          apiCache.set(cacheKey, {
-            data: tokenData,
-            timestamp: Date.now()
-          });
-          
-          return tokenData;
-        }
-      } catch (e) {
-        console.error("Error fetching from pump.fun API:", e);
-        // Continue to return null below
-      }
-    }
-    
-    return null;
-  } catch (error) {
-    console.error(`Error fetching token metadata for ${tokenAddress}:`, error);
-    return null;
-  }
-};
-
-/**
- * Get specific pump.fun tokens
- * @param limit Number of tokens to return
- * @returns Array of pump.fun token data
- */
-export const getPumpFunTokens = async (limit: number = 10): Promise<any[]> => {
-  const cacheKey = 'pump_fun_tokens';
-  const cached = apiCache.get(cacheKey);
-  
-  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-    return cached.data.slice(0, limit);
-  }
-  
-  try {
-    console.log('Fetching pump.fun tokens...');
-    
-    // Fetch from Pump.fun API
-    const response = await fetch('https://api.pump.fun/trending');
-    
-    if (!response.ok) {
-      throw new Error(`Pump.fun API returned status ${response.status}`);
-    }
-    
-    const data = await response.json();
-    
-    if (!data || !data.tokens || !Array.isArray(data.tokens)) {
-      throw new Error('Invalid response format from Pump.fun API');
-    }
-    
-    const pumpTokens = await Promise.all(data.tokens.map(async (token: any) => {
-      try {
-        // Try to get more details for each token
-        const tokenDetails = await getTokenMetadata(token.mint);
-        
-        return {
-          name: token.name || tokenDetails?.name || 'Pump Token',
-          symbol: token.symbol || tokenDetails?.symbol || token.mint.slice(0, 4).toUpperCase(),
-          address: token.mint,
-          price: token.price || tokenDetails?.price || 0,
-          marketCap: tokenDetails?.marketCap || 0, 
-          liquidity: tokenDetails?.liquidity || 0,
-          holders: tokenDetails?.holders || 0,
-          change24h: token.change24h || 0,
-          source: 'Pump.fun',
-          createdAt: token.createdAt ? new Date(token.createdAt) : new Date(),
-          isPumpFun: true
-        };
-      } catch (error) {
-        console.error(`Error enriching pump token data for ${token.mint}:`, error);
-        
-        return {
-          name: token.name || 'Pump Token',
-          symbol: token.symbol || token.mint.slice(0, 4).toUpperCase(),
-          address: token.mint, 
-          price: token.price || 0,
-          source: 'Pump.fun',
-          isPumpFun: true
-        };
-      }
-    }));
-    
-    // Cache the results
-    apiCache.set(cacheKey, {
-      data: pumpTokens,
-      timestamp: Date.now()
-    });
-    
-    return pumpTokens.slice(0, limit);
-  } catch (error) {
-    console.error("Error fetching pump.fun tokens:", error);
-    return [];
-  }
-};
-
-/**
- * Calculate token quality score based on multiple factors
- * @param tokenInfo Token data
- * @returns Quality score (0-100)
- */
-export const calculateTokenQuality = (tokenInfo: any): number => {
-  if (!tokenInfo) return 0;
-  
-  let score = 0;
-  
-  // Liquidity factor (0-20 points)
-  if (tokenInfo.liquidity >= 1000000) score += 20;
-  else if (tokenInfo.liquidity >= 500000) score += 15;
-  else if (tokenInfo.liquidity >= 100000) score += 10;
-  else if (tokenInfo.liquidity >= 50000) score += 5;
-  else if (tokenInfo.liquidity < 25000) score -= 10;
-  
-  // Holders factor (0-15 points)
-  if (tokenInfo.holders >= 1000) score += 15;
-  else if (tokenInfo.holders >= 500) score += 10;
-  else if (tokenInfo.holders >= 100) score += 5;
-  else if (tokenInfo.holders < 25) score -= 10;
-  
-  // Age factor (0-10 points)
-  const tokenAge = tokenInfo.age || 0;
-  if (tokenAge >= 30) score += 10;
-  else if (tokenAge >= 7) score += 5;
-  else if (tokenAge >= 1) score += 2;
-  
-  // Risk score factor (0-20 points)
-  const riskScore = tokenInfo.riskScore || 50;
-  if (riskScore < 20) score += 20;
-  else if (riskScore < 40) score += 10;
-  else if (riskScore < 60) score += 0;
-  else if (riskScore < 80) score -= 10;
-  else if (riskScore >= 80) score -= 20;
-  
-  // Trending factor (0-10 points)
-  if (tokenInfo.isTrending) score += 10;
-  
-  // Pump.fun bonus (0-5 points)
-  if (tokenInfo.isPumpFun) score += 5;
-  
-  // Additional factors
-  const volume = tokenInfo.volume24h || 0;
-  if (volume > 1000000) score += 10;
-  else if (volume > 500000) score += 5;
-  else if (volume > 100000) score += 3;
-  
-  // Ensure score is within 0-100 range
-  return Math.max(0, Math.min(100, score + 50)); // Base of 50 plus adjustments
-};
-
-/**
- * Get Solana price from a reliable API
- * @returns Current SOL price in USD
- */
-export const getSolPrice = async (): Promise<number> => {
-  const cacheKey = 'sol_price';
-  const cached = apiCache.get(cacheKey);
-  
-  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-    return cached.data;
-  }
-  
-  try {
-    // Try to get price from BirdEye
-    const response = await birdEyeApiCall('public/price?address=So11111111111111111111111111111111111111112');
-    
-    if (response && response.data) {
-      const price = response.data.value;
-      
-      apiCache.set(cacheKey, {
-        data: price,
-        timestamp: Date.now()
-      });
-      
-      return price;
-    }
-    
-    // If BirdEye fails, try another API (like CoinGecko)
-    const backupResponse = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd');
-    const backupData = await backupResponse.json();
-    
-    if (backupData && backupData.solana && backupData.solana.usd) {
-      const price = backupData.solana.usd;
-      
-      apiCache.set(cacheKey, {
-        data: price,
-        timestamp: Date.now()
-      });
-      
-      return price;
-    }
-    
-    // If all fails, return a fallback price
-    return 150.00;
-  } catch (error) {
-    console.error('Error fetching SOL price:', error);
-    return 150.00; // Fallback price
-  }
-};
-
-/**
- * Get trending tokens from various DEX sources
- * @param limit Number of tokens to return
- * @returns Array of trending token data
- */
-export const getTrendingTokens = async (limit: number = 10): Promise<any[]> => {
-  const cacheKey = 'trending_tokens';
-  const cached = apiCache.get(cacheKey);
-  
-  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-    return cached.data.slice(0, limit);
-  }
-  
-  try {
-    console.log('Fetching trending tokens from multiple DEX sources...');
-    
-    // Try to fetch from Jupiter trending API
-    const jupiterResponse = await fetch('https://station.jup.ag/api/trending-tokens')
-      .then(res => res.json())
-      .catch(() => null);
-    
-    // Try to fetch from Raydium trending API
-    const raydiumResponse = await fetch('https://api.raydium.io/v2/main/trending-tokens')
-      .then(res => res.json())
-      .catch(() => null);
-    
-    // Try to fetch from Pump.fun trending API
-    const pumpFunResponse = await fetch('https://api.pump.fun/trending')
-      .then(res => res.json())
-      .catch(() => null);
-    
-    // Try to fetch from BirdEye trending tokens
-    const birdEyeResponse = await birdEyeApiCall('defi/token_list?sort_by=v24hUSD&sort_type=desc&offset=0&limit=20')
-      .catch(() => null);
-    
-    const birdEyeData = birdEyeResponse?.data?.tokens || [];
-    
-    // Combine and deduplicate tokens from all sources
-    const allTokens = new Map();
-    
-    // Process Jupiter tokens
-    if (jupiterResponse && Array.isArray(jupiterResponse)) {
-      console.log(`Found ${jupiterResponse.length} trending tokens from Jupiter`);
-      for (const token of jupiterResponse) {
-        if (token.address) {
-          allTokens.set(token.address, {
-            name: token.name,
-            symbol: token.symbol,
-            address: token.address,
-            price: token.price || 0,
-            change24h: token.change24h || 0,
-            volume24h: 0,
-            source: 'Jupiter',
-            isTrending: true,
-            trendingSources: ['Jupiter']
-          });
-        }
-      }
-    }
-    
-    // Process Raydium tokens
-    if (raydiumResponse && Array.isArray(raydiumResponse)) {
-      console.log(`Found ${raydiumResponse.length} trending tokens from Raydium`);
-      for (const token of raydiumResponse) {
-        if (token.mint) {
-          const existingToken = allTokens.get(token.mint);
-          if (existingToken) {
-            existingToken.trendingSources = [...existingToken.trendingSources, 'Raydium'];
-          } else {
-            allTokens.set(token.mint, {
-              name: token.name,
-              symbol: token.symbol,
-              address: token.mint,
-              price: 0,
-              change24h: 0,
-              volume24h: 0,
-              source: 'Raydium',
-              isTrending: true,
-              trendingSources: ['Raydium']
-            });
-          }
-        }
-      }
-    }
-    
-    // Process Pump.fun tokens
-    if (pumpFunResponse && pumpFunResponse.tokens && Array.isArray(pumpFunResponse.tokens)) {
-      console.log(`Found ${pumpFunResponse.tokens.length} trending tokens from Pump.fun`);
-      for (const token of pumpFunResponse.tokens) {
-        if (token.mint) {
-          const existingToken = allTokens.get(token.mint);
-          if (existingToken) {
-            existingToken.trendingSources = [...existingToken.trendingSources, 'Pump.fun'];
-          } else {
-            allTokens.set(token.mint, {
-              name: token.name || "Unknown",
-              symbol: token.symbol || token.mint.substring(0, 4),
-              address: token.mint,
-              price: 0,
-              change24h: 0,
-              volume24h: 0,
-              source: 'Pump.fun',
-              isTrending: true,
-              trendingSources: ['Pump.fun']
-            });
-          }
-        }
-      }
-    }
-    
-    // Process BirdEye tokens
-    if (birdEyeData && Array.isArray(birdEyeData)) {
-      console.log(`Found ${birdEyeData.length} trending tokens from BirdEye`);
-      for (const token of birdEyeData) {
-        if (token.address) {
-          const existingToken = allTokens.get(token.address);
-          if (existingToken) {
-            existingToken.price = token.price || existingToken.price;
-            existingToken.change24h = token.priceChange24h || existingToken.change24h;
-            existingToken.volume24h = token.volume24h || existingToken.volume24h;
-            existingToken.trendingSources = [...existingToken.trendingSources, 'BirdEye'];
-          } else {
-            allTokens.set(token.address, {
-              name: token.name,
-              symbol: token.symbol,
-              address: token.address,
-              price: token.price || 0,
-              change24h: token.priceChange24h || 0,
-              volume24h: token.volume24h || 0,
-              source: 'BirdEye',
-              isTrending: true,
-              trendingSources: ['BirdEye']
-            });
-          }
-        }
-      }
-    }
-    
-    // Convert map to array
-    let trendingTokens = Array.from(allTokens.values());
-    
-    // Add trending score based on presence across multiple platforms
-    trendingTokens = trendingTokens.map(token => {
-      return {
-        ...token,
-        trendingScore: token.trendingSources.length,
-        source: token.trendingSources.join(', ')
-      };
-    });
-    
-    // Get additional data for tokens if needed
-    const enrichedTokens = await Promise.all(
-      trendingTokens.map(async (token) => {
-        // If we don't have price data yet, try to get it
-        if (token.price === 0) {
-          try {
-            const tokenInfo = await getTokenMetadata(token.address);
-            if (tokenInfo) {
-              token.price = tokenInfo.price || 0;
-              token.change24h = tokenInfo.priceChange24h || 0;
-              token.volume24h = tokenInfo.volume24h || 0;
-            }
-          } catch (error) {
-            console.error(`Error enriching token data for ${token.symbol}:`, error);
-          }
-        }
-        return token;
-      })
-    );
-    
-    console.log(`Successfully aggregated ${enrichedTokens.length} trending tokens from all DEXes`);
-    
-    // Sort by trending score (appear on most platforms) and then by volume
-    const sortedTokens = enrichedTokens
-      .sort((a, b) => {
-        // First sort by trending score (higher is better)
-        if (b.trendingScore !== a.trendingScore) {
-          return b.trendingScore - a.trendingScore;
-        }
-        // Then by volume (higher is better)
-        return b.volume24h - a.volume24h;
-      });
-    
-    // Cache the results
-    apiCache.set(cacheKey, {
-      data: sortedTokens,
-      timestamp: Date.now()
-    });
-    
-    return sortedTokens.slice(0, limit);
-  } catch (error) {
-    console.error("Error fetching trending tokens:", error);
-    return [];
-  }
-};
-
-/**
- * Track wallet activities of known profitable traders
- * @param walletAddresses Array of wallet addresses to track
- * @returns Recent activities of tracked wallets
- */
-export const trackWalletActivities = async (walletAddresses: string[]): Promise<any[]> => {
-  if (!walletAddresses || walletAddresses.length === 0) {
-    return [];
-  }
-  
-  try {
-    // For each wallet address, fetch recent transactions
-    const activities = await Promise.all(walletAddresses.map(async (address) => {
-      try {
-        const cacheKey = `wallet_activity_${address}`;
-        const cached = apiCache.get(cacheKey);
-        
-        if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-          return cached.data;
-        }
-        
-        // Get recent transactions for this wallet directly from Helius API
-        const response = await heliusRpcCall('getSignaturesForAddress', [address, { limit: 5 }]);
-        
-        if (!response || !Array.isArray(response)) {
-          throw new Error(`Invalid response for wallet ${address}`);
-        }
-        
-        // Get transaction details
-        const txDetails = await Promise.all(response.map(async (tx: any) => {
-          try {
-            const txResponse = await heliusRpcCall('getTransaction', [tx.signature, { maxSupportedTransactionVersion: 0 }]);
-            return txResponse;
-          } catch (error) {
-            console.error(`Error getting transaction details for ${tx.signature}:`, error);
-            return null;
-          }
-        }));
-        
-        const walletActivity = {
-          walletAddress: address,
-          transactions: txDetails.filter(tx => tx !== null),
-          lastUpdated: new Date().toISOString(),
-        };
-        
-        // Cache the results
-        apiCache.set(cacheKey, {
-          data: walletActivity,
-          timestamp: Date.now()
-        });
-        
-        return walletActivity;
-      } catch (error) {
-        console.error(`Error fetching activities for wallet ${address}:`, error);
-        return {
-          walletAddress: address,
-          transactions: [],
-          error: "Failed to fetch transactions"
-        };
-      }
-    }));
-    
-    return activities.filter(activity => activity.transactions && activity.transactions.length > 0);
-  } catch (error) {
-    console.error("Error tracking wallet activities:", error);
-    return [];
-  }
-};
-
-/**
- * Load all trading positions from storage
- * @returns Array of trading positions
- */
-export const loadTradingPositions = (): TradingPosition[] => {
-  try {
-    const storedPositions = localStorage.getItem('trading_positions');
-    return storedPositions ? JSON.parse(storedPositions) : [];
-  } catch (error) {
-    console.error("Error loading trading positions:", error);
-    return [];
-  }
-};
-
-/**
- * Save trading positions to storage
- * @param positions Array of trading positions
- */
-export const saveTradingPositions = (positions: TradingPosition[]): void => {
-  try {
-    localStorage.setItem('trading_positions', JSON.stringify(positions));
-  } catch (error) {
-    console.error("Error saving trading positions:", error);
-  }
-};
-
-/**
- * Clean up the API cache periodically
- */
-export const cleanupCache = (): void => {
+export const cleanupTokenDataCache = () => {
   const now = Date.now();
-  for (const [key, value] of apiCache.entries()) {
-    if (now - value.timestamp > CACHE_TTL) {
-      apiCache.delete(key);
+  for (const [key, value] of tokenDataCache.entries()) {
+    if (now - value.timestamp > CACHE_EXPIRY) {
+      tokenDataCache.delete(key);
     }
   }
 };
 
-// Set up periodic cache cleanup
-setInterval(cleanupCache, 300000); // Clean up every 5 minutes
+/**
+ * Gets cached token data or returns null if not in cache or expired
+ */
+const getCachedTokenData = (key: string) => {
+  const cachedData = tokenDataCache.get(key);
+  if (!cachedData) return null;
+  
+  const now = Date.now();
+  if (now - cachedData.timestamp > CACHE_EXPIRY) {
+    tokenDataCache.delete(key);
+    return null;
+  }
+  
+  return cachedData.data;
+};
+
+/**
+ * Stores data in token cache
+ */
+const cacheTokenData = (key: string, data: any) => {
+  tokenDataCache.set(key, { data, timestamp: Date.now() });
+};
+
+// Setup rate limiting for various APIs
+const heliusLimit = rateLimit(50); // 50 requests per minute
+const birdEyeLimit = rateLimit(45); // 45 requests per minute
+const jupiterLimit = rateLimit(10);  // 10 requests per minute
+const pumpFunLimit = rateLimit(10);  // 10 requests per minute
+const dexScreenerLimit = rateLimit(10); // 10 requests per minute
+
+// API constants
+const HELIUS_API_KEY = 'a18d2c93-d9fa-4db2-8419-707a4f1782f7';
+const BIRDEYE_API_KEY = '67f79318c29e4eda99c3184c2ac65116';
+
+/**
+ * Fetches token metadata using Helius API
+ */
+export const fetchTokenMetadata = async (contractAddress: string) => {
+  const cacheKey = `metadata_${contractAddress}`;
+  const cachedData = getCachedTokenData(cacheKey);
+  if (cachedData) return cachedData;
+  
+  await heliusLimit();
+  
+  try {
+    const url = `https://api.helius.xyz/v0/tokens/metadata?api-key=${HELIUS_API_KEY}`;
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mintAccounts: [contractAddress] })
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Helius API response: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    if (data && Array.isArray(data) && data.length > 0) {
+      cacheTokenData(cacheKey, data[0]);
+      return data[0];
+    }
+    
+    throw new Error('No token metadata found');
+  } catch (error) {
+    console.error('Error fetching token metadata from Helius:', error);
+    throw error;
+  }
+};
+
+/**
+ * Fetches token information using BirdEye API
+ */
+export const fetchTokenInfo = async (contractAddress: string) => {
+  const cacheKey = `tokeninfo_${contractAddress}`;
+  const cachedData = getCachedTokenData(cacheKey);
+  if (cachedData) return cachedData;
+  
+  await birdEyeLimit();
+  
+  try {
+    const url = `https://public-api.birdeye.so/defi/token_info?address=${contractAddress}`;
+    const response = await fetch(url, {
+      headers: { 'X-API-KEY': BIRDEYE_API_KEY }
+    });
+    
+    if (!response.ok) {
+      throw new Error(`BirdEye API response: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    if (data && data.success) {
+      cacheTokenData(cacheKey, data.data);
+      return data.data;
+    }
+    
+    throw new Error('No token info found or API error');
+  } catch (error) {
+    console.error('Error fetching token info from BirdEye:', error);
+    throw error;
+  }
+};
+
+/**
+ * Fetches price data from Jupiter API
+ */
+export const fetchJupiterPrice = async (contractAddress: string) => {
+  const cacheKey = `jupiter_${contractAddress}`;
+  const cachedData = getCachedTokenData(cacheKey);
+  if (cachedData) return cachedData;
+  
+  await jupiterLimit();
+  
+  try {
+    const url = `https://api.jup.ag/api/price/v4/price?ids=${contractAddress}`;
+    const response = await fetch(url);
+    
+    if (!response.ok) {
+      throw new Error(`Jupiter API response: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    if (data && data.data && data.data[contractAddress]) {
+      cacheTokenData(cacheKey, data.data[contractAddress]);
+      return data.data[contractAddress];
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('Error fetching price from Jupiter:', error);
+    return null;
+  }
+};
+
+/**
+ * Checks if a token is a Pump.fun token
+ */
+export const isPumpFunToken = (contractAddress: string | null): boolean => {
+  if (!contractAddress) return false;
+  return contractAddress.toLowerCase().endsWith('pump') || contractAddress.toLowerCase().endsWith('boop');
+};
+
+/**
+ * Fetches Pump.fun token data if applicable
+ */
+export const fetchPumpFunData = async (contractAddress: string) => {
+  if (!isPumpFunToken(contractAddress)) {
+    return null;
+  }
+  
+  const cacheKey = `pumpfun_${contractAddress}`;
+  const cachedData = getCachedTokenData(cacheKey);
+  if (cachedData) return cachedData;
+  
+  await pumpFunLimit();
+  
+  try {
+    const url = `https://api.pump.fun/token/${contractAddress}`;
+    const response = await fetch(url);
+    
+    if (!response.ok) {
+      throw new Error(`Pump.fun API response: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    cacheTokenData(cacheKey, data);
+    return data;
+  } catch (error) {
+    console.error('Error fetching data from Pump.fun:', error);
+    return null;
+  }
+};
+
+/**
+ * Fetches DexScreener data for a token
+ */
+export const fetchDexScreenerData = async (contractAddress: string) => {
+  const cacheKey = `dexscreener_${contractAddress}`;
+  const cachedData = getCachedTokenData(cacheKey);
+  if (cachedData) return cachedData;
+  
+  await dexScreenerLimit();
+  
+  try {
+    const url = `https://api.dexscreener.com/latest/dex/tokens/${contractAddress}`;
+    const response = await fetch(url);
+    
+    if (!response.ok) {
+      throw new Error(`DexScreener API response: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    if (data && data.pairs && data.pairs.length > 0) {
+      cacheTokenData(cacheKey, data);
+      return data;
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('Error fetching data from DexScreener:', error);
+    return null;
+  }
+};
+
+/**
+ * Gets trending tokens from various sources
+ */
+export const getTrendingTokens = async () => {
+  const cacheKey = 'trending_tokens';
+  const cachedData = getCachedTokenData(cacheKey);
+  if (cachedData) return cachedData;
+  
+  const trendingTokens = new Map();
+  
+  try {
+    // Jupiter trending
+    await jupiterLimit();
+    try {
+      const jupRes = await fetch('https://station.jup.ag/api/trending-tokens');
+      if (jupRes.ok) {
+        const jupData = await jupRes.json();
+        if (jupData && Array.isArray(jupData)) {
+          jupData.forEach((token, index) => {
+            if (token.address) {
+              const existing = trendingTokens.get(token.address) || { 
+                address: token.address, 
+                name: token.name || '', 
+                symbol: token.symbol || '',
+                sources: [], 
+                score: 0 
+              };
+              existing.sources.push({ name: 'Jupiter', rank: index + 1 });
+              existing.score += 10 - Math.min(index, 9); // 10 points for #1, down to 1 point for #10+
+              trendingTokens.set(token.address, existing);
+            }
+          });
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching Jupiter trending:', err);
+    }
+    
+    // Raydium trending
+    try {
+      const rayRes = await fetch('https://api.raydium.io/v2/main/trending-tokens');
+      if (rayRes.ok) {
+        const rayData = await rayRes.json();
+        if (rayData && Array.isArray(rayData)) {
+          rayData.forEach((token, index) => {
+            if (token.mint) {
+              const existing = trendingTokens.get(token.mint) || { 
+                address: token.mint, 
+                name: token.name || '', 
+                symbol: token.symbol || '',
+                sources: [], 
+                score: 0 
+              };
+              existing.sources.push({ name: 'Raydium', rank: index + 1 });
+              existing.score += 8 - Math.min(index, 7); // 8 points for #1, down to 1 point for #8+
+              trendingTokens.set(token.mint, existing);
+            }
+          });
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching Raydium trending:', err);
+    }
+    
+    // Pump.fun trending
+    await pumpFunLimit();
+    try {
+      const pumpRes = await fetch('https://api.pump.fun/trending');
+      if (pumpRes.ok) {
+        const pumpData = await pumpRes.json();
+        if (pumpData && Array.isArray(pumpData.trending_tokens)) {
+          pumpData.trending_tokens.forEach((token, index) => {
+            if (token.token_mint) {
+              const existing = trendingTokens.get(token.token_mint) || { 
+                address: token.token_mint, 
+                name: token.name || '', 
+                symbol: token.name?.toUpperCase() || '',
+                sources: [], 
+                score: 0 
+              };
+              existing.sources.push({ name: 'Pump.fun', rank: index + 1 });
+              existing.score += 12 - Math.min(index, 11); // 12 points for #1, down to 1 point for #12+
+              trendingTokens.set(token.token_mint, existing);
+            }
+          });
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching Pump.fun trending:', err);
+    }
+    
+    // DexScreener trending
+    await dexScreenerLimit();
+    try {
+      const dexRes = await fetch('https://api.dexscreener.com/latest/dex/search?q=trending');
+      if (dexRes.ok) {
+        const dexData = await dexRes.json();
+        if (dexData && Array.isArray(dexData.pairs)) {
+          dexData.pairs.filter(pair => pair.chainId === 'solana').forEach((pair, index) => {
+            if (pair.baseToken?.address) {
+              const existing = trendingTokens.get(pair.baseToken.address) || { 
+                address: pair.baseToken.address, 
+                name: pair.baseToken.name || '', 
+                symbol: pair.baseToken.symbol || '',
+                sources: [], 
+                score: 0 
+              };
+              existing.sources.push({ name: 'DexScreener', rank: index + 1 });
+              existing.score += 9 - Math.min(index, 8); // 9 points for #1, down to 1 point for #9+
+              trendingTokens.set(pair.baseToken.address, existing);
+            }
+          });
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching DexScreener trending:', err);
+    }
+  } catch (error) {
+    console.error('Error fetching trending tokens:', error);
+  }
+  
+  // Convert map to array and sort by score
+  const result = Array.from(trendingTokens.values())
+    .sort((a, b) => b.score - a.score);
+  
+  cacheTokenData(cacheKey, result);
+  return result;
+};
+
+/**
+ * Comprehensive token data fetching with fallbacks
+ */
+export const getComprehensiveTokenData = async (contractAddress: string) => {
+  const isPumpToken = isPumpFunToken(contractAddress);
+  let tokenData: any = { address: contractAddress };
+  
+  try {
+    // Try to get token metadata from Helius
+    try {
+      const metadata = await fetchTokenMetadata(contractAddress);
+      if (metadata) {
+        tokenData.name = metadata.name || tokenData.name;
+        tokenData.symbol = metadata.symbol || tokenData.symbol;
+        tokenData.decimals = metadata.decimals;
+        tokenData.logoURI = metadata.logo || tokenData.logoURI;
+      }
+    } catch (err) {
+      console.log(`Helius metadata error for ${contractAddress}:`, err);
+    }
+    
+    // If it's a Pump.fun token, get data from Pump.fun
+    if (isPumpToken) {
+      const pumpData = await fetchPumpFunData(contractAddress);
+      if (pumpData) {
+        // Extract name from contract address for Pump tokens
+        const baseName = contractAddress.split(/pump|boop/i)[0];
+        const cleanName = baseName
+          .replace(/[0-9]/g, '')
+          .replace(/([A-Z])/g, ' $1')
+          .trim();
+          
+        tokenData.name = tokenData.name || cleanName || pumpData.name || 'Unknown Token';
+        tokenData.symbol = tokenData.symbol || (cleanName ? cleanName.toUpperCase() : 'UNKNOWN');
+        tokenData.pumpFun = true;
+        tokenData.pumpData = pumpData;
+      }
+    }
+    
+    // Try to get token info from BirdEye
+    try {
+      const info = await fetchTokenInfo(contractAddress);
+      if (info) {
+        tokenData.name = tokenData.name || info.name;
+        tokenData.symbol = tokenData.symbol || info.symbol;
+        tokenData.decimals = tokenData.decimals || info.decimals;
+        tokenData.price = info.price;
+        tokenData.priceChange24h = info.priceChange24h;
+        tokenData.volume24h = info.volume24h;
+        tokenData.marketCap = info.marketCap;
+        tokenData.liquidity = info.liquidity;
+        tokenData.holders = info.holders;
+      }
+    } catch (err) {
+      console.log(`BirdEye info error for ${contractAddress}:`, err);
+    }
+    
+    // Get Jupiter price as backup
+    try {
+      const jupPrice = await fetchJupiterPrice(contractAddress);
+      if (jupPrice && jupPrice.price) {
+        tokenData.price = tokenData.price || jupPrice.price;
+      }
+    } catch (err) {
+      console.log(`Jupiter price error for ${contractAddress}:`, err);
+    }
+    
+    // Get DexScreener data for additional insights
+    try {
+      const dexData = await fetchDexScreenerData(contractAddress);
+      if (dexData && dexData.pairs && dexData.pairs.length > 0) {
+        const pair = dexData.pairs[0];
+        tokenData.name = tokenData.name || pair.baseToken.name;
+        tokenData.symbol = tokenData.symbol || pair.baseToken.symbol;
+        tokenData.price = tokenData.price || parseFloat(pair.priceUsd);
+        tokenData.priceChange24h = tokenData.priceChange24h || pair.priceChange.h24;
+        tokenData.volume24h = tokenData.volume24h || parseFloat(pair.volume.h24);
+        tokenData.liquidity = tokenData.liquidity || parseFloat(pair.liquidity.usd);
+      }
+    } catch (err) {
+      console.log(`DexScreener error for ${contractAddress}:`, err);
+    }
+    
+    // If name still not found, use contract abbreviation
+    if (!tokenData.name) {
+      tokenData.name = `Token ${contractAddress.substring(0, 4)}...${contractAddress.substring(contractAddress.length - 4)}`;
+    }
+    
+    // If symbol still not found, derive from name
+    if (!tokenData.symbol && tokenData.name) {
+      tokenData.symbol = tokenData.name.substring(0, 5).toUpperCase();
+    }
+    
+    return tokenData;
+  } catch (error) {
+    console.error(`Failed to get comprehensive data for token ${contractAddress}:`, error);
+    return { address: contractAddress, name: `Unknown Token (${contractAddress.substring(0, 4)}...)`, symbol: 'UNKNOWN', error: true };
+  }
+};
