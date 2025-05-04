@@ -54,10 +54,10 @@ const TokenAlertMonitor: React.FC = () => {
           
           setTokens(tokenData);
           
-          // Play sound notification for new tokens
+          // Play sound notification for new tokens - fixed to use a valid sound type
           if (tokenData.length > 0 && tokens.length > 0) {
             if (tokenData[0].address !== tokens[0].address) {
-              playSound('newToken');
+              playSound('alert');
             }
           }
         } else {
