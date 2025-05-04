@@ -7,11 +7,11 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Portfolio from "./pages/Portfolio";
+import MarketAnalysis from "./pages/MarketAnalysis";
 
 const queryClient = new QueryClient();
 
 // Create placeholder pages for new routes
-const MarketAnalysis = () => <div>Market Analysis Page</div>;
 const AutoTrading = () => <div>Auto Trading Page</div>;
 const Settings = () => <div>Settings Page</div>;
 

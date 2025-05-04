@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { ArrowUp, ArrowDown } from "lucide-react";
-import { playSound } from "@/utils/soundUtils";
+import { playSound, initAudio } from "@/utils/soundUtils";
 import { useToast } from "@/hooks/use-toast";
 
 interface PriceData {
@@ -18,6 +18,28 @@ const LivePriceTracker = () => {
     { symbol: "BNB", price: 0, change24h: 0 }
   ]);
   const { toast } = useToast();
+  const [audioInitialized, setAudioInitialized] = useState(false);
+
+  // Initialize audio on component mount or user interaction
+  useEffect(() => {
+    const initAudioContext = () => {
+      initAudio();
+      setAudioInitialized(true);
+      // Remove event listeners after initialization
+      document.removeEventListener('click', initAudioContext);
+      document.removeEventListener('touchstart', initAudioContext);
+    };
+    
+    // Add event listeners for user interaction to initialize audio
+    document.addEventListener('click', initAudioContext);
+    document.addEventListener('touchstart', initAudioContext);
+    
+    return () => {
+      // Clean up listeners
+      document.removeEventListener('click', initAudioContext);
+      document.removeEventListener('touchstart', initAudioContext);
+    };
+  }, []);
 
   useEffect(() => {
     const fetchPrices = async () => {
@@ -29,8 +51,8 @@ const LivePriceTracker = () => {
             ? 140 + Math.random() * 5 
             : 580 + Math.random() * 10;
           
-          // Play sound on significant price changes (>1%)
-          if (lastPrice && Math.abs((newPrice - lastPrice) / lastPrice) > 0.01) {
+          // Play sound on significant price changes (>1%) only if audio is initialized
+          if (lastPrice && Math.abs((newPrice - lastPrice) / lastPrice) > 0.01 && audioInitialized) {
             playSound(newPrice > lastPrice ? 'success' : 'alert');
             
             // Show toast for significant price changes
@@ -64,7 +86,7 @@ const LivePriceTracker = () => {
     const interval = setInterval(fetchPrices, 10000);
 
     return () => clearInterval(interval);
-  }, [prices]);
+  }, [prices, audioInitialized]);
 
   return (
     <div className="flex gap-2">
