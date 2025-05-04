@@ -38,7 +38,7 @@ const Portfolio: React.FC = () => {
         tokens: [
           { name: "Solana", symbol: "SOL", amount: 12.5, value: 1250.00 },
           { name: "USDC", symbol: "USDC", amount: 500, value: 500.00 },
-          { name: "Raydium", symbol: "RAY", amount: 100, value: 120.00 },
+          { name: "SellYourSOL", symbol: "SELL", amount: 100, value: 120.00 },
         ]
       });
     }

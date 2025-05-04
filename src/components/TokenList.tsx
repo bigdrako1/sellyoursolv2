@@ -8,7 +8,7 @@ import { useCurrencyStore } from "@/store/currencyStore";
 
 // Sample token data
 const tokens = [
-  { id: 1, name: "SolRunner", symbol: "SRUN", chain: "solana", price: 2.45, change24h: 12.3, volume24h: 1250000, marketCap: 24500000 },
+  { id: 1, name: "SellYourSOL", symbol: "SELL", price: 2.45, change24h: 12.3, volume24h: 1250000, marketCap: 24500000 },
   { id: 3, name: "AutoTrade", symbol: "AUTO", chain: "solana", price: 0.782, change24h: 5.4, volume24h: 650000, marketCap: 7900000 },
   { id: 5, name: "TradeX", symbol: "TDX", chain: "solana", price: 0.0034, change24h: 28.7, volume24h: 1760000, marketCap: 980000 },
   { id: 6, name: "Solana", symbol: "SOL", chain: "solana", price: 142.50, change24h: 3.2, volume24h: 8760000, marketCap: 59800000 },

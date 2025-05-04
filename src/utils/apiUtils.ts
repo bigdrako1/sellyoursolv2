@@ -6,6 +6,8 @@
 // Helius API configuration
 const HELIUS_API_KEY = "a18d2c93-d9fa-4db2-8419-707a4f1782f7";
 const HELIUS_BASE_URL = "https://api.helius.xyz/v0";
+const HELIUS_RPC_URL = "https://mainnet.helius-rpc.com";
+const HELIUS_WEBSOCKET_URL = "wss://mainnet.helius-rpc.com";
 
 // Rate limiting configuration
 const RATE_LIMIT = 5; // requests per second
@@ -118,6 +120,48 @@ export const heliusApiCall = async <T>(
   }
 };
 
+// Make an RPC call to Helius
+export const heliusRpcCall = async <T>(method: string, params: any[] = []): Promise<T> => {
+  if (!canMakeApiCall()) {
+    throw new Error("Rate limit exceeded. Please try again later.");
+  }
+  
+  trackApiCall(method);
+  
+  const rpcRequest = {
+    jsonrpc: "2.0",
+    id: Date.now(),
+    method,
+    params
+  };
+  
+  const url = `${HELIUS_RPC_URL}/?api-key=${HELIUS_API_KEY}`;
+  
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(rpcRequest)
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Helius RPC error: ${response.status} ${response.statusText}`);
+    }
+    
+    const data = await response.json();
+    if (data.error) {
+      throw new Error(`Helius RPC error: ${data.error.message}`);
+    }
+    
+    return data.result;
+  } catch (error) {
+    console.error("Helius RPC call failed:", error);
+    throw error;
+  }
+};
+
 // Test Helius API connection
 export const testHeliusConnection = async (): Promise<boolean> => {
   try {
@@ -126,5 +170,78 @@ export const testHeliusConnection = async (): Promise<boolean> => {
   } catch (error) {
     console.error("Failed to connect to Helius API:", error);
     return false;
+  }
+};
+
+// Create a new webhook
+export interface WebhookConfig {
+  webhook_url: string; // The URL that will receive webhook events
+  transaction_types: string[]; // Types of transactions to listen for
+  account_addresses: string[]; // Addresses to monitor
+  webhook_type: "enhanced" | "raw"; // Enhanced includes parsed data
+  auth_header?: string; // Optional authorization header
+  discord?: {
+    username?: string;
+    avatar_url?: string;
+  };
+}
+
+export const createWebhook = async (config: WebhookConfig): Promise<{ webhook_id: string }> => {
+  try {
+    return await heliusApiCall<{ webhook_id: string }>('/webhooks', 'POST', config);
+  } catch (error) {
+    console.error("Failed to create webhook:", error);
+    throw error;
+  }
+};
+
+// Get all webhooks
+export const getWebhooks = async (): Promise<any[]> => {
+  try {
+    return await heliusApiCall<any[]>('/webhooks');
+  } catch (error) {
+    console.error("Failed to get webhooks:", error);
+    throw error;
+  }
+};
+
+// Delete a webhook
+export const deleteWebhook = async (webhookId: string): Promise<boolean> => {
+  try {
+    await heliusApiCall<void>(`/webhooks/${webhookId}`, 'DELETE');
+    return true;
+  } catch (error) {
+    console.error(`Failed to delete webhook ${webhookId}:`, error);
+    return false;
+  }
+};
+
+// Parse transaction data
+export const parseTransaction = async (signatures: string[]): Promise<any[]> => {
+  try {
+    return await heliusApiCall<any[]>('/transactions', 'POST', { transactions: signatures });
+  } catch (error) {
+    console.error("Failed to parse transactions:", error);
+    throw error;
+  }
+};
+
+// Get transaction history for an address
+export const getAddressHistory = async (address: string, options: {
+  before?: string;
+  until?: string;
+  limit?: number;
+} = {}): Promise<any[]> => {
+  try {
+    const queryParams = new URLSearchParams();
+    if (options.before) queryParams.append('before', options.before);
+    if (options.until) queryParams.append('until', options.until);
+    if (options.limit) queryParams.append('limit', options.limit.toString());
+    
+    const endpoint = `/addresses/${address}/transactions?${queryParams.toString()}`;
+    return await heliusApiCall<any[]>(endpoint);
+  } catch (error) {
+    console.error(`Failed to get transaction history for ${address}:`, error);
+    throw error;
   }
 };

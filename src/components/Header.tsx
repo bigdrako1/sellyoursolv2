@@ -15,7 +15,7 @@ const Header = ({ walletAddress = "" }: HeaderProps) => {
         <div className="flex items-center justify-between h-16">
           {/* Logo and navigation */}
           <div className="flex items-center space-x-4">
-            <Link to="/" className="text-xl font-bold text-trading-highlight">SolRunner</Link>
+            <Link to="/" className="text-xl font-bold text-trading-highlight">SellYourSOL V2</Link>
             
             <nav className="hidden md:flex items-center space-x-1">
               <Link to="/" className="px-3 py-2 rounded-md hover:bg-trading-darkAccent">
