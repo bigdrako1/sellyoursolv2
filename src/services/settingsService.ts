@@ -1,6 +1,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { UserSettings } from "@/types/database.types";
+import { Currency } from "@/store/currencyStore";
 
 export async function getUserSettings(userId: string): Promise<UserSettings | null> {
   try {
@@ -18,7 +19,7 @@ export async function getUserSettings(userId: string): Promise<UserSettings | nu
   }
 }
 
-export async function updateUserSettings(settings: Partial<UserSettings>, userId: string): Promise<UserSettings | null> {
+export async function updateUserSettings(settings: Partial<UserSettings & { currency: Currency | string }>, userId: string): Promise<UserSettings | null> {
   try {
     const { data, error } = await supabase
       .from('user_settings')

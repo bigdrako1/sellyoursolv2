@@ -1,4 +1,6 @@
 
+import { Currency } from "@/store/currencyStore";
+
 export interface Profile {
   id: string;
   username: string | null;
