@@ -5,6 +5,13 @@ import { Progress } from "@/components/ui/progress";
 import { getApiUsageStats } from "@/utils/apiUtils";
 import { AlertCircle, Check, BarChart } from "lucide-react";
 
+interface ApiUsageItem {
+  name: string;
+  requests: number;
+  limit: number;
+  percentage: number;
+}
+
 const ApiUsageMonitor = () => {
   const [usageStats, setUsageStats] = useState({
     totalCalls: 0,
@@ -14,6 +21,7 @@ const ApiUsageMonitor = () => {
     lastReset: 0,
   });
   
+  const [apiUsageItems, setApiUsageItems] = useState<ApiUsageItem[]>([]);
   const [connectionStatus, setConnectionStatus] = useState<"checking" | "connected" | "error">("checking");
 
   // Get today's date in YYYY-MM-DD format
@@ -28,14 +36,28 @@ const ApiUsageMonitor = () => {
     // Update usage stats every minute
     const fetchStats = () => {
       const stats = getApiUsageStats();
-      setUsageStats(stats);
+      
+      // For the existing usageStats structure
+      setUsageStats({
+        totalCalls: stats.reduce((sum, api) => sum + api.requests, 0),
+        dailyCalls: { [today]: stats.reduce((sum, api) => sum + api.requests, 0) },
+        methodCalls: stats.reduce((acc, api) => {
+          acc[api.name] = api.requests;
+          return acc;
+        }, {} as Record<string, number>),
+        rateExceeded: 0,
+        lastReset: Date.now(),
+      });
+      
+      // For the API usage items
+      setApiUsageItems(stats);
     };
     
     fetchStats();
     const interval = setInterval(fetchStats, 60000);
     
     return () => clearInterval(interval);
-  }, []);
+  }, [today]);
 
   // Get top methods by usage
   const topMethods = Object.entries(usageStats.methodCalls)

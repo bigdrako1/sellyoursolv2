@@ -20,6 +20,13 @@ export interface WebhookConfig {
   active: boolean;
 }
 
+interface ApiUsageItem {
+  name: string;
+  requests: number;
+  limit: number;
+  percentage: number;
+}
+
 import { waitForRateLimit, setRateLimitTier, RateLimitTier } from './rateLimit';
 
 // Configure the initial rate limit tier (can be updated in settings)
@@ -216,8 +223,9 @@ export const updateHeliusRateLimitTier = (tier: RateLimitTier) => {
 
 /**
  * Get API usage statistics for monitoring
+ * @returns Array of API usage stats
  */
-export const getApiUsageStats = () => {
+export const getApiUsageStats = (): ApiUsageItem[] => {
   const heliusRpcStats = {
     name: 'Helius RPC',
     requests: Math.floor(Math.random() * 100),
