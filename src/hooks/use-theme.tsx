@@ -1,10 +1,8 @@
 
-import { useState, useEffect, createContext, useContext } from 'react';
-
-type ThemeType = 'dark';
+import { createContext, useContext, useEffect } from 'react';
 
 interface ThemeContextType {
-  theme: ThemeType;
+  theme: 'dark';
 }
 
 const defaultContext: ThemeContextType = {
@@ -14,16 +12,15 @@ const defaultContext: ThemeContextType = {
 const ThemeContext = createContext<ThemeContextType>(defaultContext);
 
 export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
-  const [theme] = useState<ThemeType>('dark');
+  // Always use dark theme
+  const theme = 'dark';
 
   useEffect(() => {
-    // Apply theme to document
+    // Apply dark theme to document
     document.documentElement.classList.add('dark');
     document.documentElement.classList.remove('light');
-
-    // Save theme preference
-    localStorage.setItem('theme', theme);
-  }, [theme]);
+    localStorage.setItem('theme', 'dark');
+  }, []);
 
   return (
     <ThemeContext.Provider value={{ theme }}>
