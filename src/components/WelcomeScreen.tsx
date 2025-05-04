@@ -1,4 +1,5 @@
 
+import { Button } from "@/components/ui/button";
 import WalletConnect from "@/components/WalletConnect";
 
 interface WelcomeScreenProps {
@@ -19,8 +20,34 @@ const WelcomeScreen = ({ onConnect, onDisconnect }: WelcomeScreenProps) => {
       <div className="w-full max-w-md">
         <WalletConnect onConnect={onConnect} onDisconnect={onDisconnect} />
       </div>
+      
+      <div className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-8 w-full max-w-4xl">
+        <FeatureCard 
+          title="AI-Powered Trading"
+          description="Our algorithms adapt to market conditions in real-time for optimal performance."
+          icon="🤖"
+        />
+        <FeatureCard 
+          title="Portfolio Management"
+          description="Track assets, monitor performance, and analyze ROI across chains."
+          icon="📊"
+        />
+        <FeatureCard 
+          title="24/7 Automation"
+          description="Set your strategy once and let our system handle the rest."
+          icon="⏰"
+        />
+      </div>
     </div>
   );
 };
+
+const FeatureCard = ({ title, description, icon }: { title: string, description: string, icon: string }) => (
+  <div className="trading-card flex flex-col items-center text-center p-6 hover-scale">
+    <div className="text-3xl mb-4">{icon}</div>
+    <h3 className="font-bold mb-2 text-trading-highlight">{title}</h3>
+    <p className="text-sm text-gray-400">{description}</p>
+  </div>
+);
 
 export default WelcomeScreen;

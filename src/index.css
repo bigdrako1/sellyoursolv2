@@ -36,20 +36,21 @@
     --radius: 0.5rem;
 
     --sidebar-background: 0 0% 98%;
-
     --sidebar-foreground: 240 5.3% 26.1%;
-
     --sidebar-primary: 240 5.9% 10%;
-
     --sidebar-primary-foreground: 0 0% 98%;
-
     --sidebar-accent: 240 4.8% 95.9%;
-
     --sidebar-accent-foreground: 240 5.9% 10%;
-
     --sidebar-border: 220 13% 91%;
-
     --sidebar-ring: 217.2 91.2% 59.8%;
+    
+    /* Trading platform light theme colors */
+    --trading-dark: 240 10% 95%;
+    --trading-darkAccent: 240 10% 90%;
+    --trading-success: 142 70% 45%;
+    --trading-danger: 0 84% 60%;
+    --trading-warning: 38 95% 50%;
+    --trading-highlight: 226 75% 56%;
   }
 
   .dark {
@@ -80,6 +81,7 @@
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
     --ring: 212.7 26.8% 83.9%;
+    
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
     --sidebar-primary: 224.3 76.3% 48%;
@@ -88,6 +90,14 @@
     --sidebar-accent-foreground: 240 4.8% 95.9%;
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 217.2 91.2% 59.8%;
+    
+    /* Trading platform dark theme colors */
+    --trading-dark: 222 47% 11%;
+    --trading-darkAccent: 215 28% 17%;
+    --trading-success: 142 70% 45%;
+    --trading-danger: 0 84% 60%;
+    --trading-warning: 38 95% 50%;
+    --trading-highlight: 226 75% 56%;
   }
 }
 
@@ -97,7 +107,11 @@
   }
 
   body {
-    @apply bg-trading-dark text-foreground dark;
+    @apply bg-background text-foreground;
+  }
+
+  body.dark {
+    @apply bg-trading-dark text-white;
   }
 
   /* Custom styling for scrollbars */
@@ -106,12 +120,25 @@
     height: 6px;
   }
   
-  ::-webkit-scrollbar-track {
+  .dark ::-webkit-scrollbar-track {
     background: #1f2937;
   }
   
-  ::-webkit-scrollbar-thumb {
+  .dark ::-webkit-scrollbar-thumb {
     background: #4b5563;
+    border-radius: 3px;
+  }
+  
+  .dark ::-webkit-scrollbar-thumb:hover {
+    background: #6366f1;
+  }
+  
+  ::-webkit-scrollbar-track {
+    background: #e5e7eb;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    background: #9ca3af;
     border-radius: 3px;
   }
   
@@ -122,7 +149,7 @@
 
 @layer components {
   .glass-panel {
-    @apply bg-black/30 backdrop-blur-md border border-white/10 rounded-lg;
+    @apply bg-black/30 backdrop-blur-md border border-white/10 rounded-lg dark:bg-black/30 dark:border-white/10 light:bg-white/20 light:border-black/5;
   }
   
   .trading-gradient-text {
@@ -130,7 +157,7 @@
   }
   
   .trading-card {
-    @apply bg-trading-darkAccent border border-white/5 rounded-lg p-4 hover:border-trading-highlight/50 transition-all duration-300;
+    @apply bg-trading-darkAccent border border-white/5 rounded-lg p-4 hover:border-trading-highlight/50 transition-all duration-300 dark:bg-trading-darkAccent dark:border-white/5 light:bg-white light:border-gray-200 light:shadow-sm;
   }
   
   .trading-button {
@@ -152,5 +179,31 @@
   /* PNL Card Background Pattern */
   .bg-pattern {
     background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  }
+  
+  /* UI Transition animations */
+  .fade-in {
+    animation: fadeIn 0.3s ease forwards;
+  }
+  
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  /* Responsive container classes */
+  .content-container {
+    @apply container mx-auto px-4 sm:px-6 lg:px-8;
+  }
+  
+  /* Button hover enhancements */
+  .hover-scale {
+    @apply transition-transform duration-200 ease-in-out hover:scale-105;
   }
 }

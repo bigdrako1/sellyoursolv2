@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import Header from "@/components/Header";
 import Dashboard from "@/components/Dashboard";
@@ -205,16 +204,6 @@ const Index = () => {
       <Header />
       
       <main className="flex-grow container mx-auto px-4 pb-10 pt-4">
-        {/* Show wallet connect if not connected */}
-        {!walletAddress && (
-          <div className="mb-6">
-            <WalletConnect 
-              onConnect={handleWalletConnect} 
-              onDisconnect={handleWalletDisconnect} 
-            />
-          </div>
-        )}
-        
         {!walletAddress ? (
           <WelcomeScreen 
             onConnect={handleWalletConnect} 

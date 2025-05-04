@@ -3,7 +3,8 @@ import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import CurrencySelector from "@/components/CurrencySelector";
 import { useState } from "react";
-import { Menu, X } from "lucide-react";
+import { Menu, X, Sun, Moon } from "lucide-react";
+import { useTheme } from "@/hooks/use-theme";
 
 interface HeaderProps {
   walletAddress?: string;
@@ -12,13 +13,14 @@ interface HeaderProps {
 const Header = ({ walletAddress = "" }: HeaderProps) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
+  const { theme, toggleTheme } = useTheme();
   
   const navItems = [
     { path: "/", label: "Dashboard" },
     { path: "/market-analysis", label: "Market Analysis" },
+    { path: "/auto-trading", label: "Auto Trading" },
     { path: "/portfolio", label: "Portfolio" },
-    { path: "/settings", label: "Settings" },
-    { path: "/webhooks", label: "Webhooks" }
+    { path: "/settings", label: "Settings" }
   ];
   
   const isActive = (path: string) => {
@@ -49,6 +51,15 @@ const Header = ({ walletAddress = "" }: HeaderProps) => {
           {/* Right side controls */}
           <div className="flex items-center space-x-4">
             <CurrencySelector />
+            
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={toggleTheme}
+              className="text-white hover:text-trading-highlight"
+            >
+              {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+            </Button>
             
             {/* Mobile menu button */}
             <Button 

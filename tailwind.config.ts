@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -62,20 +63,19 @@ export default {
           border: 'hsl(var(--sidebar-border))',
           ring: 'hsl(var(--sidebar-ring))'
         },
-        // Custom trading platform colors
+        // Custom trading platform colors that support themes
         trading: {
           primary: '#3b82f6',
           secondary: '#8b5cf6',
-          success: '#10b981',
-          danger: '#ef4444',
-          warning: '#f59e0b',
-          dark: '#111827',
-          darkAccent: '#1f2937',
-          highlight: '#6366f1'
+          success: 'hsl(var(--trading-success))',
+          danger: 'hsl(var(--trading-danger))',
+          warning: 'hsl(var(--trading-warning))',
+          dark: 'hsl(var(--trading-dark))',
+          darkAccent: 'hsl(var(--trading-darkAccent))',
+          highlight: 'hsl(var(--trading-highlight))'
         },
         solana: '#9945FF',
-        binance: '#F0B90B',
-        // New colors for PNL cards
+        // Additional colors for UI
         indigo: {
           600: '#4f46e5',
         },
@@ -104,20 +104,12 @@ export default {
       },
       keyframes: {
         'accordion-down': {
-          from: {
-            height: '0'
-          },
-          to: {
-            height: 'var(--radix-accordion-content-height)'
-          }
+          from: { height: '0' },
+          to: { height: 'var(--radix-accordion-content-height)' }
         },
         'accordion-up': {
-          from: {
-            height: 'var(--radix-accordion-content-height)'
-          },
-          to: {
-            height: '0'
-          }
+          from: { height: 'var(--radix-accordion-content-height)' },
+          to: { height: '0' }
         },
         'pulse-glow': {
           '0%, 100%': {
@@ -128,12 +120,17 @@ export default {
             opacity: '0.7',
             boxShadow: '0 0 30px rgba(139, 92, 246, 0.8)'
           }
+        },
+        'fadeIn': {
+          '0%': { opacity: '0', transform: 'translateY(10px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' }
         }
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
-        'pulse-glow': 'pulse-glow 2s infinite'
+        'pulse-glow': 'pulse-glow 2s infinite',
+        'fade-in': 'fadeIn 0.3s ease-out'
       },
       backgroundImage: {
         'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
