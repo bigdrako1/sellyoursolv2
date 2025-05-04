@@ -2,6 +2,7 @@
 import { Button } from "@/components/ui/button";
 import { TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Settings, Zap, Bot, BarChart2, Activity, AlertTriangle } from "lucide-react";
+import { Link } from "react-router-dom";
 
 interface SystemControlsProps {
   activeTab: string;
@@ -55,10 +56,12 @@ const SystemControls = ({
             </>
           )}
         </Button>
-        <Button variant="outline" size="sm" className="gap-1 bg-trading-darkAccent hover:bg-white/10 border-white/10">
-          <Settings size={14} />
-          <span className="hidden md:inline">Settings</span>
-        </Button>
+        <Link to="/settings">
+          <Button variant="outline" size="sm" className="gap-1 bg-trading-darkAccent hover:bg-white/10 border-white/10">
+            <Settings size={14} />
+            <span className="hidden md:inline">Settings</span>
+          </Button>
+        </Link>
       </div>
     </div>
   );

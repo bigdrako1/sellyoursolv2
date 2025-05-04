@@ -11,7 +11,6 @@ import Portfolio from "./pages/Portfolio";
 import MarketAnalysis from "./pages/MarketAnalysis";
 import Settings from "./pages/Settings";
 import AutoTrading from "./pages/AutoTrading";
-import Webhooks from "./pages/Webhooks";
 
 // Create a new QueryClient instance
 const queryClient = new QueryClient({
@@ -35,7 +34,6 @@ const App: React.FC = () => (
           <Route path="/auto-trading" element={<AutoTrading />} />
           <Route path="/portfolio" element={<Portfolio />} />
           <Route path="/settings" element={<Settings />} />
-          <Route path="/webhooks" element={<Webhooks />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

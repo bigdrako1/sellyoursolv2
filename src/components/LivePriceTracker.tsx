@@ -16,8 +16,7 @@ interface PriceData {
 
 const LivePriceTracker = () => {
   const [prices, setPrices] = useState<PriceData[]>([
-    { symbol: "SOL", price: 0, change24h: 0 },
-    { symbol: "BNB", price: 0, change24h: 0 }
+    { symbol: "SOL", price: 0, change24h: 0 }
   ]);
   const { toast } = useToast();
   const [audioInitialized, setAudioInitialized] = useState(false);
@@ -60,9 +59,6 @@ const LivePriceTracker = () => {
           const solData = response.tokens.find((token: any) => 
             token.symbol.toLowerCase() === "sol" || token.name.toLowerCase() === "solana");
           
-          const bnbData = response.tokens.find((token: any) => 
-            token.symbol.toLowerCase() === "bnb" || token.name.toLowerCase() === "binance coin");
-          
           const initialPrices: PriceData[] = [];
           
           if (solData) {
@@ -75,16 +71,6 @@ const LivePriceTracker = () => {
             initialPrices.push({ symbol: "SOL", price: 0, change24h: 0 });
           }
           
-          if (bnbData) {
-            initialPrices.push({
-              symbol: "BNB",
-              price: parseFloat(bnbData.price) || 0,
-              change24h: parseFloat(bnbData.change24h) || 0
-            });
-          } else {
-            initialPrices.push({ symbol: "BNB", price: 0, change24h: 0 });
-          }
-          
           setPrices(initialPrices);
         }
         setIsLoading(false);
@@ -93,8 +79,7 @@ const LivePriceTracker = () => {
         console.error("Failed to fetch initial prices:", error);
         // Fallback to default values
         setPrices([
-          { symbol: "SOL", price: 140, change24h: 0 },
-          { symbol: "BNB", price: 580, change24h: 0 }
+          { symbol: "SOL", price: 140, change24h: 0 }
         ]);
         setIsLoading(false);
         startPriceFetching();
@@ -123,8 +108,7 @@ const LivePriceTracker = () => {
               // Find the matching token in the API response
               const tokenData = response.tokens.find((t: any) => 
                 t.symbol.toLowerCase() === token.symbol.toLowerCase() ||
-                (token.symbol === "SOL" && t.name.toLowerCase() === "solana") ||
-                (token.symbol === "BNB" && t.name.toLowerCase() === "binance coin")
+                (token.symbol === "SOL" && t.name.toLowerCase() === "solana")
               );
               
               if (!tokenData) return token;
