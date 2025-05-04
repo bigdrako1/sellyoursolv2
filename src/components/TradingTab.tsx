@@ -76,6 +76,11 @@ const TradingTab = () => {
   };
 
   const handleSecureAll = () => {
+    // Get strategies that are enabled and have secureInitial option
+    const activeStrategiesWithSecureOption = Object.entries(strategies)
+      .filter(([_, strategy]) => strategy.enabled && strategy.secureInitial)
+      .length;
+    
     // Implement secure all functionality for all active strategies
     Object.entries(strategies).forEach(([type, strategy]) => {
       if (strategy.enabled && strategy.secureInitial) {
@@ -90,7 +95,7 @@ const TradingTab = () => {
     
     toast({
       title: "Initial Investments Secured",
-      description: "Initial investments have been secured for all active strategies."
+      description: `Initial investments have been secured for ${activeStrategiesWithSecureOption || 'all'} active strategies.`
     });
   };
 

@@ -52,9 +52,22 @@ const AutoTrading = () => {
   }, [toast]);
   
   const handleSecureAll = () => {
+    // Get all active strategies from localStorage
+    const savedStrategies = localStorage.getItem("trading_strategies");
+    let strategiesCount = 0;
+    
+    if (savedStrategies) {
+      try {
+        const strategies = JSON.parse(savedStrategies);
+        strategiesCount = strategies.filter((s: any) => s.enabled).length;
+      } catch (e) {
+        console.error("Error parsing strategies:", e);
+      }
+    }
+    
     toast({
       title: "Initial Investments Secured",
-      description: "Initial investments have been secured for all active strategies.",
+      description: `Initial investments have been secured for ${strategiesCount || 'all'} active strategies.`,
     });
   };
 

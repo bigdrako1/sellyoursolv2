@@ -17,8 +17,7 @@ import {
   BarChart2,
   Activity, 
   Zap,
-  Bot,
-  Shield 
+  Bot
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { secureInitialInvestment } from "@/utils/tradingUtils";
@@ -169,14 +168,6 @@ const StrategyManager = () => {
     ? strategies.filter(s => !s.enabled)
     : strategies;
 
-  const secureAllInitials = () => {
-    // Simulate securing all active strategies' initials
-    toast({
-      title: "Initial Investments Secured",
-      description: "Initial investments have been secured for all active strategies.",
-    });
-  };
-  
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row gap-6">
@@ -191,25 +182,13 @@ const StrategyManager = () => {
             <CardDescription>Configure and manage your trading algorithms</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="flex justify-between mb-4">
-              <Tabs defaultValue="all" className="mb-4" onValueChange={setActiveTab}>
-                <TabsList className="bg-black/20 w-full">
-                  <TabsTrigger value="all">All</TabsTrigger>
-                  <TabsTrigger value="active">Active</TabsTrigger>
-                  <TabsTrigger value="inactive">Inactive</TabsTrigger>
-                </TabsList>
-              </Tabs>
-              
-              <Button 
-                variant="outline" 
-                size="sm"
-                className="ml-2 flex items-center gap-1 bg-trading-success/10 text-trading-success border-trading-success/30"
-                onClick={secureAllInitials}
-              >
-                <Shield size={14} />
-                <span>Secure All Initials</span>
-              </Button>
-            </div>
+            <Tabs defaultValue="all" className="mb-4" onValueChange={setActiveTab}>
+              <TabsList className="bg-black/20 w-full">
+                <TabsTrigger value="all">All</TabsTrigger>
+                <TabsTrigger value="active">Active</TabsTrigger>
+                <TabsTrigger value="inactive">Inactive</TabsTrigger>
+              </TabsList>
+            </Tabs>
             
             <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
               {filteredStrategies.map(strategy => (
@@ -249,13 +228,6 @@ const StrategyManager = () => {
                       Risk: {strategy.riskLevel > 65 ? 'High' : strategy.riskLevel > 35 ? 'Medium' : 'Low'}
                     </Badge>
                   </div>
-                  
-                  {strategy.secureInitial && (
-                    <div className="mt-2 flex items-center gap-1 text-xs text-trading-success">
-                      <Shield size={12} className="text-trading-success" />
-                      <span>Secures {strategy.secureInitialPercentage}% of initial</span>
-                    </div>
-                  )}
                 </div>
               ))}
             </div>
@@ -365,8 +337,9 @@ const StrategyManager = () => {
                     
                     <div className="flex justify-between items-center mb-4">
                       <Label htmlFor="secureInitial" className="flex items-center gap-2">
-                        <Shield size={16} className={activeStrategy.secureInitial ? 'text-trading-success' : 'text-gray-400'} />
-                        Secure Initial Investment
+                        <span className={activeStrategy.secureInitial ? 'text-trading-success' : 'text-gray-400'}>
+                          Secure Initial Investment
+                        </span>
                       </Label>
                       <Switch 
                         id="secureInitial"
@@ -394,7 +367,10 @@ const StrategyManager = () => {
                   </div>
                   
                   <div className="flex justify-end pt-4">
-                    <Button onClick={() => saveStrategySettings(activeStrategy)} className="flex items-center gap-2">
+                    <Button 
+                      onClick={() => saveStrategySettings(activeStrategy)} 
+                      className="flex items-center gap-2"
+                    >
                       <Save size={14} />
                       Save Changes
                     </Button>
