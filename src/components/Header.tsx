@@ -3,7 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import CurrencySelector from "@/components/CurrencySelector";
 import { useState } from "react";
-import { Menu, X, Settings } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import LivePriceTracker from "@/components/LivePriceTracker";
 
 interface HeaderProps {
@@ -53,13 +53,6 @@ const Header = ({ walletAddress = "" }: HeaderProps) => {
               <LivePriceTracker />
             </div>
             <CurrencySelector />
-            
-            <Link to="/settings">
-              <Button variant="outline" size="sm" className="gap-1 bg-trading-darkAccent hover:bg-white/10 border-white/10">
-                <Settings size={14} />
-                <span className="hidden md:inline">Settings</span>
-              </Button>
-            </Link>
             
             {/* Mobile menu button */}
             <Button 

@@ -70,56 +70,44 @@ const LivePriceTracker = () => {
   // Display loading state
   if (solLoading || changeLoading) {
     return (
-      <Card className="trading-card min-h-[72px] flex items-center justify-center">
-        <CardContent className="p-3">
-          <div className="flex items-center justify-center">
-            <Loader2 className="h-4 w-4 animate-spin mr-2" />
-            <span className="text-sm">Loading price data...</span>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="flex items-center justify-center min-w-[140px]">
+        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+        <span className="text-sm">Loading...</span>
+      </div>
     );
   }
   
   // Display error state
   if (solError || changeError) {
     return (
-      <Card className="trading-card min-h-[72px] border border-trading-danger/30">
-        <CardContent className="p-3">
-          <div className="text-xs text-trading-danger text-center">
-            Failed to load price data
-          </div>
-        </CardContent>
-      </Card>
+      <div className="text-xs text-trading-danger min-w-[140px]">
+        Failed to load price
+      </div>
     );
   }
   
   return (
-    <Card className="trading-card card-with-border">
-      <CardContent className="p-3">
-        <div className="flex items-center justify-between">
-          <div>
-            <div className="text-xs text-gray-400">SOL Price</div>
-            <div className={`text-lg font-bold ${animatePrice ? (priceDirection === 'up' ? 'text-trading-success' : 'text-trading-danger') : ''}`}>
-              {currencySymbol}{solPrice ? convertToCurrency(solPrice).toFixed(2) : '-.--'}
-            </div>
+    <div className="flex flex-col min-w-[140px]">
+      <div className="text-xs text-gray-400">SOL Price</div>
+      <div className="flex items-center justify-between">
+        <span className={`text-lg font-bold ${animatePrice ? (priceDirection === 'up' ? 'text-trading-success' : 'text-trading-danger') : ''}`}>
+          {currencySymbol}{solPrice ? convertToCurrency(solPrice).toFixed(2) : '-.--'}
+        </span>
+        
+        {sol24hChange !== undefined && (
+          <div className={`flex items-center ${sol24hChange >= 0 ? 'text-trading-success' : 'text-trading-danger'} ml-2`}>
+            {sol24hChange >= 0 ? (
+              <ArrowUp className="h-3.5 w-3.5 mr-1" />
+            ) : (
+              <ArrowDown className="h-3.5 w-3.5 mr-1" />
+            )}
+            <span className="text-sm font-medium">
+              {Math.abs(sol24hChange).toFixed(2)}%
+            </span>
           </div>
-          
-          {sol24hChange !== undefined && (
-            <div className={`flex items-center ${sol24hChange >= 0 ? 'text-trading-success' : 'text-trading-danger'}`}>
-              {sol24hChange >= 0 ? (
-                <ArrowUp className="h-3.5 w-3.5 mr-1" />
-              ) : (
-                <ArrowDown className="h-3.5 w-3.5 mr-1" />
-              )}
-              <span className="text-sm font-medium">
-                {Math.abs(sol24hChange).toFixed(2)}%
-              </span>
-            </div>
-          )}
-        </div>
-      </CardContent>
-    </Card>
+        )}
+      </div>
+    </div>
   );
 };
 
