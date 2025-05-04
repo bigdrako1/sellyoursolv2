@@ -72,7 +72,10 @@ const AutoTrading = () => {
               </TabsContent>
               
               <TabsContent value="create" className="ai-trading-card card-with-border">
-                <StrategyConfig />
+                <StrategyConfig 
+                  title="Create Trading Strategy"
+                  description="Configure parameters for a new automated trading strategy"
+                />
               </TabsContent>
             </Tabs>
           </div>
