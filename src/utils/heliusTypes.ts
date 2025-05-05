@@ -80,6 +80,7 @@ export interface HeliusWalletBalance {
   address: string;
   lamports: number;
   solBalance: number;
+  nativeBalance?: number; // Added for compatibility
   tokens: HeliusTokenBalance[];
 }
 
@@ -102,6 +103,7 @@ export const parseHeliusWalletBalance = (data: any): HeliusWalletBalance => {
       address: '',
       lamports: 0,
       solBalance: 0,
+      nativeBalance: 0, // Added for compatibility
       tokens: []
     };
   }
@@ -132,6 +134,7 @@ export const parseHeliusWalletBalance = (data: any): HeliusWalletBalance => {
     address: data.address || '',
     lamports,
     solBalance,
+    nativeBalance: solBalance, // Added for compatibility
     tokens
   };
 };

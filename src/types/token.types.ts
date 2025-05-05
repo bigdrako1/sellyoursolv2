@@ -21,7 +21,7 @@ export interface Token {
   qualityScore?: number;
   trendingScore?: number | string[];
   isPumpFun?: boolean;
-  createdAt?: string;
+  createdAt?: string | Date;
   source?: string;
   lastUpdated?: string;
 }
@@ -50,4 +50,17 @@ export interface TokenAlert {
   type: 'price' | 'volume' | 'trend' | 'new';
   timestamp: string;
   message: string;
+}
+
+export interface WalletActivity {
+  id: string;
+  walletAddress: string;
+  tokenAddress: string;
+  tokenName: string;
+  tokenSymbol: string;
+  amount?: number;
+  value?: number;
+  timestamp: string;
+  activityType: 'buy' | 'sell' | 'transfer';
+  transactionHash: string;
 }

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowUpRight, Bell, BellOff, Loader2, TrendingUp, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { playSound } from "@/utils/soundUtils";
-import { getRecentTokenActivity, getTrendingTokens, getPumpFunTokens, TokenInfo, tokenInfoToToken } from "@/services/tokenDataService";
+import { getRecentTokenActivity, getTrendingTokens, getPumpFunTokens, tokenInfoToToken } from "@/services/tokenDataService";
 import type { Token } from "@/types/token.types";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/AuthContext";
@@ -35,8 +36,8 @@ const TokenAlertMonitor: React.FC = () => {
         const tokenActivity = await getRecentTokenActivity();
         
         if (tokenActivity && Array.isArray(tokenActivity) && tokenActivity.length > 0) {
-          // Process token data - convert TokenInfo to Token
-          const tokenData: Token[] = tokenActivity.map(tokenInfoToToken);
+          // Process token data
+          const tokenData: Token[] = tokenActivity.map(token => tokenInfoToToken(token));
           
           setTokens(tokenData);
           
@@ -76,7 +77,7 @@ const TokenAlertMonitor: React.FC = () => {
         
         if (trending && Array.isArray(trending)) {
           // Convert TokenInfo to Token
-          const trendingTokenData = trending.map(tokenInfoToToken);
+          const trendingTokenData = trending.map(token => tokenInfoToToken(token));
           setTrendingTokens(trendingTokenData);
         }
       } catch (error) {
@@ -103,7 +104,7 @@ const TokenAlertMonitor: React.FC = () => {
         
         if (pumpTokens && Array.isArray(pumpTokens)) {
           // Convert TokenInfo to Token
-          const pumpTokenData = pumpTokens.map(tokenInfoToToken);
+          const pumpTokenData = pumpTokens.map(token => tokenInfoToToken(token));
           setPumpFunTokens(pumpTokenData);
         }
       } catch (error) {
@@ -150,11 +151,18 @@ const TokenAlertMonitor: React.FC = () => {
     return <Badge className="bg-pink-500 flex items-center gap-1">Pump.fun</Badge>;
   };
 
-  const formatTimeAgo = (date: Date | undefined) => {
+  const formatTimeAgo = (date: Date | string | undefined) => {
     if (!date) return "unknown";
     
     try {
-      const minutes = Math.floor((new Date().getTime() - date.getTime()) / 60000);
+      // Convert string dates to Date objects
+      const dateObj = typeof date === 'string' ? new Date(date) : date;
+      
+      if (isNaN(dateObj.getTime())) {
+        return "unknown";
+      }
+      
+      const minutes = Math.floor((new Date().getTime() - dateObj.getTime()) / 60000);
       if (minutes < 60) return `${minutes}m ago`;
       return `${Math.floor(minutes / 60)}h ${minutes % 60}m ago`;
     } catch (error) {

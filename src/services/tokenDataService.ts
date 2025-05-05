@@ -1,7 +1,36 @@
-
 import { HeliusTokenData, HeliusTokenResponse } from '@/utils/heliusTypes';
-import { Token } from '@/types/token.types';
-import { HELIUS_API_KEY, BIRDEYE_API_KEY, BIRDEYE_API_BASE } from '@/utils/apiUtils';
+import { Token, WalletActivity } from '@/types/token.types';
+import { HELIUS_API_KEY, BIRDEYE_API_KEY } from '@/utils/apiUtils';
+
+const BIRDEYE_API_BASE = "https://public-api.birdeye.so";
+
+// Test Helius API connection
+export const testHeliusConnection = async (): Promise<boolean> => {
+  try {
+    const url = `https://mainnet.helius-rpc.com/?api-key=${HELIUS_API_KEY}`;
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        id: "helius-connection-test",
+        method: "getHealth"
+      }),
+    });
+
+    if (!response.ok) {
+      return false;
+    }
+
+    const data = await response.json();
+    return data.result === "ok";
+  } catch (error) {
+    console.error('Error testing Helius connection:', error);
+    return false;
+  }
+};
 
 // Utility function to fetch token metadata from Helius API
 export const fetchTokenMetadata = async (tokenAddress: string): Promise<HeliusTokenData | null> => {
@@ -68,30 +97,23 @@ export const fetchTokenMetadata = async (tokenAddress: string): Promise<HeliusTo
 };
 
 // Convert token info to Token type
-export const tokenInfoToToken = (
-  tokenAddress: string, 
-  tokenInfo: any, 
-  additionalData: Partial<Token> = {}
-): Token => {
+export const tokenInfoToToken = (token: Token): Token => {
   return {
-    address: tokenAddress,
-    name: tokenInfo.name || 'Unknown Token',
-    symbol: tokenInfo.symbol || tokenAddress.substring(0, 4),
-    decimals: tokenInfo.decimals || 9,
-    price: tokenInfo.price || 0,
-    marketCap: tokenInfo.marketCap || 0,
-    volume24h: tokenInfo.volume24h || 0,
-    change24h: tokenInfo.price_change_24h || 0,
-    holders: tokenInfo.holders || 0,
-    liquidity: tokenInfo.liquidity || 0,
-    supply: tokenInfo.supply || 0,
-    logoURI: tokenInfo.logoURI || '',
-    description: tokenInfo.description || '',
-    website: tokenInfo.website || '',
-    twitter: tokenInfo.twitter || '',
-    riskLevel: tokenInfo.riskLevel || 50,
-    qualityScore: tokenInfo.qualityScore || 50,
-    ...additionalData
+    ...token,
+    // Ensure these fields exist with defaults if they don't
+    price: token.price || 0,
+    marketCap: token.marketCap || 0,
+    volume24h: token.volume24h || 0,
+    change24h: token.change24h || 0,
+    holders: token.holders || 0,
+    liquidity: token.liquidity || 0,
+    supply: token.supply || 0,
+    logoURI: token.logoURI || '',
+    description: token.description || '',
+    website: token.website || '',
+    twitter: token.twitter || '',
+    riskLevel: token.riskLevel || 50,
+    qualityScore: token.qualityScore || 50,
   };
 };
 
@@ -282,39 +304,39 @@ export const getPumpFunTokens = async (): Promise<Token[]> => {
 };
 
 // Track wallet activities (for smart money detection)
-export const trackWalletActivities = async (walletAddresses: string[]): Promise<any> => {
+export const trackWalletActivities = async (walletAddresses: string[]): Promise<WalletActivity[]> => {
   try {
     // This would normally track wallets via API - for now return mock data
-    return {
-      totalWallets: walletAddresses.length,
-      trackedSince: new Date().toISOString(),
-      recentActivities: [
-        {
-          wallet: walletAddresses[0] || "7KBVJktNTGjmUCCBzKR7n4XecQUzwuZ8VnLnkQnY8UeF",
-          action: "buy",
-          token: "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263",
-          tokenName: "Bonk",
-          amount: 155000000000,
-          usdValue: 365250,
-          timestamp: new Date(Date.now() - 35 * 60000).toISOString()
-        },
-        {
-          wallet: walletAddresses[0] || "7KBVJktNTGjmUCCBzKR7n4XecQUzwuZ8VnLnkQnY8UeF",
-          action: "buy",
-          token: "jtojtomepa8beP8AuQc6eXt5FriJwfnGz1Y6law3uE",
-          tokenName: "Jito",
-          amount: 12500,
-          usdValue: 34375,
-          timestamp: new Date(Date.now() - 85 * 60000).toISOString()
-        }
-      ]
-    };
+    const mockActivities: WalletActivity[] = [
+      {
+        id: "activity-1",
+        walletAddress: walletAddresses[0] || "7KBVJktNTGjmUCCBzKR7n4XecQUzwuZ8VnLnkQnY8UeF",
+        tokenAddress: "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263",
+        tokenName: "Bonk",
+        tokenSymbol: "BONK",
+        amount: 155000000000,
+        value: 365250,
+        timestamp: new Date(Date.now() - 35 * 60000).toISOString(),
+        activityType: 'buy',
+        transactionHash: "4kT9XEd5PGVTr1XgkRnRYcYWt5gWLjJQmfFmrWEprBnXrk6K6F5FKtertrPdUGbzGrB5MiLaLnfi6UQNx4Cxcswp"
+      },
+      {
+        id: "activity-2",
+        walletAddress: walletAddresses[0] || "7KBVJktNTGjmUCCBzKR7n4XecQUzwuZ8VnLnkQnY8UeF",
+        tokenAddress: "jtojtomepa8beP8AuQc6eXt5FriJwfnGz1Y6law3uE",
+        tokenName: "Jito",
+        tokenSymbol: "JTO",
+        amount: 12500,
+        value: 34375,
+        timestamp: new Date(Date.now() - 85 * 60000).toISOString(),
+        activityType: 'buy',
+        transactionHash: "3B1NsUdMFnmJ4wnTeGQ7s9gQG6tkNSx6UYbsU6w9L89s5A3XGvJeuT7ymgKHWgJrw5WcCQBwvvgWJU9Gt9gbzbFT"
+      }
+    ];
+    
+    return mockActivities;
   } catch (error) {
     console.error('Error tracking wallet activities:', error);
-    return {
-      totalWallets: 0,
-      trackedSince: new Date().toISOString(),
-      recentActivities: []
-    };
+    return [];
   }
 };
