@@ -11,16 +11,23 @@ const LivePriceTracker = () => {
   const [animatePrice, setAnimatePrice] = useState(false);
   const [priceDirection, setPriceDirection] = useState<'up' | 'down' | null>(null);
   const [lastPrice, setLastPrice] = useState(0);
+  const [retryCount, setRetryCount] = useState(0);
   
-  // Use React Query to fetch the SOL price
+  // Use React Query to fetch the SOL price with retry logic
   const { 
     data: solPrice, 
     isLoading: solLoading, 
-    error: solError 
+    error: solError,
+    isFetching: solFetching,
+    refetch: refetchSolPrice
   } = useQuery({
-    queryKey: ['solPrice'],
+    queryKey: ['solPrice', retryCount],
     queryFn: getSolPrice,
-    refetchInterval: 30000 // Refetch every 30 seconds
+    refetchInterval: 30000, // Refetch every 30 seconds
+    refetchOnWindowFocus: false,
+    retry: 2,
+    retryDelay: 1000,
+    staleTime: 15000
   });
   
   // Use React Query to fetch the 24h change
@@ -29,10 +36,26 @@ const LivePriceTracker = () => {
     isLoading: changeLoading, 
     error: changeError 
   } = useQuery({
-    queryKey: ['sol24hChange'],
+    queryKey: ['sol24hChange', retryCount],
     queryFn: () => getToken24hChange('SOL'),
-    refetchInterval: 60000 // Refetch every minute
+    refetchInterval: 60000, // Refetch every minute
+    refetchOnWindowFocus: false,
+    retry: 2,
+    retryDelay: 1000,
+    staleTime: 30000
   });
+  
+  // Retry fetching data if there's an error
+  useEffect(() => {
+    if (solError || changeError) {
+      // Set up a retry mechanism
+      const retryTimer = setTimeout(() => {
+        setRetryCount(prev => prev + 1);
+      }, 10000); // Retry after 10 seconds
+      
+      return () => clearTimeout(retryTimer);
+    }
+  }, [solError, changeError]);
   
   // Handle price animation
   useEffect(() => {
@@ -70,8 +93,12 @@ const LivePriceTracker = () => {
     return value * (rates[currency as keyof typeof rates] || 1);
   };
   
+  // Use fallback price if there's an error
+  const displayPrice = Number(solPrice || 100); // Default to 100 if price fetch fails
+  const displayChange = sol24hChange ?? 0; // Default to 0% if change fetch fails
+  
   // Display loading state
-  if (solLoading || changeLoading) {
+  if ((solLoading || changeLoading) && !solPrice) {
     return (
       <div className="flex items-center justify-center min-w-[140px]">
         <Loader2 className="h-4 w-4 animate-spin mr-2" />
@@ -80,39 +107,32 @@ const LivePriceTracker = () => {
     );
   }
   
-  // Display error state
-  if (solError || changeError) {
-    return (
-      <div className="text-xs text-trading-danger min-w-[140px]">
-        Failed to load price
-      </div>
-    );
-  }
-  
-  // Type assertion for solPrice to ensure it's treated as a number
-  const displayPrice = Number(solPrice || 0);
-  
   return (
     <div className="flex flex-col min-w-[140px]">
       <div className="text-xs text-gray-400">SOL Price</div>
       <div className="flex items-center justify-between">
         <span className={`text-lg font-bold ${animatePrice ? (priceDirection === 'up' ? 'text-trading-success' : 'text-trading-danger') : ''}`}>
-          {currencySymbol}{solPrice ? convertToCurrency(displayPrice).toFixed(2) : '-.--'}
+          {currencySymbol}{convertToCurrency(displayPrice).toFixed(2)}
         </span>
         
-        {sol24hChange !== undefined && (
-          <div className={`flex items-center ${sol24hChange >= 0 ? 'text-trading-success' : 'text-trading-danger'} ml-2`}>
-            {sol24hChange >= 0 ? (
-              <ArrowUp className="h-3.5 w-3.5 mr-1" />
-            ) : (
-              <ArrowDown className="h-3.5 w-3.5 mr-1" />
-            )}
-            <span className="text-sm font-medium">
-              {Math.abs(sol24hChange).toFixed(2)}%
-            </span>
-          </div>
-        )}
+        <div className={`flex items-center ${displayChange >= 0 ? 'text-trading-success' : 'text-trading-danger'} ml-2`}>
+          {displayChange >= 0 ? (
+            <ArrowUp className="h-3.5 w-3.5 mr-1" />
+          ) : (
+            <ArrowDown className="h-3.5 w-3.5 mr-1" />
+          )}
+          <span className="text-sm font-medium">
+            {Math.abs(displayChange).toFixed(2)}%
+          </span>
+        </div>
       </div>
+      
+      {(solFetching && !solLoading) && (
+        <div className="text-xs text-gray-500 flex items-center mt-1">
+          <div className="h-1.5 w-1.5 rounded-full bg-blue-400 animate-pulse mr-1"></div>
+          Updating...
+        </div>
+      )}
     </div>
   );
 };

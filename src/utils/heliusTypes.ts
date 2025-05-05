@@ -17,26 +17,26 @@ export interface HeliusTokenResponse {
   result?: {
     onChainData?: {
       data?: {
-        name: string;
-        symbol: string;
-        decimals: number;
+        name?: string;
+        symbol?: string;
+        decimals?: number;
       };
     };
     offChainData?: {
-      name: string;
-      symbol: string;
-      decimals: number;
+      name?: string;
+      symbol?: string;
+      decimals?: number;
     };
     legacyMetadata?: {
-      name: string;
-      symbol: string;
-      decimals: number;
+      name?: string;
+      symbol?: string;
+      decimals?: number;
     };
     tokenData?: {
-      name: string;
-      symbol: string;
-      decimals: number;
-      supply: number | string;
+      name?: string;
+      symbol?: string;
+      decimals?: number;
+      supply?: number | string;
     };
     supply?: number | string;
   };
@@ -96,6 +96,23 @@ export interface HeliusTokenBalance {
   logo?: string;
 }
 
+// Helper function to safely extract a string from unknown data
+const safeString = (value: any): string => {
+  if (typeof value === 'string') return value;
+  if (value === null || value === undefined) return '';
+  return String(value);
+};
+
+// Helper function to safely extract a number from unknown data
+const safeNumber = (value: any): number => {
+  if (typeof value === 'number') return value;
+  if (typeof value === 'string') {
+    const parsed = parseFloat(value);
+    if (!isNaN(parsed)) return parsed;
+  }
+  return 0;
+};
+
 // Helper function to parse wallet balances from Helius
 export const parseHeliusWalletBalance = (data: any): HeliusWalletBalance => {
   if (!data) {
@@ -109,32 +126,37 @@ export const parseHeliusWalletBalance = (data: any): HeliusWalletBalance => {
   }
 
   // Parse SOL balance
-  const lamports = data.lamports || 0;
+  const lamports = safeNumber(data.lamports);
   const solBalance = lamports / 1000000000; // Convert lamports to SOL
 
   // Parse token balances
-  const tokens = (data.tokens || []).map((token: any) => {
-    const decimals = token.tokenMetadata?.decimals || 9;
-    const uiAmount = token.amount / Math.pow(10, decimals);
+  const tokens = Array.isArray(data.tokens) ? data.tokens.map((token: any) => {
+    if (!token) return null;
+
+    const tokenMetadata = token.tokenMetadata || {};
+    const decimals = safeNumber(tokenMetadata.decimals || 9);
+    const amount = safeNumber(token.amount);
+    const uiAmount = amount / Math.pow(10, decimals);
+    const mint = safeString(token.mint);
     
     return {
-      mint: token.mint || '',
-      amount: token.amount || 0,
-      decimals: decimals,
-      tokenAccount: token.tokenAccount || '',
-      tokenName: token.tokenMetadata?.name || 'Unknown Token',
-      tokenSymbol: token.tokenMetadata?.symbol || token.mint?.substring(0, 4) || 'UNKN',
-      uiAmount: uiAmount,
-      symbol: token.tokenMetadata?.symbol || token.mint?.substring(0, 4) || 'UNKN',
-      logo: token.tokenMetadata?.logoURI || ''
+      mint,
+      amount,
+      decimals,
+      tokenAccount: safeString(token.tokenAccount),
+      tokenName: safeString(tokenMetadata.name || 'Unknown Token'),
+      tokenSymbol: safeString(tokenMetadata.symbol || mint?.substring(0, 4) || 'UNKN'),
+      uiAmount,
+      symbol: safeString(tokenMetadata.symbol || mint?.substring(0, 4) || 'UNKN'),
+      logo: safeString(tokenMetadata.logoURI || '')
     };
-  });
+  }).filter(Boolean) : [];
 
   return {
-    address: data.address || '',
+    address: safeString(data.address),
     lamports,
     solBalance,
     nativeBalance: solBalance, // Added for compatibility
-    tokens
+    tokens: tokens as HeliusTokenBalance[]
   };
 };

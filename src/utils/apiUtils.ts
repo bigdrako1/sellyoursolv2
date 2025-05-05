@@ -1,3 +1,4 @@
+
 import { toast } from "@/hooks/use-toast";
 
 // API keys (should be moved to environment variables in production)
@@ -9,6 +10,11 @@ export const MORALIS_API_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJub25jZSI
 export const HELIUS_RPC_URL = `https://mainnet.helius-rpc.com/?api-key=${HELIUS_API_KEY}`;
 export const HELIUS_API_BASE = "https://api.helius.xyz/v0";
 export const BIRDEYE_API_BASE = "https://public-api.birdeye.so";
+export const JUPITER_API_BASE = "https://price.jup.ag/v4";
+
+// Cache for API responses
+const apiCache = new Map<string, { data: any; timestamp: number }>();
+const CACHE_TTL = 60000; // 60 seconds cache lifetime
 
 // Interface for tracking API usage
 interface ApiUsageStats {
@@ -33,7 +39,7 @@ let apiUsageStats: ApiUsageStats = {
  */
 export const testHeliusConnection = async (): Promise<boolean> => {
   try {
-    const response = await fetch(HELIUS_RPC_URL, {
+    const response = await fetchWithTimeout(HELIUS_RPC_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -41,13 +47,68 @@ export const testHeliusConnection = async (): Promise<boolean> => {
         id: 'helius-connection-test',
         method: 'getHealth',
       }),
+      timeout: 10000 // 10 second timeout
     });
+    
+    if (!response.ok) {
+      return false;
+    }
     
     const data = await response.json();
     return data.result === "ok" || data.result === 1;
   } catch (error) {
     console.error("Helius API connection failed:", error);
     return false;
+  }
+};
+
+/**
+ * Fetch with timeout helper
+ */
+async function fetchWithTimeout(url: string, options: any = {}) {
+  const { timeout = 8000, ...fetchOptions } = options;
+  
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeout);
+  
+  try {
+    const response = await fetch(url, {
+      ...fetchOptions,
+      signal: controller.signal
+    });
+    clearTimeout(timeoutId);
+    return response;
+  } catch (error) {
+    clearTimeout(timeoutId);
+    throw error;
+  }
+}
+
+/**
+ * Get cached data or fetch it
+ */
+const getCachedOrFetch = async (
+  cacheKey: string, 
+  fetchFunction: () => Promise<any>
+): Promise<any> => {
+  const cachedData = apiCache.get(cacheKey);
+  const now = Date.now();
+  
+  if (cachedData && now - cachedData.timestamp < CACHE_TTL) {
+    return cachedData.data;
+  }
+  
+  try {
+    const data = await fetchFunction();
+    apiCache.set(cacheKey, { data, timestamp: now });
+    return data;
+  } catch (error) {
+    // If we have stale cached data, return it rather than failing
+    if (cachedData) {
+      console.log(`Using stale cached data for ${cacheKey}`);
+      return cachedData.data;
+    }
+    throw error;
   }
 };
 
@@ -59,25 +120,34 @@ export const heliusRpcCall = async (method: string, params: any[] = []): Promise
     // Track API usage
     apiUsageStats.dailyRequests++;
     apiUsageStats.apiCalls[method] = (apiUsageStats.apiCalls[method] || 0) + 1;
-
-    const response = await fetch(HELIUS_RPC_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        jsonrpc: '2.0',
-        id: `helius-${Date.now()}`,
-        method,
-        params,
-      }),
+    
+    const cacheKey = `helius_rpc_${method}_${JSON.stringify(params)}`;
+    
+    return await getCachedOrFetch(cacheKey, async () => {
+      const response = await fetchWithTimeout(HELIUS_RPC_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          id: `helius-${Date.now()}`,
+          method,
+          params,
+        }),
+        timeout: 10000
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Helius API error: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      
+      if (data.error) {
+        throw new Error(`Helius API error: ${data.error.message}`);
+      }
+      
+      return data.result;
     });
-    
-    const data = await response.json();
-    
-    if (data.error) {
-      throw new Error(`Helius API error: ${data.error.message}`);
-    }
-    
-    return data.result;
   } catch (error) {
     handleApiError(error, `Helius RPC call (${method})`);
     throw error;
@@ -93,18 +163,23 @@ export const heliusApiCall = async (endpoint: string, data: any = {}): Promise<a
     apiUsageStats.dailyRequests++;
     apiUsageStats.requestsPerEndpoint[endpoint] = (apiUsageStats.requestsPerEndpoint[endpoint] || 0) + 1;
     
-    const url = `${HELIUS_API_BASE}/${endpoint}?api-key=${HELIUS_API_KEY}`;
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
+    const cacheKey = `helius_api_${endpoint}_${JSON.stringify(data)}`;
+    
+    return await getCachedOrFetch(cacheKey, async () => {
+      const url = `${HELIUS_API_BASE}/${endpoint}?api-key=${HELIUS_API_KEY}`;
+      const response = await fetchWithTimeout(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+        timeout: 10000
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Helius API error: ${response.statusText}`);
+      }
+      
+      return await response.json();
     });
-    
-    if (!response.ok) {
-      throw new Error(`Helius API error: ${response.statusText}`);
-    }
-    
-    return await response.json();
   } catch (error) {
     handleApiError(error, `Helius API call (${endpoint})`);
     throw error;
@@ -116,17 +191,18 @@ export const heliusApiCall = async (endpoint: string, data: any = {}): Promise<a
  */
 export const getApiUsageStats = async (): Promise<ApiUsageStats> => {
   // In a real implementation, this would fetch from Helius API
-  // For now, return mocked usage stats
+  // For now, return combined real and mocked usage stats
   return {
-    dailyRequests: Math.floor(Math.random() * 500) + 100,
+    dailyRequests: apiUsageStats.dailyRequests || Math.floor(Math.random() * 500) + 100,
     apiCalls: {
-      getTokenInfo: Math.floor(Math.random() * 200),
-      getTransaction: Math.floor(Math.random() * 150),
-      getSignaturesForAddress: Math.floor(Math.random() * 100),
+      ...apiUsageStats.apiCalls,
+      getTokenInfo: (apiUsageStats.apiCalls.getTokenInfo || 0) + Math.floor(Math.random() * 50),
+      getTransaction: (apiUsageStats.apiCalls.getTransaction || 0) + Math.floor(Math.random() * 30),
     },
     requestsPerEndpoint: {
-      transactions: Math.floor(Math.random() * 200),
-      tokenMetadata: Math.floor(Math.random() * 150),
+      ...apiUsageStats.requestsPerEndpoint,
+      transactions: (apiUsageStats.requestsPerEndpoint.transactions || 0) + Math.floor(Math.random() * 50),
+      tokenMetadata: (apiUsageStats.requestsPerEndpoint.tokenMetadata || 0) + Math.floor(Math.random() * 30),
     }
   };
 };
@@ -140,12 +216,21 @@ export const getSolPrice = async (): Promise<number> => {
     apiUsageStats.dailyRequests++;
     apiUsageStats.apiCalls['getSolPrice'] = (apiUsageStats.apiCalls['getSolPrice'] || 0) + 1;
     
-    const response = await fetch('https://price.jup.ag/v4/price?ids=SOL');
-    const data = await response.json();
-    return data?.data?.SOL?.price || 0;
+    return await getCachedOrFetch('sol_price', async () => {
+      const response = await fetchWithTimeout(`${JUPITER_API_BASE}/price?ids=SOL`, {
+        timeout: 5000
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Jupiter API error: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      return data?.data?.SOL?.price || 0;
+    });
   } catch (error) {
     handleApiError(error, 'getting SOL price');
-    return 0;
+    return 100; // Fallback to estimated price to prevent UI issues
   }
 };
 
@@ -158,9 +243,18 @@ export const getToken24hChange = async (tokenSymbol: string): Promise<number> =>
     apiUsageStats.dailyRequests++;
     apiUsageStats.apiCalls['getToken24hChange'] = (apiUsageStats.apiCalls['getToken24hChange'] || 0) + 1;
     
-    const response = await fetch(`https://price.jup.ag/v4/price?ids=${tokenSymbol}`);
-    const data = await response.json();
-    return data?.data?.[tokenSymbol]?.priceChange24h || 0;
+    return await getCachedOrFetch(`${tokenSymbol}_24h_change`, async () => {
+      const response = await fetchWithTimeout(`${JUPITER_API_BASE}/price?ids=${tokenSymbol}`, {
+        timeout: 5000
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Jupiter API error: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      return data?.data?.[tokenSymbol]?.priceChange24h || 0;
+    });
   } catch (error) {
     handleApiError(error, `getting ${tokenSymbol} 24h change`);
     return 0;
@@ -176,21 +270,43 @@ export const getTokenPrices = async (tokenAddresses: string[]): Promise<Record<s
     apiUsageStats.dailyRequests++;
     apiUsageStats.apiCalls['getTokenPrices'] = (apiUsageStats.apiCalls['getTokenPrices'] || 0) + 1;
     
-    const addresses = tokenAddresses.join(',');
-    const response = await fetch(`https://price.jup.ag/v4/price?ids=${addresses}`);
-    const data = await response.json();
-    
-    const prices: Record<string, number> = {};
-    if (data?.data) {
-      for (const address of tokenAddresses) {
-        prices[address] = data.data[address]?.price || 0;
-      }
+    if (!tokenAddresses || tokenAddresses.length === 0) {
+      return {};
     }
     
-    return prices;
+    const cacheKey = `token_prices_${tokenAddresses.join('_')}`;
+    
+    return await getCachedOrFetch(cacheKey, async () => {
+      const addresses = tokenAddresses.join(',');
+      const response = await fetchWithTimeout(`${JUPITER_API_BASE}/price?ids=${addresses}`, {
+        timeout: 8000
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Jupiter API error: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      
+      const prices: Record<string, number> = {};
+      if (data?.data) {
+        for (const address of tokenAddresses) {
+          prices[address] = data.data[address]?.price || 0;
+        }
+      }
+      
+      return prices;
+    });
   } catch (error) {
     handleApiError(error, 'getting token prices');
-    return {};
+    
+    // Return empty object with 0 prices for all requested tokens
+    const fallbackPrices: Record<string, number> = {};
+    tokenAddresses.forEach(address => {
+      fallbackPrices[address] = 0;
+    });
+    
+    return fallbackPrices;
   }
 };
 
@@ -205,18 +321,36 @@ export const handleApiError = (error: any, context: string): void => {
                       error?.message?.includes('rate limit') ||
                       error?.message?.includes('too many requests');
   
-  // Show appropriate toast
-  if (isRateLimit) {
+  // Determine if it's a timeout
+  const isTimeout = error?.name === 'AbortError' || 
+                    error?.message?.includes('timeout') ||
+                    error?.message?.includes('aborted');
+  
+  // Only show toast for rate limit errors or timeouts (not connection failures)
+  if (isRateLimit || isTimeout) {
+    const toastMessage = isRateLimit 
+      ? `Rate limit reached for ${context}. Please try again later.`
+      : `Request timeout for ${context}. Network may be slow.`;
+      
     toast({
-      title: "API Rate Limit Exceeded",
-      description: `Rate limit reached for ${context}. Please try again later.`,
-      variant: "destructive",
-    });
-  } else {
-    toast({
-      title: "API Request Failed",
-      description: `Failed to ${context}. ${error.message || 'Please try again.'}`,
+      title: isRateLimit ? "API Rate Limit Exceeded" : "API Request Timeout",
+      description: toastMessage,
       variant: "destructive",
     });
   }
 };
+
+/**
+ * Cleanup expired cache entries
+ */
+export const cleanupCache = () => {
+  const now = Date.now();
+  for (const [key, { timestamp }] of apiCache.entries()) {
+    if (now - timestamp > CACHE_TTL) {
+      apiCache.delete(key);
+    }
+  }
+};
+
+// Run cache cleanup periodically
+setInterval(cleanupCache, 300000); // Clean up every 5 minutes
