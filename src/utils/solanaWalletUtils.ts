@@ -1,4 +1,3 @@
-
 import { PublicKey } from '@solana/web3.js';
 import { 
   PhantomWalletAdapter, 
@@ -15,7 +14,9 @@ import {
   WalletAdapterNetwork,
   WalletReadyState,
   WalletName,
-  Adapter
+  Adapter,
+  SignMessageError,
+  WalletError
 } from '@solana/wallet-adapter-base';
 import nacl from 'tweetnacl';
 import bs58 from 'bs58';
@@ -287,8 +288,14 @@ export const signMessage = async (message: string): Promise<{
     // Convert message to Uint8Array
     const encodedMessage = new TextEncoder().encode(message);
     
+    // Check if signMessage is available (TypeScript check)
+    if (!('signMessage' in adapter)) {
+      throw new Error(`${provider} wallet does not support message signing`);
+    }
+    
     // Request signature
-    const signature = await adapter.signMessage(encodedMessage);
+    // TypeScript assertion to handle the potential absence of signMessage
+    const signature = await (adapter as any).signMessage(encodedMessage);
     
     console.log('Message signed successfully with wallet');
     
@@ -300,7 +307,9 @@ export const signMessage = async (message: string): Promise<{
     console.error('Error signing message with wallet:', error);
     
     // Handle user rejection specifically
-    if (error.message?.includes('User rejected')) {
+    if (error instanceof SignMessageError || 
+        error instanceof WalletError || 
+        error.message?.includes('User rejected')) {
       return {
         success: false,
         error: 'Signing rejected by user'

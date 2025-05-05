@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -10,7 +9,8 @@ import {
   Copy, 
   ExternalLink, 
   ChevronDown,
-  RefreshCw
+  RefreshCw,
+  Loader2
 } from "lucide-react";
 import { formatWalletAddress } from "@/utils/solanaWalletUtils";
 import { useToast } from "@/hooks/use-toast";

@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -48,9 +47,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const refreshWalletsStatus = async () => {
     setDetectingWallets(true);
     try {
-      console.log("Checking for Solana wallets...");
       const result = await detectWallets();
-      console.log("Solana wallets detected:", result);
       
       setWalletsDetected(result.available);
       setInstalledWallets(result.installedWallets);
@@ -70,7 +67,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Check for connected wallet on mount
     const savedWallet = getConnectedWallet();
     if (savedWallet.address) {
-      console.log("Found saved wallet:", savedWallet);
       setWalletAddress(savedWallet.address);
       setWalletProvider(savedWallet.provider);
     }
@@ -81,7 +77,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       try {
         setUser(JSON.parse(storedUser));
         setIsAuthenticated(true);
-        console.log("User authenticated from stored data");
       } catch (e) {
         console.error("Failed to parse stored user data:", e);
         localStorage.removeItem('user');
