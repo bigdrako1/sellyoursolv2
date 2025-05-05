@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -13,7 +12,7 @@ const Auth = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("signin");
-  const { login, register, user } = useAuth();
+  const { user, signIn, signUp } = useAuth();
 
   // Redirect if already authenticated
   if (user) {
@@ -33,19 +32,18 @@ const Auth = () => {
     if (!email || !password) {
       toast({
         title: "Missing Information",
-        description: "Please provide both email and password",
-        variant: "destructive",
+        description: "Please provide both email and password"
       });
       return;
     }
     
     setLoading(true);
     try {
-      await login(email, password);
+      await signIn(email, password);
       navigate('/');
       toast({
         title: "Welcome back!",
-        description: "You've successfully logged in",
+        description: "You've successfully logged in"
       });
     } catch (error) {
       console.error("Login error:", error);
@@ -58,7 +56,7 @@ const Auth = () => {
       toast({
         title: "Authentication Error",
         description: errorMessage,
-        variant: "destructive",
+        variant: "destructive"
       });
     } finally {
       setLoading(false);
@@ -73,7 +71,7 @@ const Auth = () => {
       toast({
         title: "Missing Information",
         description: "Please provide both email and password",
-        variant: "destructive",
+        variant: "destructive"
       });
       return;
     }
@@ -82,7 +80,7 @@ const Auth = () => {
       toast({
         title: "Password Mismatch",
         description: "Passwords do not match",
-        variant: "destructive",
+        variant: "destructive"
       });
       return;
     }
@@ -91,19 +89,19 @@ const Auth = () => {
       toast({
         title: "Password Too Short",
         description: "Password should be at least 8 characters long",
-        variant: "destructive",
+        variant: "destructive"
       });
       return;
     }
     
     setLoading(true);
     try {
-      await register(email, password);
+      await signUp(email, password);
       
       // Show success message but don't navigate - user will need to verify email
       toast({
         title: "Registration Successful",
-        description: "Please check your email for verification link",
+        description: "Please check your email for verification link"
       });
       
       // Automatically switch to login tab after registration
@@ -119,7 +117,7 @@ const Auth = () => {
       toast({
         title: "Registration Error",
         description: errorMessage,
-        variant: "destructive",
+        variant: "destructive"
       });
     } finally {
       setLoading(false);

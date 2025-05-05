@@ -75,3 +75,59 @@ export interface HeliusWebhookPayload {
   webhook_name: string;
   data: HeliusTransaction[];
 }
+
+export interface HeliusWalletBalance {
+  address: string;
+  lamports: number;
+  solBalance: number;
+  tokens: HeliusTokenBalance[];
+}
+
+export interface HeliusTokenBalance {
+  mint: string;
+  amount: number;
+  decimals: number;
+  tokenAccount: string;
+  tokenName?: string;
+  tokenSymbol?: string;
+  uiAmount?: number;
+}
+
+// Helper function to parse wallet balances from Helius
+export const parseHeliusWalletBalance = (data: any): HeliusWalletBalance => {
+  if (!data) {
+    return {
+      address: '',
+      lamports: 0,
+      solBalance: 0,
+      tokens: []
+    };
+  }
+
+  // Parse SOL balance
+  const lamports = data.lamports || 0;
+  const solBalance = lamports / 1000000000; // Convert lamports to SOL
+
+  // Parse token balances
+  const tokens = (data.tokens || []).map((token: any) => {
+    const decimals = token.tokenMetadata?.decimals || 9;
+    const uiAmount = token.amount / Math.pow(10, decimals);
+    
+    return {
+      mint: token.mint || '',
+      amount: token.amount || 0,
+      decimals: decimals,
+      tokenAccount: token.tokenAccount || '',
+      tokenName: token.tokenMetadata?.name || 'Unknown Token',
+      tokenSymbol: token.tokenMetadata?.symbol || token.mint?.substring(0, 4) || 'UNKN',
+      uiAmount: uiAmount
+    };
+  });
+
+  return {
+    address: data.address || '',
+    lamports,
+    solBalance,
+    tokens
+  };
+};

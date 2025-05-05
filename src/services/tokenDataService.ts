@@ -1,7 +1,6 @@
-
 import { testHeliusConnection, HELIUS_API_KEY, HELIUS_RPC_URL, BIRDEYE_API_KEY, BIRDEYE_API_BASE, heliusRpcCall, heliusApiCall } from "../utils/apiUtils";
 import { HeliusTokenData, HeliusTokenResponse } from "../utils/heliusTypes";
-import { WalletActivity, Token } from "@/types/token.types";
+import type { WalletActivity, Token } from "@/types/token.types";
 import { toast } from "@/hooks/use-toast";
 
 // Re-export the testHeliusConnection function
@@ -32,9 +31,6 @@ export interface TokenInfo {
   riskScore?: number;
 }
 
-// Re-export Token from types
-export { Token };
-
 /**
  * Convert TokenInfo to Token
  */
@@ -51,7 +47,7 @@ export const tokenInfoToToken = (tokenInfo: TokenInfo): Token => {
     holders: tokenInfo.holders,
     launchDate: tokenInfo.launchDate,
     quality: tokenInfo.quality,
-    riskScore: tokenInfo.riskScore,
+    riskLevel: tokenInfo.riskScore,
     decimals: tokenInfo.decimals,
     description: tokenInfo.description,
     website: tokenInfo.website,
