@@ -2,11 +2,26 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Wallet, RotateCw, LogOut, ArrowUpRight, Copy, ExternalLink } from "lucide-react";
-import { connectPhantomWallet, disconnectWallet, formatWalletAddress } from "@/utils/phantomUtils";
+import { 
+  Wallet, 
+  RotateCw, 
+  LogOut, 
+  ArrowUpRight, 
+  Copy, 
+  ExternalLink, 
+  ChevronDown,
+  RefreshCw
+} from "lucide-react";
+import { formatWalletAddress } from "@/utils/solanaWalletUtils";
 import { useToast } from "@/hooks/use-toast";
 import { useCurrencyStore } from "@/store/currencyStore";
 import { useAuth } from "@/contexts/AuthContext";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const getWalletBalances = async (address: string) => {
   try {
@@ -36,7 +51,17 @@ const WalletConnect = ({ onConnect, onDisconnect }: WalletConnectProps) => {
   const [walletBalances, setWalletBalances] = useState<any>(null);
   const { toast } = useToast();
   const { currency, currencySymbol } = useCurrencyStore();
-  const { walletAddress, isAuthenticated, signIn, signOut } = useAuth();
+  const { 
+    walletAddress,
+    walletProvider, 
+    isAuthenticated, 
+    signIn, 
+    signOut, 
+    installedWallets,
+    walletsDetected,
+    detectingWallets,
+    refreshWalletsStatus
+  } = useAuth();
 
   // Fetch wallet balances when wallet is connected
   useEffect(() => {
@@ -45,36 +70,31 @@ const WalletConnect = ({ onConnect, onDisconnect }: WalletConnectProps) => {
     }
   }, [walletAddress]);
 
-  const handleConnect = async () => {
+  const handleConnect = async (walletName?: string) => {
     setConnecting(true);
     
     try {
       if (!walletAddress) {
-        const result = await connectPhantomWallet();
-        if (result.success && result.address) {
-          onConnect(result.address);
+        await signIn(walletName);
+        if (walletAddress) {
+          onConnect(walletAddress);
           
           toast({
             title: "Wallet Connected",
-            description: "Successfully connected to wallet address: " + formatWalletAddress(result.address),
+            description: "Successfully connected to wallet address: " + formatWalletAddress(walletAddress),
             variant: "default",
           });
           
           // Fetch wallet balances after connection
-          fetchWalletBalances(result.address);
-        } else {
-          throw new Error(result.error || "Failed to connect");
+          fetchWalletBalances(walletAddress);
         }
       } else if (!isAuthenticated) {
         // If wallet is connected but not authenticated, proceed with authentication
         await signIn();
       }
     } catch (error) {
-      toast({
-        title: "Connection Failed",
-        description: "Failed to connect wallet. Please try again.",
-        variant: "destructive",
-      });
+      console.error("Connection error:", error);
+      // Error is handled in signIn function
     } finally {
       setConnecting(false);
     }
@@ -137,6 +157,14 @@ const WalletConnect = ({ onConnect, onDisconnect }: WalletConnectProps) => {
     }
   };
 
+  const handleRefreshWallets = async () => {
+    await refreshWalletsStatus();
+    toast({
+      title: "Wallet Detection Refreshed",
+      description: `${installedWallets.length} compatible wallets found`,
+    });
+  };
+
   // Convert SOL value to selected currency
   const convertToCurrency = (value: number): number => {
     const rates = {
@@ -150,8 +178,68 @@ const WalletConnect = ({ onConnect, onDisconnect }: WalletConnectProps) => {
     return value * (rates[currency as keyof typeof rates] || 1);
   };
   
-  const goToPhantomWebsite = () => {
-    window.open('https://phantom.app/', '_blank', 'noopener,noreferrer');
+  const renderWalletSelector = () => {
+    if (detectingWallets) {
+      return (
+        <Button variant="outline" disabled className="flex items-center">
+          <Loader2 className="h-4 w-4 animate-spin mr-2" />
+          Detecting wallets...
+        </Button>
+      );
+    }
+    
+    if (installedWallets.length === 0) {
+      return (
+        <div className="flex items-center gap-2">
+          <Button variant="outline" className="text-trading-danger" disabled>
+            No wallets found
+          </Button>
+          <Button 
+            size="icon"
+            variant="outline" 
+            onClick={handleRefreshWallets}
+            title="Refresh wallet detection"
+          >
+            <RefreshCw className="h-4 w-4" />
+          </Button>
+        </div>
+      );
+    }
+    
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="outline" className="trading-button">
+            <Wallet className="h-4 w-4 mr-2" />
+            Connect Wallet
+            <ChevronDown className="h-4 w-4 ml-2" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="bg-trading-darkAccent border-trading-highlight/20">
+          {installedWallets.map((wallet) => (
+            <DropdownMenuItem 
+              key={wallet.name}
+              className="cursor-pointer hover:bg-trading-highlight/10"
+              onClick={() => handleConnect(wallet.name)}
+            >
+              <div className="flex items-center w-full">
+                {wallet.icon && (
+                  <img 
+                    src={wallet.icon} 
+                    alt={`${wallet.name} icon`} 
+                    className="h-5 w-5 mr-2"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).style.display = 'none';
+                    }}
+                  />
+                )}
+                {wallet.name}
+              </div>
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    );
   };
 
   return (
@@ -165,9 +253,14 @@ const WalletConnect = ({ onConnect, onDisconnect }: WalletConnectProps) => {
                 <span className="text-sm text-gray-400">Connected Wallet</span>
                 <div className="flex items-center gap-1">
                   <span className="font-medium">{formatWalletAddress(walletAddress)}</span>
+                  {walletProvider && (
+                    <span className="text-xs bg-trading-highlight/20 text-trading-highlight px-1.5 py-0.5 rounded ml-1">
+                      {walletProvider}
+                    </span>
+                  )}
                   <button 
                     onClick={copyAddress}
-                    className="text-trading-highlight hover:text-trading-highlight/80"
+                    className="text-trading-highlight hover:text-trading-highlight/80 ml-1"
                     aria-label="Copy wallet address"
                   >
                     <Copy className="h-3.5 w-3.5" />
@@ -191,14 +284,7 @@ const WalletConnect = ({ onConnect, onDisconnect }: WalletConnectProps) => {
               <div className="flex flex-col">
                 <span className="font-medium">Connect Wallet</span>
                 <span className="text-xs text-gray-400">
-                  Sign in with <Button 
-                    variant="link" 
-                    className="text-trading-highlight p-0 h-auto" 
-                    onClick={goToPhantomWebsite} 
-                    size="sm"
-                  >
-                    Phantom <ExternalLink className="ml-1 h-3 w-3" />
-                  </Button>
+                  Sign in with any Solana wallet
                 </span>
               </div>
             )}
@@ -236,20 +322,19 @@ const WalletConnect = ({ onConnect, onDisconnect }: WalletConnectProps) => {
             </Button>
           </div>
         ) : (
-          <Button 
-            onClick={handleConnect} 
-            disabled={connecting}
-            className="trading-button"
-          >
+          <div className="flex gap-2 items-center">
             {connecting ? (
-              <>
+              <Button 
+                disabled
+                className="trading-button"
+              >
                 <RotateCw className="mr-2 h-4 w-4 animate-spin" />
                 Connecting...
-              </>
+              </Button>
             ) : (
-              "Connect"
+              renderWalletSelector()
             )}
-          </Button>
+          </div>
         )}
       </div>
     </Card>

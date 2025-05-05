@@ -3,36 +3,41 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, Wallet, Key, Lock, AlertCircle, ExternalLink } from "lucide-react";
+import { Loader2, Wallet, Key, Lock, AlertCircle, ExternalLink, Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { APP_CONFIG } from "@/config/appDefinition";
-import { formatWalletAddress, detectPhantomWallet } from "@/utils/phantomUtils";
+import { formatWalletAddress } from "@/utils/solanaWalletUtils";
 
 const Auth = () => {
   const [isConnecting, setIsConnecting] = useState(false);
   const [isSigning, setIsSigning] = useState(false);
-  const [isDetectingWallet, setIsDetectingWallet] = useState(true);
   const { toast } = useToast();
-  const { signIn, isAuthenticated, walletAddress, isPhantomInstalled } = useAuth();
+  const { 
+    signIn, 
+    isAuthenticated, 
+    walletAddress, 
+    walletProvider,
+    walletsDetected, 
+    installedWallets,
+    loadableWallets,
+    detectingWallets,
+    refreshWalletsStatus
+  } = useAuth();
   const navigate = useNavigate();
   
-  // Detect wallet on component mount
+  // Try detecting wallets if none were found on first load
   useEffect(() => {
-    const checkWalletStatus = async () => {
-      setIsDetectingWallet(true);
-      try {
-        const isDetected = await detectPhantomWallet();
-        console.log("Phantom wallet detection:", isDetected);
-      } catch (error) {
-        console.error("Error detecting wallet:", error);
-      } finally {
-        setIsDetectingWallet(false);
-      }
-    };
-    
-    checkWalletStatus();
-  }, []);
+    if (!detectingWallets && !walletsDetected) {
+      const recheckWallets = async () => {
+        await refreshWalletsStatus();
+      };
+      
+      // Wait a bit for extensions to initialize
+      const timer = setTimeout(recheckWallets, 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [detectingWallets, walletsDetected, refreshWalletsStatus]);
   
   useEffect(() => {
     if (isAuthenticated) {
@@ -51,13 +56,11 @@ const Auth = () => {
     }
   }, [walletAddress, isAuthenticated, toast]);
   
-  const handleWalletConnect = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
+  const handleWalletConnect = async (walletName?: string) => {
     setIsConnecting(true);
     try {
-      console.log("Initiating sign in process");
-      const result = await signIn();
+      console.log("Initiating sign in process", walletName ? `with ${walletName}` : "");
+      const result = await signIn(walletName);
       console.log("Sign in result:", result);
       
       toast({
@@ -73,8 +76,97 @@ const Auth = () => {
     }
   };
 
-  const openPhantomWebsite = () => {
-    window.open('https://phantom.app/', '_blank', 'noopener,noreferrer');
+  const openWalletWebsite = (url: string) => {
+    window.open(url, '_blank', 'noopener,noreferrer');
+  };
+  
+  const renderWalletsList = () => {
+    if (detectingWallets) {
+      return (
+        <div className="flex items-center justify-center py-4">
+          <Loader2 className="h-6 w-6 text-blue-400 animate-spin mr-2" />
+          <span>Detecting wallets...</span>
+        </div>
+      );
+    }
+
+    if (installedWallets.length === 0) {
+      return (
+        <div className="space-y-4">
+          <div className="bg-yellow-900/20 border border-yellow-500/30 p-4 rounded-lg flex items-start gap-3">
+            <AlertCircle className="h-5 w-5 text-yellow-400 mt-0.5" />
+            <div>
+              <h4 className="font-medium text-yellow-400 mb-1">No Solana Wallets Found</h4>
+              <p className="text-sm text-gray-300">
+                To continue, you need to install one of these Solana wallet extensions:
+              </p>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-2 mt-2">
+            {loadableWallets.slice(0, 4).map((wallet) => (
+              <Button
+                key={wallet.name}
+                variant="outline"
+                className="flex justify-start items-center p-3 h-auto"
+                onClick={() => openWalletWebsite(wallet.url)}
+              >
+                {wallet.icon && (
+                  <img 
+                    src={wallet.icon} 
+                    alt={`${wallet.name} icon`} 
+                    className="h-5 w-5 mr-2"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).style.display = 'none';
+                    }}
+                  />
+                )}
+                <div className="flex flex-col items-start">
+                  <span className="text-sm">{wallet.name}</span>
+                  <span className="text-xs text-gray-400 flex items-center">
+                    Install <Download className="h-3 w-3 ml-1" />
+                  </span>
+                </div>
+              </Button>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-2">
+        <p className="text-sm text-gray-400 mb-2">Select a wallet to connect:</p>
+        <div className="grid grid-cols-2 gap-2">
+          {installedWallets.map((wallet) => (
+            <Button
+              key={wallet.name}
+              variant={walletProvider === wallet.name ? "default" : "outline"}
+              className={`flex justify-start items-center p-3 h-auto ${walletProvider === wallet.name ? 'bg-trading-highlight text-white' : ''}`}
+              onClick={() => handleWalletConnect(wallet.name)}
+              disabled={isConnecting}
+            >
+              {wallet.icon && (
+                <img 
+                  src={wallet.icon} 
+                  alt={`${wallet.name} icon`} 
+                  className="h-5 w-5 mr-2"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).style.display = 'none';
+                  }}
+                />
+              )}
+              <span className="text-sm">{wallet.name}</span>
+              {walletProvider === wallet.name && (
+                <span className="ml-auto text-xs bg-green-500/20 text-green-400 px-1.5 py-0.5 rounded">
+                  Connected
+                </span>
+              )}
+            </Button>
+          ))}
+        </div>
+      </div>
+    );
   };
   
   return (
@@ -95,73 +187,45 @@ const Auth = () => {
           
           <CardContent className="pt-6">
             <div className="mb-6">          
-              {isDetectingWallet ? (
-                <div className="bg-blue-900/20 border border-blue-500/30 p-4 rounded-lg mb-4 flex items-center gap-3">
-                  <Loader2 className="h-5 w-5 text-blue-400 animate-spin" />
-                  <div>
-                    <h4 className="font-medium text-blue-400 mb-1">Detecting Wallet</h4>
-                    <p className="text-sm text-gray-300">
-                      Checking for Phantom wallet extension...
-                    </p>
-                  </div>
-                </div>
-              ) : !isPhantomInstalled ? (
-                <div className="bg-red-900/20 border border-red-500/30 p-4 rounded-lg mb-4 flex items-start gap-3">
-                  <AlertCircle className="h-5 w-5 text-red-400 mt-0.5" />
-                  <div>
-                    <h4 className="font-medium text-red-400 mb-1">Phantom Wallet Not Detected</h4>
-                    <p className="text-sm text-gray-300">
-                      You need to install the Phantom browser extension to connect your wallet.
-                    </p>
-                    <Button 
-                      variant="link" 
-                      className="text-red-400 p-0 h-auto mt-2 flex items-center" 
-                      onClick={openPhantomWebsite}
-                    >
-                      Download Phantom Wallet
-                      <ExternalLink className="ml-1 h-3 w-3" />
-                    </Button>
-                  </div>
-                </div>
-              ) : walletAddress ? (
+              {walletAddress ? (
                 <div className="bg-trading-dark/40 p-4 rounded-md mb-4">
                   <div className="text-sm text-gray-400 mb-1">Connected Wallet</div>
                   <div className="font-mono text-trading-highlight flex items-center">
                     <Wallet className="h-4 w-4 mr-2" />
                     {formatWalletAddress(walletAddress, 6)}
+                    {walletProvider && (
+                      <span className="ml-2 text-xs bg-trading-highlight/20 text-trading-highlight px-1.5 py-0.5 rounded">
+                        {walletProvider}
+                      </span>
+                    )}
                   </div>
                   <p className="text-xs text-gray-400 mt-2">
                     Sign a secure message to complete authentication
                   </p>
                 </div>
-              ) : null}
+              ) : (
+                renderWalletsList()
+              )}
               
-              <Button
-                onClick={handleWalletConnect}
-                className="w-full trading-button"
-                disabled={isConnecting || (!isPhantomInstalled && !isDetectingWallet)}
-              >
-                {isConnecting ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin mr-2" /> 
-                    {walletAddress ? "Signing Message..." : "Connecting..."}
-                  </>
-                ) : (
-                  <>
-                    {walletAddress ? (
-                      <>
-                        <Key className="h-4 w-4 mr-2" />
-                        Sign Message to Authenticate
-                      </>
-                    ) : (
-                      <>
-                        <Wallet className="h-4 w-4 mr-2" />
-                        Connect Phantom Wallet
-                      </>
-                    )}
-                  </>
-                )}
-              </Button>
+              {walletAddress && !isAuthenticated && (
+                <Button
+                  onClick={() => handleWalletConnect()}
+                  className="w-full trading-button mt-4"
+                  disabled={isConnecting}
+                >
+                  {isConnecting ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" /> 
+                      Signing Message...
+                    </>
+                  ) : (
+                    <>
+                      <Key className="h-4 w-4 mr-2" />
+                      Sign Message to Authenticate
+                    </>
+                  )}
+                </Button>
+              )}
             </div>
             
             {/* Added security explanation */}

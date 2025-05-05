@@ -6,7 +6,7 @@ import PortfolioOverview from "@/components/PortfolioOverview";
 import PortfolioAssets from "@/components/PortfolioAssets";
 import PortfolioPerformance from "@/components/PerformanceMetrics";
 import PortfolioHistory from "@/components/PortfolioHistory";
-import { getConnectedWallet } from "@/utils/walletUtils";
+import { getConnectedWallet } from "@/utils/solanaWalletUtils";
 import { testHeliusConnection } from "@/utils/apiUtils";
 
 const Portfolio: React.FC = () => {
@@ -23,8 +23,8 @@ const Portfolio: React.FC = () => {
   // Check for connected wallet and API on mount
   useEffect(() => {
     const savedWallet = getConnectedWallet();
-    if (savedWallet) {
-      setWalletAddress(savedWallet);
+    if (savedWallet.address) {
+      setWalletAddress(savedWallet.address);
     }
     
     // Check API connection

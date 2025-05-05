@@ -4,23 +4,29 @@ import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { 
-  connectPhantomWallet,
+  connectWallet,
   disconnectWallet,
   getConnectedWallet,
-  signWithPhantom,
-  detectPhantomWallet, 
-  verifyWalletSignature 
-} from '@/utils/phantomUtils';
+  signMessage,
+  detectWallets,
+  verifyWalletSignature,
+  WalletProviderInfo 
+} from '@/utils/solanaWalletUtils';
 
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
-  signIn: () => Promise<void>;
+  signIn: (walletName?: string) => Promise<void>;
   signOut: () => Promise<void>;
   isAuthenticated: boolean;
   walletAddress: string | null;
-  isPhantomInstalled: boolean;
+  walletProvider: string | null;
+  walletsDetected: boolean;
+  installedWallets: WalletProviderInfo[];
+  loadableWallets: WalletProviderInfo[];
+  detectingWallets: boolean;
+  refreshWalletsStatus: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -30,26 +36,43 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
-  const [isPhantomInstalled, setIsPhantomInstalled] = useState<boolean>(false);
+  const [walletProvider, setWalletProvider] = useState<string | null>(null);
+  const [walletsDetected, setWalletsDetected] = useState<boolean>(false);
+  const [detectingWallets, setDetectingWallets] = useState<boolean>(true);
+  const [installedWallets, setInstalledWallets] = useState<WalletProviderInfo[]>([]);
+  const [loadableWallets, setLoadableWallets] = useState<WalletProviderInfo[]>([]);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const { toast } = useToast();
 
+  // Function to refresh wallets status
+  const refreshWalletsStatus = async () => {
+    setDetectingWallets(true);
+    try {
+      console.log("Checking for Solana wallets...");
+      const result = await detectWallets();
+      console.log("Solana wallets detected:", result);
+      
+      setWalletsDetected(result.available);
+      setInstalledWallets(result.installedWallets);
+      setLoadableWallets(result.loadableWallets);
+    } catch (error) {
+      console.error("Error detecting wallets:", error);
+      setWalletsDetected(false);
+    } finally {
+      setDetectingWallets(false);
+    }
+  };
+
   useEffect(() => {
-    // Check if Phantom wallet is installed
-    const checkPhantom = async () => {
-      console.log("Checking for Phantom wallet...");
-      const hasPhantom = await detectPhantomWallet();
-      console.log("Phantom wallet detected:", hasPhantom);
-      setIsPhantomInstalled(hasPhantom);
-    };
-    
-    checkPhantom();
+    // Check for Solana wallets
+    refreshWalletsStatus();
     
     // Check for connected wallet on mount
     const savedWallet = getConnectedWallet();
-    if (savedWallet) {
+    if (savedWallet.address) {
       console.log("Found saved wallet:", savedWallet);
-      setWalletAddress(savedWallet);
+      setWalletAddress(savedWallet.address);
+      setWalletProvider(savedWallet.provider);
     }
     
     // Load user data from localStorage if available
@@ -68,40 +91,48 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setLoading(false);
   }, []);
 
-  const signIn = async () => {
+  const signIn = async (walletName?: string) => {
     try {
       setLoading(true);
       
-      // Check for Phantom again in case the user just installed it
-      const hasPhantom = await detectPhantomWallet();
-      setIsPhantomInstalled(hasPhantom);
+      // Check for available wallets
+      await refreshWalletsStatus();
       
-      // Check if Phantom is installed
-      if (!hasPhantom) {
-        console.error("Phantom wallet not detected");
-        throw new Error("Phantom wallet is not installed. Please install the Phantom browser extension");
+      // Check if wallets are available
+      if (!walletsDetected && installedWallets.length === 0) {
+        console.error("No Solana wallets detected");
+        throw new Error("No Solana wallets detected. Please install a Solana wallet extension");
       }
       
-      // If the wallet is not connected yet, connect it using Phantom
+      // If the wallet is not connected yet, connect it
       if (!walletAddress) {
         try {
-          // Connect to Phantom wallet
-          console.log("Connecting to Phantom wallet...");
-          const result = await connectPhantomWallet();
+          // If a specific wallet was requested, use that one
+          let walletToUse = walletName;
+          
+          // If no specific wallet was requested, use the first detected wallet
+          if (!walletToUse && installedWallets.length > 0) {
+            walletToUse = installedWallets[0].name;
+          }
+          
+          if (!walletToUse) {
+            throw new Error("No wallet specified and no wallets detected");
+          }
+          
+          // Connect to wallet
+          console.log(`Connecting to wallet: ${walletToUse}`);
+          const result = await connectWallet(walletToUse);
           
           if (result.success && result.address) {
             // Set the wallet address
-            console.log("Wallet connected:", result.address);
+            console.log("Wallet connected:", result);
             setWalletAddress(result.address);
-            
-            // Store wallet address for persistence
-            localStorage.setItem('walletAddress', result.address);
-            localStorage.setItem('walletProvider', 'phantom');
+            setWalletProvider(result.walletName || walletToUse);
             
             // Show toast notification that wallet was connected
             toast({
               title: "Wallet Connected",
-              description: `Connected to wallet: ${result.address.slice(0, 6)}...${result.address.slice(-4)}`,
+              description: `Connected to ${result.walletName || walletToUse}: ${result.address.slice(0, 6)}...${result.address.slice(-4)}`,
             });
           } else {
             console.error("Connection failed:", result.error);
@@ -112,7 +143,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           if (err instanceof Error && err.message.includes('User rejected')) {
             throw new Error("Wallet connection was rejected by user");
           }
-          throw new Error("Failed to connect to Phantom wallet");
+          throw new Error(`Failed to connect to wallet: ${err instanceof Error ? err.message : 'Unknown error'}`);
         }
       }
       
@@ -126,7 +157,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       try {
         console.log("Requesting signature for message:", message);
         // Have the user sign the message with their wallet
-        const signResult = await signWithPhantom(message);
+        const signResult = await signMessage(message);
         
         if (!signResult.success || !signResult.signature) {
           console.error("Signature failed:", signResult.error);
@@ -151,6 +182,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const userData = {
           id: walletAddress,
           wallet_address: walletAddress,
+          wallet_provider: walletProvider,
           auth_method: "wallet_signature",
           signature: Array.from(signResult.signature),
           timestamp: timestamp,
@@ -198,6 +230,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error("Failed to disconnect wallet");
       }
       setWalletAddress(null);
+      setWalletProvider(null);
       
       // Clear user data from localStorage
       localStorage.removeItem('user');
@@ -232,7 +265,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       signOut,
       isAuthenticated,
       walletAddress,
-      isPhantomInstalled,
+      walletProvider,
+      walletsDetected,
+      installedWallets,
+      loadableWallets,
+      detectingWallets,
+      refreshWalletsStatus
     }}>
       {children}
     </AuthContext.Provider>
