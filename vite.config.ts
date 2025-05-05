@@ -20,7 +20,7 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
-  // Add optimizeDeps and build options for better compatibility
+  // Optimize dependencies for better compatibility
   optimizeDeps: {
     esbuildOptions: {
       target: 'es2020',
