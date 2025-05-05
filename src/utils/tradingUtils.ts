@@ -249,7 +249,7 @@ export const createTradingPosition = (
   initialInvestment: number,
   source: string
 ): TradingPosition => {
-  const position = {
+  const position: TradingPosition = {
     contractAddress,
     tokenName,
     tokenSymbol,
@@ -262,7 +262,7 @@ export const createTradingPosition = (
     securedInitial: false,
     scaleOutHistory: [],
     source,
-    status: 'active',
+    status: 'active' as const,
     pnl: 0,
     roi: 0,
     notes: 'Position created via internal routing'

@@ -1,4 +1,3 @@
-
 import { APP_CONFIG } from '@/config/appDefinition';
 import { waitForRateLimit } from '@/utils/rateLimit';
 
@@ -245,12 +244,6 @@ export const executeSwap = async (inputMint: string, outputMint: string, amount:
     if (!quote) {
       throw new Error("Failed to get quote for swap");
     }
-    
-    // In a production app, this would:
-    // 1. Create the appropriate transactions
-    // 2. Sign them with the user's wallet
-    // 3. Send to the blockchain
-    // 4. Confirm and return results
     
     // For simulation, we'll just return the expected output
     return {

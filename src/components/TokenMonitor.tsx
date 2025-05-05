@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -102,7 +103,7 @@ const TokenMonitor: React.FC = () => {
   const handleTrackToken = (token: Token) => {
     toast({
       title: "Token Tracked",
-      description: `${token.symbol} has been added to your watchlist`,
+      description: `${token.symbol} has been added to your watchlist`
     });
   };
   
@@ -132,7 +133,7 @@ const TokenMonitor: React.FC = () => {
           
           toast({
             title: "Position Created",
-            description: `Successfully added ${selectedToken.symbol} to your portfolio`,
+            description: `Successfully added ${selectedToken.symbol} to your portfolio`
           });
         }
         
@@ -141,13 +142,13 @@ const TokenMonitor: React.FC = () => {
         
         toast({
           title: "Trade Executed Successfully",
-          description: `Purchased ${selectedToken.symbol} for ${tradeAmount} SOL`,
+          description: `Purchased ${selectedToken.symbol} for ${tradeAmount} SOL`
         });
       } else {
         toast({
           title: "Trade Failed",
           description: result.error || "There was an error executing your trade. Please try again.",
-          variant: "destructive",
+          variant: "destructive"
         });
       }
     } catch (error) {
@@ -155,7 +156,7 @@ const TokenMonitor: React.FC = () => {
       toast({
         title: "Trade Failed",
         description: "There was an unexpected error executing your trade. Please try again.",
-        variant: "destructive",
+        variant: "destructive"
       });
     } finally {
       setIsProcessing(false);
