@@ -91,6 +91,8 @@ export interface HeliusTokenBalance {
   tokenName?: string;
   tokenSymbol?: string;
   uiAmount?: number;
+  symbol?: string;
+  logo?: string;
 }
 
 // Helper function to parse wallet balances from Helius
@@ -120,7 +122,9 @@ export const parseHeliusWalletBalance = (data: any): HeliusWalletBalance => {
       tokenAccount: token.tokenAccount || '',
       tokenName: token.tokenMetadata?.name || 'Unknown Token',
       tokenSymbol: token.tokenMetadata?.symbol || token.mint?.substring(0, 4) || 'UNKN',
-      uiAmount: uiAmount
+      uiAmount: uiAmount,
+      symbol: token.tokenMetadata?.symbol || token.mint?.substring(0, 4) || 'UNKN',
+      logo: token.tokenMetadata?.logoURI || ''
     };
   });
 

@@ -1,411 +1,320 @@
-import { testHeliusConnection, HELIUS_API_KEY, HELIUS_RPC_URL, BIRDEYE_API_KEY, BIRDEYE_API_BASE, heliusRpcCall, heliusApiCall } from "../utils/apiUtils";
-import { HeliusTokenData, HeliusTokenResponse } from "../utils/heliusTypes";
-import type { WalletActivity, Token } from "@/types/token.types";
-import { toast } from "@/hooks/use-toast";
 
-// Re-export the testHeliusConnection function
-export { testHeliusConnection };
+import { HeliusTokenData, HeliusTokenResponse } from '@/utils/heliusTypes';
+import { Token } from '@/types/token.types';
+import { HELIUS_API_KEY, BIRDEYE_API_KEY, BIRDEYE_API_BASE } from '@/utils/apiUtils';
 
-// Re-export necessary functions and types from apiUtils
-export { heliusRpcCall, heliusApiCall };
-
-// Define token-related types
-export interface TokenInfo {
-  name: string;
-  symbol: string;
-  address: string;
-  decimals: number;
-  totalSupply?: string | number;
-  description?: string;
-  logoURI?: string;
-  website?: string;
-  twitter?: string;
-  holders?: number;
-  price?: number;
-  marketCap?: number;
-  volume24h?: number;
-  priceChange24h?: number;
-  liquidity?: number;
-  launchDate?: string;
-  quality?: number;
-  riskScore?: number;
-}
-
-/**
- * Convert TokenInfo to Token
- */
-export const tokenInfoToToken = (tokenInfo: TokenInfo): Token => {
-  return {
-    name: tokenInfo.name,
-    symbol: tokenInfo.symbol,
-    address: tokenInfo.address,
-    price: tokenInfo.price || 0,
-    priceChange24h: tokenInfo.priceChange24h,
-    marketCap: tokenInfo.marketCap,
-    liquidity: tokenInfo.liquidity,
-    volume24h: tokenInfo.volume24h,
-    holders: tokenInfo.holders,
-    launchDate: tokenInfo.launchDate,
-    quality: tokenInfo.quality,
-    riskLevel: tokenInfo.riskScore,
-    decimals: tokenInfo.decimals,
-    description: tokenInfo.description,
-    website: tokenInfo.website,
-    twitter: tokenInfo.twitter,
-    // Additional fields for TokenAlertMonitor
-    source: "API",
-    createdAt: new Date(),
-    isPumpFun: tokenInfo.address.includes("pump") || false,
-    qualityScore: tokenInfo.quality || 50,
-    change24h: tokenInfo.priceChange24h || 0
-  };
-};
-
-/**
- * Get token information
- */
-export const getTokenInfo = async (tokenAddress: string): Promise<TokenInfo | null> => {
-  try {
-    // First try to get token info from Helius
-    const tokenMetadata = await fetchTokenMetadata(tokenAddress);
-    
-    if (!tokenMetadata?.name) {
-      console.warn(`Failed to fetch token metadata from Helius for ${tokenAddress}`);
-      return null;
-    }
-    
-    // Get price and market data from Birdeye
-    const marketData = await fetchTokenMarketData(tokenAddress);
-    
-    return {
-      name: tokenMetadata.name || "Unknown Token",
-      symbol: tokenMetadata.symbol || tokenAddress.substring(0, 4),
-      address: tokenAddress,
-      decimals: tokenMetadata.decimals || 0,
-      totalSupply: tokenMetadata.supply,
-      description: tokenMetadata.description,
-      logoURI: tokenMetadata.logoURI,
-      website: tokenMetadata.website,
-      twitter: tokenMetadata.twitter,
-      price: marketData?.price,
-      marketCap: marketData?.marketCap,
-      volume24h: marketData?.volume24h,
-      priceChange24h: marketData?.priceChange24h,
-      liquidity: marketData?.liquidity,
-      holders: marketData?.holders,
-      quality: calculateTokenQuality(marketData),
-      riskScore: calculateRiskScore(marketData, tokenMetadata),
-    };
-  } catch (error) {
-    console.error(`Error fetching token info for ${tokenAddress}:`, error);
-    toast({
-      title: "Error retrieving token data",
-      description: `Failed to fetch token information for ${tokenAddress}`,
-      variant: "destructive",
-    });
-    return null;
-  }
-};
-
-/**
- * Fetch token metadata from Helius
- */
-export const fetchTokenMetadata = async (tokenAddress: string): Promise<HeliusTokenData> => {
+// Utility function to fetch token metadata from Helius API
+export const fetchTokenMetadata = async (tokenAddress: string): Promise<HeliusTokenData | null> => {
   try {
     const url = `https://api.helius.xyz/v0/tokens/metadata?api-key=${HELIUS_API_KEY}`;
     const response = await fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ mintAccounts: [tokenAddress] }),
-    });
-    
-    if (!response.ok) {
-      throw new Error(`Helius API error: ${response.statusText}`);
-    }
-    
-    const data = await response.json();
-    const tokenData = data[0] as HeliusTokenResponse;
-    
-    // Extract token metadata
-    let name, symbol, decimals, supply;
-    
-    // Try to get values from different parts of the response
-    if (tokenData.result) {
-      // Try onChainData
-      if (tokenData.result.onChainData?.data) {
-        name = tokenData.result.onChainData.data.name;
-        symbol = tokenData.result.onChainData.data.symbol;
-      }
-      
-      // Try offChainData
-      if (!name && tokenData.result.offChainData) {
-        name = tokenData.result.offChainData.name;
-        symbol = tokenData.result.offChainData.symbol;
-      }
-      
-      // Try legacyMetadata
-      if (!name && tokenData.result.legacyMetadata) {
-        name = tokenData.result.legacyMetadata.name;
-        symbol = tokenData.result.legacyMetadata.symbol;
-      }
-      
-      // Try tokenData
-      if (!name && tokenData.result.tokenData) {
-        name = tokenData.result.tokenData.name;
-        symbol = tokenData.result.tokenData.symbol;
-        supply = tokenData.result.tokenData.supply;
-      }
-      
-      // Get supply if not already set
-      if (!supply && tokenData.result.supply) {
-        supply = tokenData.result.supply;
-      }
-    }
-    
-    return {
-      name: name || "Unknown Token",
-      symbol: symbol || tokenAddress.substring(0, 4),
-      decimals: decimals || 9,
-      supply: supply || 0,
-      mintAddress: tokenAddress,
-    };
-  } catch (error) {
-    console.error(`Error fetching token metadata for ${tokenAddress}:`, error);
-    return {
-      name: "Unknown Token",
-      symbol: tokenAddress.substring(0, 4),
-      decimals: 9,
-      mintAddress: tokenAddress,
-    };
-  }
-};
-
-/**
- * Fetch token market data from Birdeye
- */
-const fetchTokenMarketData = async (tokenAddress: string): Promise<{
-  price?: number;
-  marketCap?: number;
-  volume24h?: number;
-  priceChange24h?: number;
-  liquidity?: number;
-  holders?: number;
-}> => {
-  try {
-    const url = `${BIRDEYE_API_BASE}/public/tokenInfo?address=${tokenAddress}`;
-    const response = await fetch(url, {
       headers: {
-        'x-api-key': BIRDEYE_API_KEY,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        mintAccounts: [tokenAddress],
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch token metadata: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    
+    if (!data || !data.result || data.result.length === 0) {
+      console.warn(`No metadata found for token: ${tokenAddress}`);
+      return null;
+    }
+    
+    const tokenData: HeliusTokenResponse = data.result[0];
+    
+    // Extract token data with fallbacks for different data structures
+    const name = 
+      tokenData.result?.onChainData?.data?.name || 
+      tokenData.result?.offChainData?.name || 
+      tokenData.result?.legacyMetadata?.name ||
+      tokenData.result?.tokenData?.name ||
+      'Unknown Token';
+      
+    const symbol = 
+      tokenData.result?.onChainData?.data?.symbol || 
+      tokenData.result?.offChainData?.symbol || 
+      tokenData.result?.legacyMetadata?.symbol ||
+      tokenData.result?.tokenData?.symbol ||
+      tokenAddress.substring(0, 4);
+      
+    const decimals = 
+      tokenData.result?.onChainData?.data?.decimals || 
+      tokenData.result?.offChainData?.decimals || 
+      tokenData.result?.legacyMetadata?.decimals ||
+      tokenData.result?.tokenData?.decimals || 
+      9;
+    
+    const supply = tokenData.result?.supply || tokenData.result?.tokenData?.supply || 0;
+      
+    return {
+      name,
+      symbol,
+      decimals,
+      mintAddress: tokenAddress,
+      supply,
+    };
+  } catch (error) {
+    console.error('Error fetching token metadata:', error);
+    return null;
+  }
+};
+
+// Convert token info to Token type
+export const tokenInfoToToken = (
+  tokenAddress: string, 
+  tokenInfo: any, 
+  additionalData: Partial<Token> = {}
+): Token => {
+  return {
+    address: tokenAddress,
+    name: tokenInfo.name || 'Unknown Token',
+    symbol: tokenInfo.symbol || tokenAddress.substring(0, 4),
+    decimals: tokenInfo.decimals || 9,
+    price: tokenInfo.price || 0,
+    marketCap: tokenInfo.marketCap || 0,
+    volume24h: tokenInfo.volume24h || 0,
+    change24h: tokenInfo.price_change_24h || 0,
+    holders: tokenInfo.holders || 0,
+    liquidity: tokenInfo.liquidity || 0,
+    supply: tokenInfo.supply || 0,
+    logoURI: tokenInfo.logoURI || '',
+    description: tokenInfo.description || '',
+    website: tokenInfo.website || '',
+    twitter: tokenInfo.twitter || '',
+    riskLevel: tokenInfo.riskLevel || 50,
+    qualityScore: tokenInfo.qualityScore || 50,
+    ...additionalData
+  };
+};
+
+// Get token information from BirdEye API
+export const getTokenInfo = async (tokenAddress: string): Promise<any> => {
+  try {
+    // First try BirdEye for price data
+    const birdeyeUrl = `${BIRDEYE_API_BASE}/public/tokenInfo?address=${tokenAddress}`;
+    const response = await fetch(birdeyeUrl, {
+      headers: {
+        'X-API-KEY': BIRDEYE_API_KEY
       }
     });
     
     if (!response.ok) {
-      throw new Error(`Birdeye API error: ${response.statusText}`);
+      throw new Error('Failed to fetch token info from BirdEye');
     }
     
     const data = await response.json();
     
-    return {
-      price: data.data?.price,
-      marketCap: data.data?.mc,
-      volume24h: data.data?.v24h,
-      priceChange24h: data.data?.priceChange24h,
-      liquidity: data.data?.liquidity,
-      holders: data.data?.holderCount,
-    };
+    if (data && data.data) {
+      return data.data;
+    }
+    
+    throw new Error('No token data returned from BirdEye');
+    
   } catch (error) {
-    console.error(`Error fetching market data for ${tokenAddress}:`, error);
-    return {};
+    console.error('Error fetching token info:', error);
+    
+    // Fall back to Helius metadata
+    try {
+      return await fetchTokenMetadata(tokenAddress);
+    } catch (heliusError) {
+      console.error('Fallback to Helius failed:', heliusError);
+      return null;
+    }
   }
 };
 
-/**
- * Calculate token quality score
- */
-const calculateTokenQuality = (marketData: any): number => {
-  if (!marketData) return 0;
-  
-  let score = 0;
-  
-  // Liquidity factor (0-20 points)
-  const liquidity = marketData.liquidity || 0;
-  if (liquidity >= 1000000) score += 20;
-  else if (liquidity >= 500000) score += 15;
-  else if (liquidity >= 100000) score += 10;
-  else if (liquidity >= 50000) score += 5;
-  else if (liquidity < 25000) score -= 10;
-  
-  // Holders factor (0-15 points)
-  const holders = marketData.holders || 0;
-  if (holders >= 1000) score += 15;
-  else if (holders >= 500) score += 10;
-  else if (holders >= 100) score += 5;
-  else if (holders < 25) score -= 10;
-  
-  // Volume factor (0-15 points)
-  const volume24h = marketData.volume24h || 0;
-  if (volume24h >= 500000) score += 15;
-  else if (volume24h >= 100000) score += 10;
-  else if (volume24h >= 50000) score += 5;
-  else if (volume24h < 10000) score -= 5;
-  
-  return Math.max(0, Math.min(100, score));
-};
-
-/**
- * Calculate risk score
- */
-const calculateRiskScore = (marketData: any, tokenMetadata: any): number => {
-  if (!marketData) return 100;
-  
-  let riskScore = 50;
-  
-  // Liquidity factor
-  const liquidity = marketData.liquidity || 0;
-  if (liquidity >= 1000000) riskScore -= 20;
-  else if (liquidity >= 100000) riskScore -= 10;
-  else if (liquidity < 10000) riskScore += 20;
-  
-  // Holders factor
-  const holders = marketData.holders || 0;
-  if (holders >= 1000) riskScore -= 10;
-  else if (holders < 50) riskScore += 15;
-  
-  return Math.max(0, Math.min(100, riskScore));
-};
-
-/**
- * Get recent token activity
- */
+// Get recent token activity 
 export const getRecentTokenActivity = async (): Promise<Token[]> => {
   try {
-    // This would normally fetch from an API
-    // Mocked implementation for now
-    return [
+    // This would normally call an API - for now return mock data
+    const mockTokens: Token[] = [
       {
-        name: "Example Token",
-        symbol: "EX",
-        address: "ExampleAddressForAToken11111111111111111111",
-        price: 0.00032,
-        priceChange24h: 5.2,
-        marketCap: 320000,
-        liquidity: 50000,
-        volume24h: 25000,
-        holders: 120,
-        decimals: 9,
-        source: "Recent Activity",
-        createdAt: new Date(),
-        isPumpFun: false,
-        qualityScore: 75,
-        change24h: 5.2
-      }
-    ];
-  } catch (error) {
-    console.error("Error fetching recent token activity:", error);
-    return [];
-  }
-};
-
-/**
- * Get trending tokens
- */
-export const getTrendingTokens = async (): Promise<Token[]> => {
-  try {
-    // This would normally fetch from an API
-    // Mocked implementation for now
-    return [
-      {
-        name: "Trending Token",
-        symbol: "TREND",
-        address: "TrendingAddressForAToken111111111111111111",
-        price: 0.00045,
-        priceChange24h: 12.7,
-        marketCap: 450000,
-        liquidity: 75000,
-        volume24h: 45000,
-        holders: 230,
-        isTrending: true,
-        trendingRank: 1,
-        decimals: 9,
-        source: "Jupiter, Raydium",
-        change24h: 12.7,
-        trendingScore: ["Jupiter", "Raydium"],
-        qualityScore: 85
-      }
-    ];
-  } catch (error) {
-    console.error("Error fetching trending tokens:", error);
-    return [];
-  }
-};
-
-/**
- * Get pump.fun tokens
- */
-export const getPumpFunTokens = async (): Promise<Token[]> => {
-  try {
-    // This would fetch from pump.fun API
-    // Mocked implementation for now
-    return [
-      {
-        name: "Pump Token",
-        symbol: "PUMP",
-        address: "PumpFunTokenAddressForAToken1111111111111",
-        price: 0.00012,
-        priceChange24h: 25.3,
-        marketCap: 150000,
-        liquidity: 35000,
-        volume24h: 28000,
-        holders: 180,
-        decimals: 9,
-        source: "Pump.fun",
-        createdAt: new Date(),
-        isPumpFun: true,
-        qualityScore: 60,
-        change24h: 25.3
-      }
-    ];
-  } catch (error) {
-    console.error("Error fetching pump.fun tokens:", error);
-    return [];
-  }
-};
-
-/**
- * Track wallet activities
- */
-export const trackWalletActivities = async (walletAddresses: string[]): Promise<WalletActivity[]> => {
-  try {
-    // This would normally fetch from Helius API
-    // Mocked implementation for now
-    return [
-      {
-        id: "activity1",
-        walletAddress: walletAddresses[0] || "WalletAddress111111111111111111111111111",
-        tokenAddress: "TokenAddress11111111111111111111111111111",
-        tokenName: "Smart Money Token",
-        tokenSymbol: "SMT",
-        amount: 10000,
-        value: 5000,
-        timestamp: new Date().toISOString(),
-        transactionHash: "transaction111111111111111111",
-        activityType: "buy"
+        address: 'DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263',
+        name: 'Bonk',
+        symbol: 'BONK',
+        decimals: 5,
+        price: 0.00000235,
+        marketCap: 1540000000,
+        volume24h: 25000000,
+        change24h: 5.2,
+        holders: 125000,
+        liquidity: 15000000,
+        createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+        qualityScore: 85,
+        trendingScore: 95
       },
       {
-        id: "activity2",
-        walletAddress: walletAddresses[0] || "WalletAddress111111111111111111111111111",
-        tokenAddress: "TokenAddress22222222222222222222222222222",
-        tokenName: "Another Token",
-        tokenSymbol: "AT",
-        amount: 5000,
-        value: 2500,
-        timestamp: new Date(Date.now() - 3600000).toISOString(), // 1 hour ago
-        transactionHash: "transaction222222222222222222",
-        activityType: "sell"
+        address: '7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU',
+        name: 'Samoyedcoin',
+        symbol: 'SAMO',
+        decimals: 9,
+        price: 0.0125,
+        marketCap: 56000000,
+        volume24h: 1500000,
+        change24h: -2.3,
+        holders: 38000,
+        liquidity: 3500000,
+        createdAt: new Date(Date.now() - 200 * 24 * 60 * 60 * 1000).toISOString(),
+        qualityScore: 80,
+        trendingScore: 85
+      },
+      {
+        address: 'MEMEXQWzNMLG4t5UtUVqbXEhJSxssCwYVTT1dosXKz7',
+        name: 'MEME100',
+        symbol: 'MEME',
+        decimals: 6,
+        price: 0.0000078,
+        marketCap: 350000,
+        volume24h: 120000,
+        change24h: 103.5,
+        holders: 850,
+        liquidity: 250000,
+        createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+        qualityScore: 60,
+        trendingScore: 100,
+        source: 'MEME1000X'
       }
     ];
+    
+    return mockTokens;
   } catch (error) {
-    console.error("Error tracking wallet activities:", error);
+    console.error('Error getting recent token activity:', error);
     return [];
+  }
+};
+
+// Get trending tokens from various sources
+export const getTrendingTokens = async (): Promise<Token[]> => {
+  try {
+    // This would normally call trending APIs - for now return mock data
+    const mockTrending: Token[] = [
+      {
+        address: 'WIFoYQM7UpsMW67Py4NAfmLZgcMoreLhiM12tGMkXTP',
+        name: 'WIF With Hat',
+        symbol: 'WIF',
+        decimals: 9,
+        price: 0.058,
+        marketCap: 284500000,
+        volume24h: 7500000,
+        change24h: 8.3,
+        holders: 25800,
+        liquidity: 12000000,
+        createdAt: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString(),
+        qualityScore: 95,
+        trendingScore: 98
+      },
+      {
+        address: 'jtojtomepa8beP8AuQc6eXt5FriJwfnGz1Y6law3uE',
+        name: 'Jito',
+        symbol: 'JTO',
+        decimals: 9,
+        price: 2.75,
+        marketCap: 312000000,
+        volume24h: 4500000,
+        change24h: 1.5,
+        holders: 15600,
+        liquidity: 9000000,
+        createdAt: new Date(Date.now() - 120 * 24 * 60 * 60 * 1000).toISOString(),
+        qualityScore: 90,
+        trendingScore: 92
+      }
+    ];
+    
+    return mockTrending;
+  } catch (error) {
+    console.error('Error getting trending tokens:', error);
+    return [];
+  }
+};
+
+// Get pump.fun tokens
+export const getPumpFunTokens = async (): Promise<Token[]> => {
+  try {
+    // This would normally call pump.fun API - for now return mock data
+    const mockPumpTokens: Token[] = [
+      {
+        address: 'daiskPLEbNUvVq1k8bCrdo7r9SuCDNYJyXnj1FJP8',
+        name: 'Daisy',
+        symbol: 'DAISY',
+        decimals: 9,
+        price: 0.000061,
+        marketCap: 1850000,
+        volume24h: 350000,
+        change24h: 25.8,
+        holders: 1950,
+        liquidity: 450000,
+        createdAt: new Date(Date.now() - 18 * 24 * 60 * 60 * 1000).toISOString(),
+        qualityScore: 75,
+        trendingScore: 88,
+        isPumpFun: true
+      },
+      {
+        address: 'nofbptzYyFWCacYzLzTQ5dK1qPkQCVB1xKt6nyfxf5H',
+        name: 'NOT FINANCIAL ADVICE',
+        symbol: 'NFA',
+        decimals: 9,
+        price: 0.0000035,
+        marketCap: 350000,
+        volume24h: 95000,
+        change24h: 43.2,
+        holders: 568,
+        liquidity: 120000,
+        createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+        qualityScore: 60,
+        trendingScore: 75,
+        isPumpFun: true
+      }
+    ];
+    
+    return mockPumpTokens;
+  } catch (error) {
+    console.error('Error getting pump.fun tokens:', error);
+    return [];
+  }
+};
+
+// Track wallet activities (for smart money detection)
+export const trackWalletActivities = async (walletAddresses: string[]): Promise<any> => {
+  try {
+    // This would normally track wallets via API - for now return mock data
+    return {
+      totalWallets: walletAddresses.length,
+      trackedSince: new Date().toISOString(),
+      recentActivities: [
+        {
+          wallet: walletAddresses[0] || "7KBVJktNTGjmUCCBzKR7n4XecQUzwuZ8VnLnkQnY8UeF",
+          action: "buy",
+          token: "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263",
+          tokenName: "Bonk",
+          amount: 155000000000,
+          usdValue: 365250,
+          timestamp: new Date(Date.now() - 35 * 60000).toISOString()
+        },
+        {
+          wallet: walletAddresses[0] || "7KBVJktNTGjmUCCBzKR7n4XecQUzwuZ8VnLnkQnY8UeF",
+          action: "buy",
+          token: "jtojtomepa8beP8AuQc6eXt5FriJwfnGz1Y6law3uE",
+          tokenName: "Jito",
+          amount: 12500,
+          usdValue: 34375,
+          timestamp: new Date(Date.now() - 85 * 60000).toISOString()
+        }
+      ]
+    };
+  } catch (error) {
+    console.error('Error tracking wallet activities:', error);
+    return {
+      totalWallets: 0,
+      trackedSince: new Date().toISOString(),
+      recentActivities: []
+    };
   }
 };
