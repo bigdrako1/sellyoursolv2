@@ -233,7 +233,6 @@ const AutoTradeSimple: React.FC = () => {
                     ...config,
                     riskLevel: value[0]
                   })}
-                  className="mb-2"
                 />
                 <div className="flex justify-between text-xs text-gray-400">
                   <span>Conservative</span>
