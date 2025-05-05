@@ -212,13 +212,12 @@ const SmartMoneyAlerts: React.FC = () => {
               </div>
               
               <div>
-                <Label htmlFor="amount">Amount (SOL)</Label>
+                <Label className="block">Amount (SOL)</Label>
                 <div className="mt-1">
                   <Input
-                    id="amount"
                     type="number"
                     value={tradeAmount}
-                    onChange={(e) => setTradeAmount(parseFloat(e.target.value) || 0)}
+                    onChange={(e) => setTradeAmount(parseFloat(e.target.value) || 0.01)}
                     className="bg-black/20 border-white/10"
                     min={0.01}
                     step={0.01}

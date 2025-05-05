@@ -5,7 +5,7 @@ import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { 
   Brain, 
@@ -19,7 +19,6 @@ import {
   Save
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { APP_CONFIG } from "@/config/appDefinition";
 
 const AutoTradeConfig = () => {
   const [activeTab, setActiveTab] = useState("frontrun");
@@ -520,9 +519,9 @@ const AutoTradeConfig = () => {
           </div>
         </div>
 
-        <Tabs defaultValue="frontrun" className="w-full" onValueChange={setActiveTab} value={activeTab}>
+        <Tabs defaultValue="frontrun" onValueChange={setActiveTab} value={activeTab}>
           <TabsList className="grid w-full grid-cols-3 bg-trading-darkAccent">
-            <TabsTrigger value="frontrun" className="relative">
+            <TabsTrigger value="frontrun">
               <div className="flex items-center gap-1">
                 <Cpu size={14} />
                 <span>Front Runner</span>
@@ -545,7 +544,15 @@ const AutoTradeConfig = () => {
             </TabsTrigger>
           </TabsList>
 
-          {renderContent()}
+          <TabsContent value="frontrun">
+            {renderContent()}
+          </TabsContent>
+          <TabsContent value="market">
+            {renderContent()}
+          </TabsContent>
+          <TabsContent value="wallet">
+            {renderContent()}
+          </TabsContent>
         </Tabs>
       </div>
     </Card>
