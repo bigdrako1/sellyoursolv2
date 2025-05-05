@@ -1,176 +1,116 @@
 
-import { Card } from "@/components/ui/card";
+import React, { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Bell, ArrowUpRight, ArrowDownRight, BarChart2, Wallet, Brain, Loader2 } from "lucide-react";
-import { useState, useEffect } from "react";
-import { heliusApiCall } from "@/utils/apiUtils";
-import { useToast } from "@/hooks/use-toast";
-import { playSound } from "@/utils/soundUtils";
+import { Button } from "@/components/ui/button";
+import { AlertCircle, ExternalLink, TrendingUp } from "lucide-react";
 
-interface Alert {
-  id: number;
-  type: "info" | "success" | "warning" | "danger";
-  title: string;
-  message: string;
-  timestamp: Date;
-  icon: "trade" | "wallet" | "system" | "market" | "ai";
-  action?: string;
-}
+// Sample trade alerts
+const SAMPLE_ALERTS = [
+  {
+    id: "1",
+    tokenName: "Alpha Runner",
+    tokenSymbol: "ALPHA",
+    tokenAddress: "5qTnnb9UCVzpEErQNgcwi5seVjKc8kizNnWcmgxQt3Us",
+    type: "price_gain",
+    detail: "increased by 25% in the last hour",
+    timestamp: new Date(Date.now() - 1800000).toISOString() // 30 minutes ago
+  },
+  {
+    id: "2",
+    tokenName: "Gamma Coin",
+    tokenSymbol: "GAMMA",
+    tokenAddress: "5G811VMkkTKU4HTFQZURp5jcfZbD4LF2SGym5qQbviFN",
+    type: "quality_token",
+    detail: "trending on Jupiter with high quality score",
+    timestamp: new Date(Date.now() - 3600000).toISOString() // 1 hour ago
+  }
+];
 
-const TradeAlerts = () => {
-  const [alerts, setAlerts] = useState<Alert[]>([]);
-  const [loading, setLoading] = useState(false);
-  const { toast } = useToast();
+const TradeAlerts: React.FC = () => {
+  const [alerts] = useState(SAMPLE_ALERTS);
   
-  useEffect(() => {
-    const fetchAlerts = async () => {
-      setLoading(true);
-      try {
-        // In a production app, we would fetch real alert data from Helius API
-        // For now, we're showing an empty state
-        setAlerts([]);
-        
-        // In a production environment, uncomment this code to fetch real alerts:
-        /*
-        const response = await heliusApiCall("getTradeAlerts", []);
-        if (response && Array.isArray(response)) {
-          const alertData = response.map(alert => ({
-            id: alert.id,
-            type: alert.type || "info",
-            title: alert.title || "New Alert",
-            message: alert.message || "Alert details",
-            timestamp: new Date(alert.timestamp || Date.now()),
-            icon: alert.icon || "system",
-            action: alert.action
-          }));
-          setAlerts(alertData);
-          
-          // Play sound for new alerts
-          if (alertData.length > 0 && alertData[0].timestamp > new Date(Date.now() - 60000)) {
-            playSound("alert");
-          }
-        }
-        */
-      } catch (error) {
-        console.error("Error fetching alerts:", error);
-        toast({
-          title: "Error fetching alerts",
-          description: "Could not load trading alerts from the server",
-          variant: "destructive",
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
+  const formatTimeAgo = (timestamp: string) => {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
     
-    fetchAlerts();
-    
-    // Set up polling for real-time alerts
-    const intervalId = setInterval(fetchAlerts, 30000);
-    return () => clearInterval(intervalId);
-  }, [toast]);
-  
-  const getAlertIcon = (iconType: string) => {
-    switch (iconType) {
-      case "trade":
-        return <ArrowUpRight className="h-4 w-4 text-trading-success" />;
-      case "wallet":
-        return <Wallet className="h-4 w-4 text-trading-highlight" />;
-      case "system":
-        return <Bell className="h-4 w-4 text-trading-warning" />;
-      case "market":
-        return <BarChart2 className="h-4 w-4 text-trading-secondary" />;
-      case "ai":
-        return <Brain className="h-4 w-4 text-purple-400" />;
-      default:
-        return <ArrowUpRight className="h-4 w-4 text-trading-success" />;
+    if (diffMins < 60) {
+      return `${diffMins}m ago`;
+    } else {
+      const diffHours = Math.floor(diffMins / 60);
+      return `${diffHours}h ago`;
     }
   };
   
-  const formatAlertTime = (timestamp: Date) => {
-    const now = new Date();
-    const diffMs = now.getTime() - timestamp.getTime();
-    const diffMinutes = Math.floor(diffMs / 60000);
-    
-    if (diffMinutes < 1) return "Just now";
-    if (diffMinutes < 60) return `${diffMinutes}m ago`;
-    
-    const diffHours = Math.floor(diffMinutes / 60);
-    if (diffHours < 24) return `${diffHours}h ago`;
-    
-    return timestamp.toLocaleDateString();
-  };
-  
-  const handleAlertAction = (alert: Alert) => {
-    if (alert.action) {
-      // Handle alert actions - implement with real functionality
-      toast({
-        title: "Action triggered",
-        description: `Executing action for alert: ${alert.title}`,
-      });
+  const getAlertBadge = (type: string) => {
+    switch (type) {
+      case "price_gain":
+        return <Badge className="bg-green-600">Price Up</Badge>;
+      case "price_drop":
+        return <Badge className="bg-red-600">Price Down</Badge>;
+      case "quality_token":
+        return <Badge className="bg-blue-600">Quality Token</Badge>;
+      case "whale_activity":
+        return <Badge className="bg-purple-600">Whale Activity</Badge>;
+      default:
+        return <Badge>Alert</Badge>;
     }
   };
   
   return (
-    <Card className="trading-card">
-      <div className="p-4">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="font-bold text-lg">Live Alerts</h3>
-          <Badge variant="outline" className="bg-trading-highlight/10 text-trading-highlight border-none">
-            {alerts.length} Alerts
-          </Badge>
-        </div>
-        
-        <ScrollArea className="h-[220px] pr-4">
-          {loading ? (
-            <div className="flex flex-col items-center justify-center h-full">
-              <Loader2 className="h-6 w-6 animate-spin text-trading-highlight mb-2" />
-              <p className="text-sm text-gray-400">Loading alerts...</p>
-            </div>
-          ) : alerts.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-gray-400">
-              <Bell className="h-8 w-8 mb-2 opacity-50" />
-              <p className="text-sm">No alerts yet</p>
-              <p className="text-xs mt-1">Alerts will appear here when detected</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {alerts.map(alert => (
-                <div 
-                  key={alert.id}
-                  className={`
-                    p-3 rounded-lg border flex items-start gap-3
-                    ${alert.type === "success" ? "bg-trading-success/10 border-trading-success/20" :
-                      alert.type === "warning" ? "bg-trading-warning/10 border-trading-warning/20" :
-                      alert.type === "danger" ? "bg-trading-danger/10 border-trading-danger/20" :
-                      "bg-trading-highlight/10 border-trading-highlight/20"}
-                  `}
-                >
-                  <div className="mt-0.5">
-                    {getAlertIcon(alert.icon)}
+    <Card className="card-with-border">
+      <CardHeader>
+        <CardTitle className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="h-4 w-4 text-amber-400" />
+            Trade Alerts
+          </div>
+          {alerts.length > 0 && <Badge className="bg-amber-600">{alerts.length}</Badge>}
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-3">
+          {alerts.length > 0 ? (
+            alerts.map(alert => (
+              <div key={alert.id} className="bg-black/20 p-2 rounded-md">
+                <div className="flex items-start justify-between">
+                  <div>
+                    {getAlertBadge(alert.type)}
+                    <span className="ml-2 font-medium">${alert.tokenSymbol}</span>
                   </div>
-                  <div className="flex-1">
-                    <div className="flex justify-between">
-                      <span className="font-medium">{alert.title}</span>
-                      <span className="text-xs text-gray-400">{formatAlertTime(alert.timestamp)}</span>
-                    </div>
-                    <p className="text-sm text-gray-300 mt-1">{alert.message}</p>
-                    {alert.action && (
-                      <button 
-                        className="text-xs text-trading-highlight hover:underline mt-1"
-                        onClick={() => handleAlertAction(alert)}
-                      >
-                        {alert.action}
-                      </button>
-                    )}
-                  </div>
+                  <span className="text-xs text-gray-400">{formatTimeAgo(alert.timestamp)}</span>
                 </div>
-              ))}
+                <div className="mt-1 text-xs text-gray-300">
+                  {alert.tokenName} {alert.detail}
+                </div>
+                <div className="mt-2 flex gap-1">
+                  <Button 
+                    size="sm" 
+                    className="text-xs h-7 flex-grow"
+                  >
+                    <TrendingUp className="h-3 w-3 mr-1" />
+                    Trade
+                  </Button>
+                  <Button 
+                    size="icon" 
+                    variant="outline" 
+                    className="bg-black/20 border-white/10 h-7 w-7"
+                    onClick={() => window.open(`https://birdeye.so/token/${alert.tokenAddress}?chain=solana`, '_blank')}
+                  >
+                    <ExternalLink className="h-3 w-3" />
+                  </Button>
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="text-center py-4 text-sm text-gray-400">
+              No alerts at this time
             </div>
           )}
-        </ScrollArea>
-      </div>
+        </div>
+      </CardContent>
     </Card>
   );
 };
