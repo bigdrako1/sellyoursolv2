@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { Wallet, Plus, ExternalLink, X, AlertCircle } from "lucide-react";
 
 interface TrackedWallet {
@@ -23,7 +23,6 @@ const WalletMonitor: React.FC = () => {
   const [newWallet, setNewWallet] = useState("");
   const [newLabel, setNewLabel] = useState("");
   const [isAddingWallet, setIsAddingWallet] = useState(false);
-  const { toast } = useToast();
   
   // Load saved wallets from localStorage on component mount
   useEffect(() => {
@@ -51,10 +50,8 @@ const WalletMonitor: React.FC = () => {
   const handleAddWallet = () => {
     if (newWallet && newWallet.length >= 32) {
       if (wallets.some(w => w.address === newWallet)) {
-        toast({
-          title: "Wallet already tracked",
-          description: "This wallet address is already being monitored",
-          variant: "destructive"
+        toast("Wallet already tracked", {
+          description: "This wallet address is already being monitored"
         });
         return;
       }
@@ -71,15 +68,12 @@ const WalletMonitor: React.FC = () => {
       setNewLabel("");
       setIsAddingWallet(false);
       
-      toast({
-        title: "Wallet added",
+      toast("Wallet added", {
         description: "The wallet has been added to your tracking list"
       });
     } else {
-      toast({
-        title: "Invalid wallet address",
-        description: "Please enter a valid Solana wallet address",
-        variant: "destructive"
+      toast("Invalid wallet address", {
+        description: "Please enter a valid Solana wallet address"
       });
     }
   };
@@ -89,17 +83,14 @@ const WalletMonitor: React.FC = () => {
     const isSmartWallet = SMART_WALLETS.some(w => w.address === address);
     
     if (isSmartWallet) {
-      toast({
-        title: "Cannot remove default wallet",
-        description: "Smart trader wallets cannot be removed from tracking",
-        variant: "destructive"
+      toast("Cannot remove default wallet", {
+        description: "Smart trader wallets cannot be removed from tracking"
       });
       return;
     }
     
     setWallets(wallets.filter(wallet => wallet.address !== address));
-    toast({
-      title: "Wallet removed",
+    toast("Wallet removed", {
       description: "The wallet has been removed from your tracking list"
     });
   };
