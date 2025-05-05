@@ -99,7 +99,7 @@ const SmartMoneyAlerts: React.FC = () => {
         <div className="space-y-4">
           {alerts.length > 0 ? (
             <div className="space-y-3">
-              {alerts.map(alert => (
+              {alerts.map((alert) => (
                 <div key={alert.id} className="bg-black/20 p-3 rounded-lg border border-white/5">
                   <div className="flex justify-between items-start">
                     <div>
