@@ -81,32 +81,34 @@ export interface HeliusTokenResponse {
 export interface HeliusWalletBalance {
   address: string;
   balance: number;
-  nativeBalance?: number; // Added missing property
+  nativeBalance?: number;
   tokens: {
     mint: string;
     amount: number;
     decimals: number;
     tokenAccount: string;
-    symbol?: string; // Added missing property
-    logo?: string; // Added missing property
+    symbol?: string;
+    logo?: string;
   }[];
 }
 
 export function parseHeliusWalletBalance(data: any): HeliusWalletBalance {
-  // Implement parsing logic for wallet balance from Helius API
   return {
     address: data.address || "",
     balance: parseFloat(data.lamports || 0) / 1e9,
-    nativeBalance: parseFloat(data.lamports || 0) / 1e9, // Added nativeBalance property
+    nativeBalance: parseFloat(data.lamports || 0) / 1e9,
     tokens: Array.isArray(data.tokens) 
       ? data.tokens.map((token: any) => ({
           mint: token.mint || "",
           amount: parseFloat(token.amount || 0) / Math.pow(10, token.decimals || 0),
           decimals: token.decimals || 0,
           tokenAccount: token.tokenAccount || "",
-          symbol: token.symbol || token.mint?.substring(0, 4) || "", // Added symbol property
-          logo: token.logo || "" // Added logo property
+          symbol: token.symbol || token.mint?.substring(0, 4) || "",
+          logo: token.logo || ""
         }))
       : []
   };
 }
+
+// Export all types from this file for service usage
+export type { HeliusTokenData as TokenData, HeliusTokenResponse as TokenResponse };
