@@ -1,7 +1,7 @@
 
-import { testHeliusConnection, HELIUS_API_KEY, HELIUS_RPC_URL, BIRDEYE_API_KEY, heliusRpcCall, heliusApiCall } from "../utils/apiUtils";
+import { testHeliusConnection, HELIUS_API_KEY, HELIUS_RPC_URL, BIRDEYE_API_KEY, BIRDEYE_API_BASE, heliusRpcCall, heliusApiCall } from "../utils/apiUtils";
 import { HeliusTokenData, HeliusTokenResponse } from "../utils/heliusTypes";
-import { WalletActivity } from "@/types/token.types";
+import { WalletActivity, Token } from "@/types/token.types";
 import { toast } from "@/hooks/use-toast";
 
 // Re-export the testHeliusConnection function
@@ -32,26 +32,8 @@ export interface TokenInfo {
   riskScore?: number;
 }
 
-export interface Token {
-  name: string;
-  symbol: string;
-  address: string;
-  price?: number;
-  priceChange24h?: number;
-  marketCap?: number;
-  liquidity?: number;
-  volume24h?: number;
-  holders?: number;
-  launchDate?: string;
-  quality?: number;
-  riskScore?: number;
-  isTrending?: boolean;
-  trendingRank?: number;
-  description?: string;
-  website?: string;
-  twitter?: string;
-  decimals: number;
-}
+// Re-export Token from types
+export { Token };
 
 /**
  * Convert TokenInfo to Token
@@ -61,7 +43,7 @@ export const tokenInfoToToken = (tokenInfo: TokenInfo): Token => {
     name: tokenInfo.name,
     symbol: tokenInfo.symbol,
     address: tokenInfo.address,
-    price: tokenInfo.price,
+    price: tokenInfo.price || 0,
     priceChange24h: tokenInfo.priceChange24h,
     marketCap: tokenInfo.marketCap,
     liquidity: tokenInfo.liquidity,
@@ -74,6 +56,12 @@ export const tokenInfoToToken = (tokenInfo: TokenInfo): Token => {
     description: tokenInfo.description,
     website: tokenInfo.website,
     twitter: tokenInfo.twitter,
+    // Additional fields for TokenAlertMonitor
+    source: "API",
+    createdAt: new Date(),
+    isPumpFun: tokenInfo.address.includes("pump") || false,
+    qualityScore: tokenInfo.quality || 50,
+    change24h: tokenInfo.priceChange24h || 0
   };
 };
 
@@ -309,6 +297,11 @@ export const getRecentTokenActivity = async (): Promise<Token[]> => {
         volume24h: 25000,
         holders: 120,
         decimals: 9,
+        source: "Recent Activity",
+        createdAt: new Date(),
+        isPumpFun: false,
+        qualityScore: 75,
+        change24h: 5.2
       }
     ];
   } catch (error) {
@@ -338,6 +331,10 @@ export const getTrendingTokens = async (): Promise<Token[]> => {
         isTrending: true,
         trendingRank: 1,
         decimals: 9,
+        source: "Jupiter, Raydium",
+        change24h: 12.7,
+        trendingScore: ["Jupiter", "Raydium"],
+        qualityScore: 85
       }
     ];
   } catch (error) {
@@ -365,6 +362,11 @@ export const getPumpFunTokens = async (): Promise<Token[]> => {
         volume24h: 28000,
         holders: 180,
         decimals: 9,
+        source: "Pump.fun",
+        createdAt: new Date(),
+        isPumpFun: true,
+        qualityScore: 60,
+        change24h: 25.3
       }
     ];
   } catch (error) {

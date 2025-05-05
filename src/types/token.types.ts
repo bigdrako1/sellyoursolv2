@@ -16,6 +16,34 @@ export interface TokenData {
   logoURI?: string;
 }
 
+export interface Token {
+  name: string;
+  symbol: string;
+  address: string;
+  decimals: number;
+  price: number;
+  priceChange24h?: number;
+  marketCap?: number;
+  liquidity?: number;
+  volume24h?: number;
+  holders?: number;
+  launchDate?: string;
+  quality?: number;
+  riskLevel?: number;
+  isTrending?: boolean;
+  trendingRank?: number;
+  trendingScore?: number | string[];
+  description?: string;
+  website?: string;
+  twitter?: string;
+  // Additional properties needed by TokenAlertMonitor
+  isPumpFun?: boolean;
+  source?: string;
+  createdAt?: Date;
+  qualityScore?: number;
+  change24h?: number;
+}
+
 export interface WalletActivity {
   id: string;
   walletAddress: string;

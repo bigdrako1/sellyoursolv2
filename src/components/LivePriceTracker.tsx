@@ -38,7 +38,7 @@ const LivePriceTracker = () => {
   useEffect(() => {
     if (solPrice && lastPrice !== 0) {
       // Type assertion for solPrice
-      const currentPrice = solPrice as number;
+      const currentPrice = Number(solPrice);
       
       if (currentPrice > lastPrice) {
         setPriceDirection('up');
@@ -53,7 +53,7 @@ const LivePriceTracker = () => {
     
     if (solPrice) {
       // Type assertion for solPrice
-      setLastPrice(solPrice as number);
+      setLastPrice(Number(solPrice));
     }
   }, [solPrice, lastPrice]);
   
@@ -90,7 +90,7 @@ const LivePriceTracker = () => {
   }
   
   // Type assertion for solPrice to ensure it's treated as a number
-  const displayPrice = (solPrice as number) || 0;
+  const displayPrice = Number(solPrice || 0);
   
   return (
     <div className="flex flex-col min-w-[140px]">
