@@ -2,6 +2,7 @@
 import { PublicKey } from '@solana/web3.js';
 import nacl from 'tweetnacl';
 import bs58 from 'bs58';
+import { toast } from "@/components/ui/use-toast";
 
 /**
  * Detect if Phantom wallet is installed
@@ -9,9 +10,15 @@ import bs58 from 'bs58';
  */
 export const detectPhantomWallet = async (): Promise<boolean> => {
   try {
-    // Check if Phantom is installed
-    const isPhantomInstalled = (window as any).phantom?.solana?.isPhantom || false;
+    // Check for Phantom in multiple ways to increase detection reliability
+    const isPhantomInstalled = (
+      // Standard way to detect Phantom
+      (window as any).phantom?.solana?.isPhantom || 
+      // Fallback detection method
+      typeof (window as any).solana?.isPhantom !== 'undefined'
+    );
     
+    console.log("Phantom detection result:", isPhantomInstalled);
     return isPhantomInstalled;
   } catch (error) {
     console.error('Error detecting Phantom wallet:', error);
@@ -25,27 +32,34 @@ export const detectPhantomWallet = async (): Promise<boolean> => {
  */
 export const connectPhantomWallet = async (): Promise<{ success: boolean; address?: string; error?: string }> => {
   try {
-    // Check if Phantom is installed
-    if (!(window as any).phantom?.solana?.isPhantom) {
+    console.log("Attempting to connect to Phantom wallet");
+    
+    // Check if Phantom exists on window.solana or window.phantom.solana
+    const provider = (window as any).phantom?.solana || (window as any).solana;
+    
+    // If neither exists, Phantom is not installed
+    if (!provider || !provider.isPhantom) {
+      console.error("No Phantom provider found on window");
       throw new Error('Phantom wallet is not installed');
     }
     
-    // Connect to Phantom
-    const provider = (window as any).phantom?.solana;
-    const { publicKey } = await provider.connect();
+    // Try to connect
+    console.log("Provider found, connecting...");
+    const response = await provider.connect();
+    console.log("Connection response:", response);
     
     // Get the wallet address
-    const address = publicKey.toString();
+    const publicKey = response.publicKey.toString();
     
     // Save wallet info to localStorage for persistence
-    localStorage.setItem('walletAddress', address);
+    localStorage.setItem('walletAddress', publicKey);
     localStorage.setItem('walletProvider', 'phantom');
     
-    console.log('Successfully connected to Phantom wallet:', address);
+    console.log('Successfully connected to Phantom wallet:', publicKey);
     
     return {
       success: true,
-      address
+      address: publicKey
     };
   } catch (error: any) {
     console.error('Error connecting to Phantom wallet:', error);

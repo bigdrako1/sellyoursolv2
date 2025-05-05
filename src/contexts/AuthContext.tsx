@@ -37,7 +37,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     // Check if Phantom wallet is installed
     const checkPhantom = async () => {
+      console.log("Checking for Phantom wallet...");
       const hasPhantom = await detectPhantomWallet();
+      console.log("Phantom wallet detected:", hasPhantom);
       setIsPhantomInstalled(hasPhantom);
     };
     
@@ -46,6 +48,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Check for connected wallet on mount
     const savedWallet = getConnectedWallet();
     if (savedWallet) {
+      console.log("Found saved wallet:", savedWallet);
       setWalletAddress(savedWallet);
     }
     
@@ -55,6 +58,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       try {
         setUser(JSON.parse(storedUser));
         setIsAuthenticated(true);
+        console.log("User authenticated from stored data");
       } catch (e) {
         console.error("Failed to parse stored user data:", e);
         localStorage.removeItem('user');
@@ -68,8 +72,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       setLoading(true);
       
+      // Check for Phantom again in case the user just installed it
+      const hasPhantom = await detectPhantomWallet();
+      setIsPhantomInstalled(hasPhantom);
+      
       // Check if Phantom is installed
-      if (!isPhantomInstalled) {
+      if (!hasPhantom) {
+        console.error("Phantom wallet not detected");
         throw new Error("Phantom wallet is not installed. Please install the Phantom browser extension");
       }
       
@@ -77,10 +86,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (!walletAddress) {
         try {
           // Connect to Phantom wallet
+          console.log("Connecting to Phantom wallet...");
           const result = await connectPhantomWallet();
           
           if (result.success && result.address) {
             // Set the wallet address
+            console.log("Wallet connected:", result.address);
             setWalletAddress(result.address);
             
             // Store wallet address for persistence
@@ -93,9 +104,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               description: `Connected to wallet: ${result.address.slice(0, 6)}...${result.address.slice(-4)}`,
             });
           } else {
+            console.error("Connection failed:", result.error);
             throw new Error(result.error || "Failed to connect to wallet");
           }
         } catch (err) {
+          console.error("Error in wallet connection:", err);
           if (err instanceof Error && err.message.includes('User rejected')) {
             throw new Error("Wallet connection was rejected by user");
           }
@@ -111,13 +124,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const message = `Sign this message to authenticate with Token Monitor: ${timestamp}-${nonce}`;
       
       try {
+        console.log("Requesting signature for message:", message);
         // Have the user sign the message with their wallet
         const signResult = await signWithPhantom(message);
         
         if (!signResult.success || !signResult.signature) {
+          console.error("Signature failed:", signResult.error);
           throw new Error(signResult.error || "Failed to sign message");
         }
         
+        console.log("Message signed successfully, verifying signature...");
         // Verify the signature
         const isValid = await verifyWalletSignature(
           walletAddress as string,
@@ -126,9 +142,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         );
         
         if (!isValid) {
+          console.error("Signature verification failed");
           throw new Error("Signature verification failed");
         }
         
+        console.log("Signature verified successfully");
         // Create a simple user object with the wallet data
         const userData = {
           id: walletAddress,
@@ -152,12 +170,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           variant: "default",
         });
       } catch (err) {
+        console.error("Error in message signing:", err);
         if (err instanceof Error && err.message.includes('User rejected')) {
           throw new Error("Message signing was rejected by user");
         }
         throw err;
       }
     } catch (error: any) {
+      console.error("Authentication error:", error);
       toast({
         title: "Authentication Failed",
         description: error.message,

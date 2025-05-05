@@ -7,17 +7,36 @@ import { Loader2, Wallet, Key, Lock, AlertCircle, ExternalLink } from "lucide-re
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { APP_CONFIG } from "@/config/appDefinition";
-import { formatWalletAddress } from "@/utils/phantomUtils";
+import { formatWalletAddress, detectPhantomWallet } from "@/utils/phantomUtils";
 
 const Auth = () => {
   const [isConnecting, setIsConnecting] = useState(false);
   const [isSigning, setIsSigning] = useState(false);
+  const [isDetectingWallet, setIsDetectingWallet] = useState(true);
   const { toast } = useToast();
   const { signIn, isAuthenticated, walletAddress, isPhantomInstalled } = useAuth();
   const navigate = useNavigate();
   
+  // Detect wallet on component mount
+  useEffect(() => {
+    const checkWalletStatus = async () => {
+      setIsDetectingWallet(true);
+      try {
+        const isDetected = await detectPhantomWallet();
+        console.log("Phantom wallet detection:", isDetected);
+      } catch (error) {
+        console.error("Error detecting wallet:", error);
+      } finally {
+        setIsDetectingWallet(false);
+      }
+    };
+    
+    checkWalletStatus();
+  }, []);
+  
   useEffect(() => {
     if (isAuthenticated) {
+      console.log("User is authenticated, redirecting to home");
       navigate('/');
     }
   }, [isAuthenticated, navigate]);
@@ -37,15 +56,18 @@ const Auth = () => {
     
     setIsConnecting(true);
     try {
-      await signIn();
+      console.log("Initiating sign in process");
+      const result = await signIn();
+      console.log("Sign in result:", result);
+      
       toast({
         title: "Authentication Successful",
         description: "You're now logged in to the platform",
       });
       navigate('/');
     } catch (error) {
-      // Error is handled in the signIn function
       console.error("Authentication failed:", error);
+      // Error is handled in the signIn function
     } finally {
       setIsConnecting(false);
     }
@@ -73,7 +95,17 @@ const Auth = () => {
           
           <CardContent className="pt-6">
             <div className="mb-6">          
-              {!isPhantomInstalled ? (
+              {isDetectingWallet ? (
+                <div className="bg-blue-900/20 border border-blue-500/30 p-4 rounded-lg mb-4 flex items-center gap-3">
+                  <Loader2 className="h-5 w-5 text-blue-400 animate-spin" />
+                  <div>
+                    <h4 className="font-medium text-blue-400 mb-1">Detecting Wallet</h4>
+                    <p className="text-sm text-gray-300">
+                      Checking for Phantom wallet extension...
+                    </p>
+                  </div>
+                </div>
+              ) : !isPhantomInstalled ? (
                 <div className="bg-red-900/20 border border-red-500/30 p-4 rounded-lg mb-4 flex items-start gap-3">
                   <AlertCircle className="h-5 w-5 text-red-400 mt-0.5" />
                   <div>
@@ -107,7 +139,7 @@ const Auth = () => {
               <Button
                 onClick={handleWalletConnect}
                 className="w-full trading-button"
-                disabled={isConnecting || !isPhantomInstalled}
+                disabled={isConnecting || (!isPhantomInstalled && !isDetectingWallet)}
               >
                 {isConnecting ? (
                   <>
