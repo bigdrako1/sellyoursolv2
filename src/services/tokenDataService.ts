@@ -1,4 +1,3 @@
-
 import { TokenInfo, Token, WalletActivity } from "@/types/token.types";
 import { HeliusTokenData } from "@/utils/heliusTypes";
 import { heliusApiCall, heliusRpcCall } from "@/utils/apiUtils";
@@ -9,6 +8,9 @@ const BIRDEYE_API_URL = 'https://public-api.birdeye.so/public';
 const COINGECKO_API_URL = 'https://api.coingecko.com/api/v3';
 const PUMPFUN_API_URL = 'https://api.pump.fun';
 const JUPITER_API_URL = 'https://price.jup.ag/v4';
+
+// Export the interfaces for use in other components
+export { TokenInfo, Token }; // Export these types from token.types.ts
 
 // Mock data for testing
 const MOCK_TOKEN_DATA: Token[] = [

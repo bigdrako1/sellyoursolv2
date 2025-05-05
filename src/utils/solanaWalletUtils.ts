@@ -3,16 +3,12 @@ import { WalletAdapterNetwork } from "@solana/wallet-adapter-base";
 import {
   PhantomWalletAdapter,
   SolflareWalletAdapter,
-  BackpackWalletAdapter,
-  BraveWalletAdapter,
   CoinbaseWalletAdapter,
-  ExodusWalletAdapter,
-  SlopeWalletAdapter,
 } from "@solana/wallet-adapter-wallets";
 
 import { Connection, PublicKey } from "@solana/web3.js";
 import { sign } from "tweetnacl";
-import { decode as bs58Decode } from "bs58";
+import bs58 from "bs58"; // Using correct import syntax
 
 export type WalletError = Error & { name: string; message: string };
 export type SignMessageError = WalletError & { name: string; message: string };
@@ -21,6 +17,7 @@ export interface WalletProviderInfo {
   name: string;
   installed: boolean;
   icon?: string;
+  url?: string; // Added url property
   canLoad: boolean;
   adapter?: any;
 }
@@ -29,6 +26,12 @@ export interface WalletProviderInfo {
 let connectedWalletAddress: string | null = null;
 let connectedWalletProvider: string | null = null;
 let currentWalletAdapter: any = null;
+
+// Function to format wallet address
+export const formatWalletAddress = (address: string): string => {
+  if (!address) return '';
+  return address.length > 8 ? `${address.slice(0, 4)}...${address.slice(-4)}` : address;
+};
 
 // Function to detect available wallets
 export const detectWallets = async (): Promise<{
@@ -41,11 +44,8 @@ export const detectWallets = async (): Promise<{
     const walletAdapters = [
       new PhantomWalletAdapter(),
       new SolflareWalletAdapter(),
-      new BackpackWalletAdapter(),
-      new BraveWalletAdapter(),
       new CoinbaseWalletAdapter(),
-      new ExodusWalletAdapter(),
-      new SlopeWalletAdapter()
+      // Removed unsupported wallet adapters
     ];
     
     // Check which wallets are installed/available
@@ -57,6 +57,7 @@ export const detectWallets = async (): Promise<{
         name: adapter.name,
         installed: adapter.readyState === "Installed",
         canLoad: adapter.readyState !== "Unsupported",
+        url: `https://solana.com/ecosystem/wallets/${adapter.name.toLowerCase().replace(/\s+/g, '-')}`,
         adapter: adapter
       };
       
@@ -200,8 +201,7 @@ export const signMessage = async (message: string): Promise<{
     // Encode message to Uint8Array
     const encodedMessage = new TextEncoder().encode(message);
     
-    // Sign message
-    // Using as any to address TypeScript error - the adapter does support signMessage
+    // Sign message with type assertion to ensure it can call signMessage
     const signature = await (currentWalletAdapter as any).signMessage(encodedMessage);
     
     return {

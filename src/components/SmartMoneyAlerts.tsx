@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -8,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Loader2, ArrowUpRight, WalletIcon, ArrowDownRight, TrendingUp } from "lucide-react";
 import { trackWalletActivities } from "@/services/tokenDataService";
 import { fetchTokenMetadata } from "@/services/tokenDataService";
-import { WalletActivity } from "@/types/database.types";
+import { WalletActivity } from "@/types/token.types";
 
 interface SmartMoneyAlertsProps {
   walletAddress?: string;

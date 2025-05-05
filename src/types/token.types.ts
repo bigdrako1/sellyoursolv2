@@ -38,7 +38,7 @@ export interface WalletActivity {
   tokenAddress?: string;
   tokenName: string;
   tokenSymbol: string;
-  activityType: 'buy' | 'sell' | 'transfer' | 'other';
+  activityType: 'buy' | 'sell' | 'send' | 'receive' | 'swap' | 'mint' | 'burn' | 'create';
   amount?: number;
   value?: number;
   timestamp: string;
