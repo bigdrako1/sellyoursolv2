@@ -24,7 +24,8 @@ export default function Auth() {
     try {
       // Handle login
       if (activeTab === 'login') {
-        await signIn(email, password);
+        // Use signIn without parameters or with walletName parameter if needed
+        await signIn();
         toast({
           title: "Login successful",
           description: "Welcome back!",
