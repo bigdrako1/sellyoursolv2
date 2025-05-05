@@ -1,3 +1,4 @@
+
 import React, { useState, FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -12,7 +13,7 @@ export default function Auth() {
   const [password, setPassword] = useState('');
   const [activeTab, setActiveTab] = useState('login');
   const [loading, setLoading] = useState(false);
-  const { login, logout, isAuthenticated } = useAuth();
+  const { signIn, signOut, isAuthenticated } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -23,7 +24,7 @@ export default function Auth() {
     try {
       // Handle login
       if (activeTab === 'login') {
-        await login(email, password);
+        await signIn(email, password);
         toast({
           title: "Login successful",
           description: "Welcome back!",
