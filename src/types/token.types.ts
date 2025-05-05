@@ -1,35 +1,19 @@
 
-export interface TokenInfo {
-  address: string;
+// Token related types
+export interface TokenData {
   name: string;
   symbol: string;
-  logoURI: string;
+  address: string;
   decimals: number;
-  supply: string;
-  coingeckoId: string | null;
-  lastUpdatedAt: number | null;
-  description: string | null;
-  twitter: string | null;
-  website: string | null;
-}
-
-export interface Token {
-  address: string;
-  name: string;
-  symbol: string;
-  logoURI: string;
-  price: number;
-  marketCap: number;
-  change24h?: number;
+  price?: number;
+  priceChange24h?: number;
   volume24h?: number;
-  liquidity?: number;
+  marketCap?: number;
   holders?: number;
-  qualityScore: number;
-  createdAt: Date;
-  source: string;
-  isPumpFun?: boolean;
-  trendingScore?: number | string[];
-  riskLevel?: number;
+  liquidity?: number;
+  quality?: number;
+  risk?: number;
+  logoURI?: string;
 }
 
 export interface WalletActivity {
@@ -38,9 +22,27 @@ export interface WalletActivity {
   tokenAddress?: string;
   tokenName: string;
   tokenSymbol: string;
-  activityType: 'buy' | 'sell' | 'send' | 'receive' | 'swap' | 'mint' | 'burn' | 'create';
   amount?: number;
   value?: number;
   timestamp: string;
   transactionHash: string;
+  activityType: 'buy' | 'sell' | 'transfer' | 'stake' | 'unstake' | 'swap';
+  status?: 'completed' | 'pending' | 'failed';
+}
+
+export interface TokenAlert {
+  id: string;
+  tokenAddress: string;
+  tokenName: string;
+  tokenSymbol: string;
+  price?: number;
+  priceChange?: number;
+  marketCap?: number;
+  liquidity?: number;
+  volume?: number;
+  alertType: 'new' | 'trending' | 'whale' | 'price' | 'volume';
+  severity: 'low' | 'medium' | 'high';
+  timestamp: string;
+  message: string;
+  status: 'new' | 'read' | 'dismissed';
 }

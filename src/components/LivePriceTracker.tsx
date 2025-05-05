@@ -37,9 +37,12 @@ const LivePriceTracker = () => {
   // Handle price animation
   useEffect(() => {
     if (solPrice && lastPrice !== 0) {
-      if (solPrice > lastPrice) {
+      // Type assertion for solPrice
+      const currentPrice = solPrice as number;
+      
+      if (currentPrice > lastPrice) {
         setPriceDirection('up');
-      } else if (solPrice < lastPrice) {
+      } else if (currentPrice < lastPrice) {
         setPriceDirection('down');
       }
       
@@ -49,7 +52,8 @@ const LivePriceTracker = () => {
     }
     
     if (solPrice) {
-      setLastPrice(solPrice);
+      // Type assertion for solPrice
+      setLastPrice(solPrice as number);
     }
   }, [solPrice, lastPrice]);
   
@@ -85,12 +89,15 @@ const LivePriceTracker = () => {
     );
   }
   
+  // Type assertion for solPrice to ensure it's treated as a number
+  const displayPrice = (solPrice as number) || 0;
+  
   return (
     <div className="flex flex-col min-w-[140px]">
       <div className="text-xs text-gray-400">SOL Price</div>
       <div className="flex items-center justify-between">
         <span className={`text-lg font-bold ${animatePrice ? (priceDirection === 'up' ? 'text-trading-success' : 'text-trading-danger') : ''}`}>
-          {currencySymbol}{solPrice ? convertToCurrency(solPrice).toFixed(2) : '-.--'}
+          {currencySymbol}{solPrice ? convertToCurrency(displayPrice).toFixed(2) : '-.--'}
         </span>
         
         {sol24hChange !== undefined && (
