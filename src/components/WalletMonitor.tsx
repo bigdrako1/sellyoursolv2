@@ -13,7 +13,7 @@ interface TrackedWallet {
   lastActivity?: string;
 }
 
-const SMART_WALLETS = [
+const SMART_WALLETS: TrackedWallet[] = [
   { address: "B8oMRGgLETGQcksXBawvTDXvr5NLKX1jsBL2bAhXHyQT", label: "Smart Trader 1" },
   { address: "DWkZXkZKuqeM1aM991Kz6BVLuGgzWEyK9K4YqgJV6EEU", label: "SOL Whale" },
 ];
@@ -24,13 +24,11 @@ const WalletMonitor: React.FC = () => {
   const [newLabel, setNewLabel] = useState("");
   const [isAddingWallet, setIsAddingWallet] = useState(false);
   
-  // Load saved wallets from localStorage on component mount
   useEffect(() => {
     const savedWallets = localStorage.getItem('tracked_wallets');
     if (savedWallets) {
       try {
         const parsedWallets = JSON.parse(savedWallets);
-        // Combine with smart wallets if not already included
         const smartWalletAddresses = SMART_WALLETS.map(w => w.address);
         const filteredSavedWallets = parsedWallets.filter(
           (w: TrackedWallet) => !smartWalletAddresses.includes(w.address)
@@ -42,7 +40,6 @@ const WalletMonitor: React.FC = () => {
     }
   }, []);
   
-  // Save wallets to localStorage when they change
   useEffect(() => {
     localStorage.setItem('tracked_wallets', JSON.stringify(wallets));
   }, [wallets]);
@@ -62,8 +59,7 @@ const WalletMonitor: React.FC = () => {
         dateAdded: new Date().toISOString(),
       };
       
-      const updatedWallets = [...wallets, newWalletObj];
-      setWallets(updatedWallets);
+      setWallets([...wallets, newWalletObj]);
       setNewWallet("");
       setNewLabel("");
       setIsAddingWallet(false);
@@ -79,7 +75,6 @@ const WalletMonitor: React.FC = () => {
   };
   
   const handleRemoveWallet = (address: string) => {
-    // Check if it's one of the predefined smart wallets
     const isSmartWallet = SMART_WALLETS.some(w => w.address === address);
     
     if (isSmartWallet) {
@@ -98,7 +93,7 @@ const WalletMonitor: React.FC = () => {
   const truncateAddress = (address: string) => {
     return `${address.slice(0, 4)}...${address.slice(-4)}`;
   };
-  
+
   return (
     <Card className="card-with-border">
       <CardHeader>
@@ -160,7 +155,7 @@ const WalletMonitor: React.FC = () => {
           
           <div className="space-y-2">
             {wallets.length > 0 ? (
-              wallets.map((wallet) => {
+              wallets.map((wallet: TrackedWallet) => {
                 const isSmartWallet = SMART_WALLETS.some(w => w.address === wallet.address);
                 
                 return (
