@@ -5,8 +5,18 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { AlertCircle, ExternalLink, TrendingUp } from "lucide-react";
 
+interface TradeAlert {
+  id: string;
+  tokenName: string;
+  tokenSymbol: string;
+  tokenAddress: string;
+  type: string;
+  detail: string;
+  timestamp: string;
+}
+
 // Sample trade alerts
-const SAMPLE_ALERTS = [
+const SAMPLE_ALERTS: TradeAlert[] = [
   {
     id: "1",
     tokenName: "Alpha Runner",
@@ -28,7 +38,7 @@ const SAMPLE_ALERTS = [
 ];
 
 const TradeAlerts: React.FC = () => {
-  const [alerts] = useState(SAMPLE_ALERTS);
+  const [alerts] = useState<TradeAlert[]>(SAMPLE_ALERTS);
   
   const formatTimeAgo = (timestamp: string) => {
     const date = new Date(timestamp);

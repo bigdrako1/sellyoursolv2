@@ -6,8 +6,20 @@ import { Badge } from "@/components/ui/badge";
 import { AlertCircle, ExternalLink, Bell } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
+interface SmartMoneyAlert {
+  id: string;
+  tokenName: string;
+  tokenSymbol: string;
+  tokenAddress: string;
+  walletAddress: string;
+  walletName: string;
+  actionType: string;
+  amount: number;
+  timestamp: string;
+}
+
 // Sample data for smart money alerts
-const SAMPLE_ALERTS = [
+const SAMPLE_ALERTS: SmartMoneyAlert[] = [
   {
     id: "alert1",
     tokenName: "MEME1000",
@@ -44,7 +56,7 @@ const SAMPLE_ALERTS = [
 ];
 
 const SmartMoneyAlerts: React.FC = () => {
-  const [alerts, setAlerts] = useState(SAMPLE_ALERTS);
+  const [alerts, setAlerts] = useState<SmartMoneyAlert[]>(SAMPLE_ALERTS);
   const { toast } = useToast();
   
   const handleFollow = (alertId: string) => {

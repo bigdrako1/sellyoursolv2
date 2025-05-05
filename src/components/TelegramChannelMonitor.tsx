@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -7,7 +7,16 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { MessageSquare, AlertCircle, Settings, Plus } from "lucide-react";
 
-const MONITORED_CHANNELS = [
+interface MonitoredChannel {
+  id: string;
+  name: string;
+  channelId: string;
+  active: boolean;
+  tokenCount: number;
+  lastUpdate: string;
+}
+
+const MONITORED_CHANNELS: MonitoredChannel[] = [
   {
     id: "channel1",
     name: "CYRILXBT GAMBLING",
@@ -43,6 +52,25 @@ const MONITORED_CHANNELS = [
 ];
 
 const TelegramChannelMonitor: React.FC = () => {
+  const [channels, setChannels] = useState<MonitoredChannel[]>(MONITORED_CHANNELS);
+  const [newChannelId, setNewChannelId] = useState("");
+
+  const handleToggleChannel = (id: string) => {
+    setChannels(
+      channels.map(channel => 
+        channel.id === id ? { ...channel, active: !channel.active } : channel
+      )
+    );
+  };
+
+  const handleAddChannel = () => {
+    // Add validation and actual implementation as needed
+    if (newChannelId) {
+      setNewChannelId("");
+      // Implementation would go here
+    }
+  };
+
   return (
     <Card className="card-with-border">
       <CardHeader>
@@ -65,7 +93,7 @@ const TelegramChannelMonitor: React.FC = () => {
               <div className="text-sm">
                 <p className="text-blue-400 font-medium mb-1">Channel Monitoring Active</p>
                 <p className="text-gray-300">
-                  The system is monitoring {MONITORED_CHANNELS.length} Telegram channels for token contract addresses.
+                  The system is monitoring {channels.length} Telegram channels for token contract addresses.
                   Token detection will automatically extract Solana addresses and validate them.
                 </p>
               </div>
@@ -73,18 +101,21 @@ const TelegramChannelMonitor: React.FC = () => {
           </div>
           
           <div className="flex justify-between items-center">
-            <div className="text-sm font-medium">Monitored Channels ({MONITORED_CHANNELS.length})</div>
+            <div className="text-sm font-medium">Monitored Channels ({channels.length})</div>
             <Button size="sm" variant="ghost" className="h-8 w-8 p-0">
               <Settings className="h-4 w-4" />
             </Button>
           </div>
           
           <div className="space-y-2">
-            {MONITORED_CHANNELS.map(channel => (
+            {channels.map(channel => (
               <div key={channel.id} className="bg-black/20 p-3 rounded-lg border border-white/5">
                 <div className="flex items-center justify-between">
                   <div className="font-medium">{channel.name}</div>
-                  <Switch checked={channel.active} />
+                  <Switch 
+                    checked={channel.active}
+                    onCheckedChange={() => handleToggleChannel(channel.id)}
+                  />
                 </div>
                 
                 <div className="mt-2 text-xs text-gray-400 font-mono">
@@ -108,8 +139,13 @@ const TelegramChannelMonitor: React.FC = () => {
           <div>
             <div className="mb-2 text-sm font-medium">Add New Channel</div>
             <div className="flex gap-2">
-              <Input placeholder="Enter channel ID or URL" className="bg-black/20 border-white/10" />
-              <Button>Add</Button>
+              <Input 
+                placeholder="Enter channel ID or URL" 
+                className="bg-black/20 border-white/10"
+                value={newChannelId}
+                onChange={(e) => setNewChannelId(e.target.value)}
+              />
+              <Button onClick={handleAddChannel}>Add</Button>
             </div>
             <p className="text-xs text-gray-400 mt-2">
               You can add public channels by ID or URL. Private channels require authentication.
