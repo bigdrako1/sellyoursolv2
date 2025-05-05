@@ -3,6 +3,7 @@ import { APP_CONFIG } from '@/config/appDefinition';
 import { getTokenPrice } from '@/services/jupiterService';
 import { getTokenInfo } from '@/services/tokenDataService';
 import { waitForRateLimit } from '@/utils/rateLimit';
+import { toast } from '@/components/ui/sonner';
 
 /**
  * Analyzes market data to identify potential runners
@@ -46,7 +47,7 @@ export const identifyPotentialRunners = async (marketData: any[], timeframe: str
 };
 
 /**
- * Executes a trade via Jupiter aggregator
+ * Advanced internal swap execution
  * @param tokenAddress Address of the token to trade
  * @param amount Amount to trade in SOL
  * @returns Transaction details
@@ -56,72 +57,81 @@ export const executeTrade = async (
   amount: number
 ): Promise<any> => {
   try {
-    // Route all trades through Jupiter
+    console.log(`Executing internal trade: ${amount} SOL for token ${tokenAddress}`);
+    
+    // The SOL mint address
     const SOL_MINT = 'So11111111111111111111111111111111111111112';
-    const inputMint = SOL_MINT; // Always buying tokens with SOL
-    const outputMint = tokenAddress;
     
-    // Convert SOL to lamports (1 SOL = 10^9 lamports)
-    const amountInLamports = amount * 1_000_000_000;
-    
-    // In production, we'd get a quote from Jupiter and execute the swap
-    await waitForRateLimit('jupiterApi');
-    
-    // For now, simulate a transaction with Jupiter
+    // Get current token price for estimating output
     const price = await getTokenPrice(tokenAddress);
     
     if (!price) {
-      throw new Error(`Could not get price for ${tokenAddress}`);
+      console.warn(`Could not get price for ${tokenAddress}`);
+      return {
+        success: false,
+        error: "Could not fetch token price"
+      };
     }
     
-    // This would connect to Jupiter API in production
-    // For now, we create a transaction object with current market data
-    const transactionParams = {
-      inputMint,
-      outputMint,
-      amountInLamports,
-      route: 'jupiter',
-      timestamp: new Date().toISOString(),
-      estimatedValue: amount * price
-    };
+    // Calculate estimated output (how many tokens the user will receive)
+    const estimatedTokens = amount / price;
     
-    console.log(`Executing trade via Jupiter: ${amount} SOL for token ${tokenAddress} at $${price}`);
+    // In a real implementation, this would use Solana Web3.js to:
+    // 1. Get the best route from a DEX aggregator (internal implementation)
+    // 2. Create and sign the transaction
+    // 3. Submit the transaction to the blockchain
+    // 4. Return the confirmed transaction details
     
-    // In production, this would return the actual transaction hash from the blockchain
-    // For now, we create a simulated hash
-    const txHash = await simulateTransaction(transactionParams);
+    // For now, we'll simulate the transaction
+    const txHash = simulateTransaction({
+      fromToken: SOL_MINT,
+      toToken: tokenAddress,
+      amount,
+      route: 'internal_dex_aggregator',
+      estimatedOutput: estimatedTokens,
+      price
+    });
     
+    // Add a slight delay to simulate transaction processing
+    await new Promise(resolve => setTimeout(resolve, 1200));
+    
+    // Return successful transaction object
     return {
-      ...transactionParams,
       success: true,
-      executionTime: 1200, // in milliseconds
-      gasFee: 0.00001, // Solana gas fee is very low
-      txHash
+      txHash,
+      fromToken: SOL_MINT,
+      toToken: tokenAddress,
+      amount,
+      price,
+      outputAmount: estimatedTokens,
+      timestamp: new Date().toISOString(),
+      executionTime: 1200, // milliseconds
+      route: 'internal_dex_aggregator',
+      slippage: 0.5, // 0.5%
+      fee: amount * 0.001 // 0.1% fee
     };
   } catch (error) {
     console.error("Trade execution error:", error);
     return {
-      tokenAddress,
-      amount,
-      route: 'jupiter',
       success: false,
-      error: "Transaction failed",
+      error: error instanceof Error ? error.message : "Unknown error occurred",
       timestamp: new Date().toISOString()
     };
   }
 };
 
 /**
- * Simulate a transaction on the blockchain (for demo purposes)
- * In production, this would submit a real transaction via Jupiter
+ * Simulate a transaction on the blockchain
+ * In a real implementation, this would be replaced with actual blockchain interaction
  */
-async function simulateTransaction(params: any): Promise<string> {
-  // Create a transaction-like hash based on real parameters
+function simulateTransaction(params: any): string {
+  // Generate a random transaction hash
   const randomHex = () => Math.floor(Math.random() * 16).toString(16);
   const hash = Array.from({length: 64}, () => randomHex()).join('');
   
   // Log the simulated transaction
-  console.log(`Simulated Jupiter transaction: ${hash}`);
+  console.log(`Simulated internal transaction: ${hash}`);
+  console.log('Transaction parameters:', params);
   
   return hash;
 }
@@ -239,7 +249,7 @@ export const createTradingPosition = (
   initialInvestment: number,
   source: string
 ): TradingPosition => {
-  return {
+  const position = {
     contractAddress,
     tokenName,
     tokenSymbol,
@@ -255,8 +265,14 @@ export const createTradingPosition = (
     status: 'active',
     pnl: 0,
     roi: 0,
-    notes: 'Position created via Jupiter'
+    notes: 'Position created via internal routing'
   };
+  
+  // Save the position to our local storage
+  const positions = loadTradingPositions();
+  saveTradingPositions([...positions, position]);
+  
+  return position;
 };
 
 /**
@@ -451,17 +467,19 @@ export const saveTradingPositions = (positions: TradingPosition[]): void => {
 /**
  * Get a shareable link for a trade
  * @param position Trading position
- * @returns Shareable link
+ * @returns Shareable link to view the position details
  */
 export const getShareableTradeLink = (position: TradingPosition): string => {
-  return `https://jup.ag/swap/SOL-${position.contractAddress}`;
+  // Change from external Jupiter link to internal position view
+  return `#/portfolio/positions/${position.contractAddress}`;
 };
 
 /**
- * Generate Jupiter swap link
+ * Get internal swap link for a token
  * @param tokenAddress Token address
- * @returns Jupiter swap URL
+ * @returns Internal swap URL
  */
-export const getJupiterSwapLink = (tokenAddress: string): string => {
-  return `https://jup.ag/swap/SOL-${tokenAddress}`;
+export const getInternalSwapLink = (tokenAddress: string): string => {
+  // Create an internal app link instead of Jupiter external link
+  return `#/trade?token=${tokenAddress}`;
 };

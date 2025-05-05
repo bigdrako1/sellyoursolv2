@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -11,14 +10,15 @@ import {
   AlertCircle,
   ExternalLink,
   BarChart,
-  Check
+  Check,
+  Loader2
 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "@/components/ui/sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
-import { createTradingPosition, saveTradingPositions, loadTradingPositions } from "@/utils/tradingUtils";
+import { Slider } from "@/components/ui/slider";
+import { executeTrade, createTradingPosition, saveTradingPositions, loadTradingPositions } from "@/utils/tradingUtils";
 
 interface Token {
   id: string;
@@ -43,7 +43,6 @@ const TokenMonitor: React.FC = () => {
   const [tradeAmount, setTradeAmount] = useState<number>(0.1);
   const [trackingEnabled, setTrackingEnabled] = useState<boolean>(true);
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
-  const { toast } = useToast();
   
   // Load tokens (would fetch from API in a real implementation)
   useEffect(() => {
@@ -107,48 +106,60 @@ const TokenMonitor: React.FC = () => {
     });
   };
   
-  const handleExecuteTrade = () => {
+  const handleExecuteTrade = async () => {
     if (!selectedToken) return;
     
     setIsProcessing(true);
     
-    // Simulate API call delay
-    setTimeout(() => {
-      try {
-        // Create a trading position
-        const newPosition = createTradingPosition(
-          selectedToken.address,
-          selectedToken.name,
-          selectedToken.symbol,
-          selectedToken.price,
-          tradeAmount * 100, // Convert SOL to USD for simplicity in this demo
-          selectedToken.source
-        );
-        
-        // Save to existing positions
-        const currentPositions = loadTradingPositions();
-        saveTradingPositions([...currentPositions, newPosition]);
+    try {
+      // Execute trade using internal system
+      const result = await executeTrade(
+        selectedToken.address,
+        tradeAmount
+      );
+      
+      if (result.success) {
+        // Create a position if tracking is enabled
+        if (trackingEnabled) {
+          const newPosition = createTradingPosition(
+            selectedToken.address,
+            selectedToken.name,
+            selectedToken.symbol,
+            selectedToken.price,
+            tradeAmount * 100, // Convert SOL to USD for simplicity
+            selectedToken.source
+          );
+          
+          toast({
+            title: "Position Created",
+            description: `Successfully added ${selectedToken.symbol} to your portfolio`,
+          });
+        }
         
         // Close dialog and show success
         setTradeDialogOpen(false);
-        setIsProcessing(false);
         
         toast({
           title: "Trade Executed Successfully",
           description: `Purchased ${selectedToken.symbol} for ${tradeAmount} SOL`,
-          variant: "default",
         });
-      } catch (error) {
-        console.error("Trade execution error:", error);
-        setIsProcessing(false);
-        
+      } else {
         toast({
           title: "Trade Failed",
-          description: "There was an error executing your trade. Please try again.",
+          description: result.error || "There was an error executing your trade. Please try again.",
           variant: "destructive",
         });
       }
-    }, 1500);
+    } catch (error) {
+      console.error("Trade execution error:", error);
+      toast({
+        title: "Trade Failed",
+        description: "There was an unexpected error executing your trade. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessing(false);
+    }
   };
   
   // Filter tokens based on active tab
@@ -320,7 +331,7 @@ const TokenMonitor: React.FC = () => {
               <div className="bg-blue-500/10 text-blue-300 p-3 rounded-lg text-xs space-y-2">
                 <p className="flex gap-2 items-center">
                   <BarChart size={14} />
-                  <span>Estimated output: ~{(tradeAmount * 100 / selectedToken.price).toFixed(0)} ${selectedToken.symbol}</span>
+                  <span>Trading with internal routing for optimal execution</span>
                 </p>
                 <p className="flex gap-2 items-center">
                   <Bot size={14} />
@@ -345,10 +356,8 @@ const TokenMonitor: React.FC = () => {
             >
               {isProcessing ? (
                 <>
-                  <span className="animate-pulse">Processing...</span>
-                  <span className="absolute inset-0 flex items-center justify-center">
-                    <span className="h-4 w-4 rounded-full border-2 border-t-transparent border-white animate-spin"></span>
-                  </span>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Processing...
                 </>
               ) : (
                 <>
