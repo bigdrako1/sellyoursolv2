@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AlertCircle, ExternalLink, Bell } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 
 interface SmartMoneyAlert {
   id: string;
@@ -56,21 +56,14 @@ const SAMPLE_ALERTS: SmartMoneyAlert[] = [
 ];
 
 const SmartMoneyAlerts: React.FC = () => {
-  const [alerts, setAlerts] = useState<SmartMoneyAlert[]>(SAMPLE_ALERTS);
-  const { toast } = useToast();
+  const [alerts] = useState<SmartMoneyAlert[]>(SAMPLE_ALERTS);
   
   const handleFollow = (alertId: string) => {
-    toast({
-      title: "Alert Followed",
-      description: "You'll be notified of similar activity in the future"
-    });
+    toast(`Alert ${alertId} followed. You'll be notified of similar activity in the future`);
   };
   
   const handleTrade = (tokenAddress: string, tokenSymbol: string) => {
-    toast({
-      title: "Trading Modal",
-      description: `Would open trading modal for ${tokenSymbol}`
-    });
+    toast(`Opening trading modal for ${tokenSymbol}`);
   };
   
   const formatTimeAgo = (timestamp: string) => {

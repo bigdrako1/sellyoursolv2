@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { testHeliusConnection } from "@/utils/apiUtils";
 import APP_CONFIG, { getActiveApiConfig } from "@/config/appDefinition";
 import TradingStrategy from "@/components/TradingStrategy";
@@ -25,7 +25,6 @@ const AutoTrading = () => {
   const [systemLatency, setSystemLatency] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState("overview");
   const [apiKeyConfigured, setApiKeyConfigured] = useState(false);
-  const { toast } = useToast();
   const apiConfig = getActiveApiConfig();
   const environment = apiConfig.environment || 'development';
 
@@ -41,10 +40,7 @@ const AutoTrading = () => {
   const handleApiKeySet = (apiKey: string) => {
     if (apiKey) {
       setApiKeyConfigured(true);
-      toast({
-        title: "API Key Configured",
-        description: "Your Helius API key has been set up successfully.",
-      });
+      toast("Your Helius API key has been set up successfully.");
     } else {
       setApiKeyConfigured(false);
     }
@@ -61,25 +57,13 @@ const AutoTrading = () => {
         if (apiConnectionChecked && connected !== apiConnected) {
           // Only show toast when status changes after initial check
           if (connected) {
-            toast({
-              title: "API Connection Restored",
-              description: `Successfully connected to trading API (${environment}).`,
-              variant: "default",
-            });
+            toast(`Successfully connected to trading API (${environment}).`);
           } else {
-            toast({
-              title: "API Connection Lost",
-              description: `Connection to trading API (${environment}) has been lost. Some features may be limited.`,
-              variant: "destructive",
-            });
+            toast.error(`Connection to trading API (${environment}) has been lost. Some features may be limited.`);
           }
         } else if (!apiConnectionChecked && !connected) {
           // Only show disconnection toast on first load
-          toast({
-            title: "API Connection Failed",
-            description: `Could not connect to trading API (${environment}). Auto-trading features may be limited.`,
-            variant: "destructive",
-          });
+          toast.error(`Could not connect to trading API (${environment}). Auto-trading features may be limited.`);
         }
         
         setApiConnected(connected);
@@ -90,11 +74,7 @@ const AutoTrading = () => {
         
         if (apiConnected) {
           // Only show toast when going from connected to disconnected
-          toast({
-            title: "API Connection Lost",
-            description: `Connection to trading API (${environment}) has been lost. Some features may be limited.`,
-            variant: "destructive",
-          });
+          toast.error(`Connection to trading API (${environment}) has been lost. Some features may be limited.`);
         }
         
         setApiConnected(false);
@@ -108,7 +88,7 @@ const AutoTrading = () => {
     const intervalId = setInterval(checkApiConnection, 60000); // Check every minute
     
     return () => clearInterval(intervalId);
-  }, [toast, apiConnected, apiConnectionChecked, environment]);
+  }, [apiConnected, apiConnectionChecked, environment]);
 
   return (
     <div className="flex flex-col min-h-screen">
