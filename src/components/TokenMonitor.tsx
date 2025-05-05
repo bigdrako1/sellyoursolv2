@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -14,7 +13,7 @@ import {
   Check,
   Loader2
 } from "lucide-react";
-import { toast } from "@/components/ui/sonner";
+import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -101,10 +100,7 @@ const TokenMonitor: React.FC = () => {
   };
   
   const handleTrackToken = (token: Token) => {
-    toast({
-      title: "Token Tracked",
-      description: `${token.symbol} has been added to your watchlist`
-    });
+    toast(`${token.symbol} has been added to your watchlist`);
   };
   
   const handleExecuteTrade = async () => {
@@ -131,33 +127,19 @@ const TokenMonitor: React.FC = () => {
             selectedToken.source
           );
           
-          toast({
-            title: "Position Created",
-            description: `Successfully added ${selectedToken.symbol} to your portfolio`
-          });
+          toast(`Successfully added ${selectedToken.symbol} to your portfolio`);
         }
         
         // Close dialog and show success
         setTradeDialogOpen(false);
         
-        toast({
-          title: "Trade Executed Successfully",
-          description: `Purchased ${selectedToken.symbol} for ${tradeAmount} SOL`
-        });
+        toast(`Purchased ${selectedToken.symbol} for ${tradeAmount} SOL`);
       } else {
-        toast({
-          title: "Trade Failed",
-          description: result.error || "There was an error executing your trade. Please try again.",
-          variant: "destructive"
-        });
+        toast.error(result.error || "There was an error executing your trade. Please try again.");
       }
     } catch (error) {
       console.error("Trade execution error:", error);
-      toast({
-        title: "Trade Failed",
-        description: "There was an unexpected error executing your trade. Please try again.",
-        variant: "destructive"
-      });
+      toast.error("There was an unexpected error executing your trade. Please try again.");
     } finally {
       setIsProcessing(false);
     }
