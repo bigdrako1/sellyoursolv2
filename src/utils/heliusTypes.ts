@@ -4,7 +4,7 @@ export interface HeliusTokenData {
   name?: string;
   decimals?: number;
   tokenAuthority?: string;
-  supply?: string | number;  // Adding the missing supply property
+  supply?: string | number;  
   mintAddress?: string;
   logoURI?: string;
   eTag?: string;
@@ -75,5 +75,32 @@ export interface HeliusTokenResponse {
       symbol?: string;
       supply?: string | number;
     };
+  };
+}
+
+export interface HeliusWalletBalance {
+  address: string;
+  balance: number;
+  tokens: {
+    mint: string;
+    amount: number;
+    decimals: number;
+    tokenAccount: string;
+  }[];
+}
+
+export function parseHeliusWalletBalance(data: any): HeliusWalletBalance {
+  // Implement parsing logic for wallet balance from Helius API
+  return {
+    address: data.address || "",
+    balance: parseFloat(data.lamports || 0) / 1e9,
+    tokens: Array.isArray(data.tokens) 
+      ? data.tokens.map((token: any) => ({
+          mint: token.mint || "",
+          amount: parseFloat(token.amount || 0) / Math.pow(10, token.decimals || 0),
+          decimals: token.decimals || 0,
+          tokenAccount: token.tokenAccount || ""
+        }))
+      : []
   };
 }
