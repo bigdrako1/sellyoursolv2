@@ -160,7 +160,7 @@ const TelegramChannelMonitor: React.FC = () => {
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          {isConnected && (
+          {isConnected ? (
             <>
               <div className="flex justify-between items-center">
                 <h3 className="text-sm font-medium">Monitored Channels</h3>
@@ -266,9 +266,7 @@ const TelegramChannelMonitor: React.FC = () => {
                 )}
               </div>
             </>
-          )}
-          
-          {!isConnected && !isConnecting && (
+          ) : (
             <div className="text-center py-8">
               <MessageSquare className="h-12 w-12 mx-auto text-gray-400 mb-3" />
               <p className="text-gray-400 mb-2">Telegram monitoring not connected</p>

@@ -69,15 +69,9 @@ const SmartMoneyAlerts: React.FC = () => {
     toast(`Alert ${alertId} followed. You'll be notified of similar activity in the future`);
   };
   
-  const handleTrade = (tokenAddress: string, tokenSymbol: string, alertId: string) => {
-    // Find the token data from the alert
-    const alert = alerts.find(alert => alert.id === alertId);
-    if (alert) {
-      setSelectedToken(alert);
-      setTradeDialogOpen(true);
-    } else {
-      toast(`Opening trading modal for ${tokenSymbol}`);
-    }
+  const handleTrade = (alert: SmartMoneyAlert) => {
+    setSelectedToken(alert);
+    setTradeDialogOpen(true);
   };
   
   const handleExecuteTrade = () => {
@@ -154,7 +148,7 @@ const SmartMoneyAlerts: React.FC = () => {
                       size="sm"
                       variant="outline"
                       className="bg-black/20 border-white/10 text-xs h-7 flex-1"
-                      onClick={() => handleTrade(alert.tokenAddress, alert.tokenSymbol, alert.id)}
+                      onClick={() => handleTrade(alert)}
                     >
                       Trade
                     </Button>

@@ -23,6 +23,9 @@ import HeliusSetup from '@/components/HeliusSetup';
 import { useToast } from '@/hooks/use-toast';
 import { APP_CONFIG } from '@/config/appDefinition';
 import { testHeliusConnection } from '@/services/tokenDataService';
+import SmartMoneyAlerts from '@/components/SmartMoneyAlerts';
+import TelegramChannelMonitor from '@/components/TelegramChannelMonitor';
+import TokenDetectionBotControl from '@/components/TokenDetectionBotControl';
 
 const TradingTab = () => {
   const [activeTab, setActiveTab] = useState('monitor');
@@ -174,6 +177,8 @@ const TradingTab = () => {
           <TabsList className="bg-black/20 border-white/10 border">
             <TabsTrigger value="monitor">Token Monitor</TabsTrigger>
             <TabsTrigger value="detector">Token Detector</TabsTrigger>
+            <TabsTrigger value="smartmoney">Smart Money</TabsTrigger>
+            <TabsTrigger value="telegram">Telegram</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
             <TabsTrigger value="sentiment">Sentiment</TabsTrigger>
             <TabsTrigger value="quality">Quality Filter</TabsTrigger>
@@ -202,6 +207,23 @@ const TradingTab = () => {
                 <div className="lg:col-span-2">
                   <TokenDetector />
                 </div>
+                <TokenDetectionBotControl />
+              </div>
+            )}
+          </TabsContent>
+          
+          <TabsContent value="smartmoney" className="space-y-4">
+            {activeTab === 'smartmoney' && (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <SmartMoneyAlerts />
+              </div>
+            )}
+          </TabsContent>
+          
+          <TabsContent value="telegram" className="space-y-4">
+            {activeTab === 'telegram' && (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <TelegramChannelMonitor />
               </div>
             )}
           </TabsContent>
