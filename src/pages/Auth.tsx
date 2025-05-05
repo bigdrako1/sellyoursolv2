@@ -1,59 +1,40 @@
 
-import React, { useState, FormEvent } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { useToast } from '@/hooks/use-toast';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { toast } from 'sonner';
+import { Loader2, Wallet } from 'lucide-react';
 
 export default function Auth() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [activeTab, setActiveTab] = useState('login');
   const [loading, setLoading] = useState(false);
-  const { signIn, signOut, isAuthenticated } = useAuth();
-  const { toast } = useToast();
+  const { signIn, walletAddress, walletsDetected, installedWallets, detectingWallets, refreshWalletsStatus } = useAuth();
   const navigate = useNavigate();
 
-  const handleAuth = async (e: FormEvent) => {
-    e.preventDefault();
+  const handleAuth = async (walletName?: string) => {
     setLoading(true);
 
     try {
-      // Handle login
-      if (activeTab === 'login') {
-        // Use signIn without parameters or with walletName parameter if needed
-        await signIn();
-        toast({
-          title: "Login successful",
-          description: "Welcome back!",
-        });
-        navigate('/');
-      } 
-      // Handle registration
-      else {
-        if (!email || !password) {
-          throw new Error('Please provide both email and password');
-        }
-        
-        // Since there's no signUp in the context, simulate registration
-        toast({
-          title: "Registration successful",
-          description: "Account created successfully!",
-        });
-        setActiveTab('login');
-      }
+      await signIn(walletName);
+      toast("Login successful", {
+        description: "Welcome back!",
+      });
+      navigate('/');
     } catch (error) {
-      toast({
-        title: activeTab === 'login' ? "Login failed" : "Registration failed",
+      toast.error("Authentication failed", {
         description: error instanceof Error ? error.message : "An unknown error occurred",
-        variant: "destructive",
       });
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleRefreshWallets = async () => {
+    await refreshWalletsStatus();
+    toast("Wallet Detection Refreshed", {
+      description: `${installedWallets.length} compatible wallets found`,
+    });
   };
 
   return (
@@ -61,84 +42,55 @@ export default function Auth() {
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl text-center">
-            {activeTab === 'login' ? 'Login' : 'Create Account'}
+            Connect Wallet
           </CardTitle>
           <CardDescription className="text-center">
-            {activeTab === 'login'
-              ? 'Enter your email and password to login'
-              : 'Enter your email and password to create an account'}
+            Connect your Solana wallet to continue
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4">
-          <Tabs defaultValue="login" value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="login">Login</TabsTrigger>
-              <TabsTrigger value="register">Register</TabsTrigger>
-            </TabsList>
-            <TabsContent value="login">
-              <form onSubmit={handleAuth} className="grid gap-4">
-                <div className="space-y-2">
-                  <Input
-                    type="email"
-                    placeholder="Email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Input
-                    type="password"
-                    placeholder="Password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                  />
-                </div>
-                <Button type="submit" disabled={loading}>
-                  {loading ? 'Logging in...' : 'Login'}
+          {detectingWallets ? (
+            <div className="flex flex-col items-center justify-center py-4">
+              <Loader2 className="h-8 w-8 animate-spin mb-4 text-blue-500" />
+              <p>Detecting wallets...</p>
+            </div>
+          ) : installedWallets.length > 0 ? (
+            <div className="grid gap-3">
+              {installedWallets.map((wallet) => (
+                <Button 
+                  key={wallet.name}
+                  onClick={() => handleAuth(wallet.name)}
+                  disabled={loading}
+                  className="flex items-center justify-center gap-2"
+                  variant="default"
+                >
+                  {loading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Wallet className="h-4 w-4" />
+                  )}
+                  Connect with {wallet.name}
                 </Button>
-              </form>
-            </TabsContent>
-            <TabsContent value="register">
-              <form onSubmit={handleAuth} className="grid gap-4">
-                <div className="space-y-2">
-                  <Input
-                    type="email"
-                    placeholder="Email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Input
-                    type="password"
-                    placeholder="Password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                  />
-                </div>
-                <Button type="submit" disabled={loading}>
-                  {loading ? 'Creating account...' : 'Create Account'}
-                </Button>
-              </form>
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-        <CardFooter className="text-center">
-          {activeTab === 'login' ? (
-            <>
-              <Link to="/reset-password" className="text-sm text-gray-500 hover:underline">
-                Forgot password?
-              </Link>
-            </>
+              ))}
+            </div>
           ) : (
-            <p className="text-sm text-gray-500">
-              Already have an account?{' '}
-              <button type="button" className="text-blue-500 hover:underline" onClick={() => setActiveTab('login')}>
-                Login
-              </button>
-            </p>
+            <div className="flex flex-col items-center py-4 space-y-4">
+              <p className="text-center text-amber-500">No Solana wallets detected</p>
+              <Button 
+                onClick={handleRefreshWallets}
+                variant="outline"
+                className="gap-2"
+              >
+                <Loader2 className="h-4 w-4" />
+                Refresh Wallet Detection
+              </Button>
+              <p className="text-xs text-gray-500 text-center max-w-xs mt-4">
+                To use this application, you need to install a Solana wallet extension 
+                like Phantom or Solflare in your browser.
+              </p>
+            </div>
           )}
-        </CardFooter>
+        </CardContent>
       </Card>
     </div>
   );
