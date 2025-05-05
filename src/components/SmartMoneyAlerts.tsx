@@ -5,6 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AlertCircle, ExternalLink, Bell } from "lucide-react";
 import { toast } from "sonner";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Slider } from "@/components/ui/slider";
 
 interface SmartMoneyAlert {
   id: string;
@@ -57,13 +61,33 @@ const SAMPLE_ALERTS: SmartMoneyAlert[] = [
 
 const SmartMoneyAlerts: React.FC = () => {
   const [alerts] = useState<SmartMoneyAlert[]>(SAMPLE_ALERTS);
+  const [tradeDialogOpen, setTradeDialogOpen] = useState(false);
+  const [selectedToken, setSelectedToken] = useState<SmartMoneyAlert | null>(null);
+  const [tradeAmount, setTradeAmount] = useState(0.1);
   
   const handleFollow = (alertId: string) => {
     toast(`Alert ${alertId} followed. You'll be notified of similar activity in the future`);
   };
   
-  const handleTrade = (tokenAddress: string, tokenSymbol: string) => {
-    toast(`Opening trading modal for ${tokenSymbol}`);
+  const handleTrade = (tokenAddress: string, tokenSymbol: string, alertId: string) => {
+    // Find the token data from the alert
+    const alert = alerts.find(alert => alert.id === alertId);
+    if (alert) {
+      setSelectedToken(alert);
+      setTradeDialogOpen(true);
+    } else {
+      toast(`Opening trading modal for ${tokenSymbol}`);
+    }
+  };
+  
+  const handleExecuteTrade = () => {
+    if (!selectedToken) return;
+    
+    toast(`Executed trade for ${tradeAmount} SOL of ${selectedToken.tokenSymbol}`, {
+      description: "Transaction submitted successfully"
+    });
+    
+    setTradeDialogOpen(false);
   };
   
   const formatTimeAgo = (timestamp: string) => {
@@ -130,7 +154,7 @@ const SmartMoneyAlerts: React.FC = () => {
                       size="sm"
                       variant="outline"
                       className="bg-black/20 border-white/10 text-xs h-7 flex-1"
-                      onClick={() => handleTrade(alert.tokenAddress, alert.tokenSymbol)}
+                      onClick={() => handleTrade(alert.tokenAddress, alert.tokenSymbol, alert.id)}
                     >
                       Trade
                     </Button>
@@ -166,6 +190,81 @@ const SmartMoneyAlerts: React.FC = () => {
           )}
         </div>
       </CardContent>
+
+      {/* Trade Dialog */}
+      <Dialog open={tradeDialogOpen} onOpenChange={setTradeDialogOpen}>
+        <DialogContent className="sm:max-w-[425px] bg-gray-900">
+          <DialogHeader>
+            <DialogTitle>
+              Trade {selectedToken?.tokenSymbol}
+            </DialogTitle>
+          </DialogHeader>
+          
+          {selectedToken && (
+            <div className="space-y-4">
+              <div className="bg-black/20 p-3 rounded-md">
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-400">Token:</span>
+                  <span>{selectedToken.tokenName} (${selectedToken.tokenSymbol})</span>
+                </div>
+                <div className="flex justify-between text-sm mt-1">
+                  <span className="text-gray-400">Signal Type:</span>
+                  <span className="capitalize">{selectedToken.actionType}</span>
+                </div>
+                <div className="flex justify-between text-sm mt-1">
+                  <span className="text-gray-400">Smart Money:</span>
+                  <span>{selectedToken.walletName}</span>
+                </div>
+              </div>
+              
+              <div>
+                <Label htmlFor="amount">Amount (SOL)</Label>
+                <div className="mt-1">
+                  <Input
+                    id="amount"
+                    type="number"
+                    value={tradeAmount}
+                    onChange={(e) => setTradeAmount(parseFloat(e.target.value) || 0)}
+                    className="bg-black/20 border-white/10"
+                    min={0.01}
+                    step={0.01}
+                  />
+                </div>
+                <Slider
+                  value={[tradeAmount]}
+                  min={0.01}
+                  max={1}
+                  step={0.01}
+                  onValueChange={(value) => setTradeAmount(value[0])}
+                  className="mt-2"
+                />
+                <div className="flex justify-between text-xs text-gray-400 mt-1">
+                  <span>0.01</span>
+                  <span>0.25</span>
+                  <span>0.5</span>
+                  <span>1.0</span>
+                </div>
+              </div>
+              
+              <div className="bg-blue-900/20 border border-blue-500/20 rounded-md p-3">
+                <p className="text-xs text-blue-300">
+                  Following smart money's {selectedToken.actionType} signal for ${selectedToken.tokenSymbol}.
+                  This trade will be executed using our optimal routing algorithm.
+                </p>
+              </div>
+            </div>
+          )}
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setTradeDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleExecuteTrade}>
+              Execute Trade
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 };

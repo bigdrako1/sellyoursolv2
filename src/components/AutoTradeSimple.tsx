@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -87,7 +88,10 @@ const AutoTradeSimple: React.FC = () => {
     const savedWallets = localStorage.getItem("tracked_wallets");
     if (savedWallets) {
       try {
-        setTrackedWallets(JSON.parse(savedWallets));
+        const parsedWallets = JSON.parse(savedWallets);
+        if (Array.isArray(parsedWallets)) {
+          setTrackedWallets(parsedWallets);
+        }
       } catch (error) {
         console.error("Error loading tracked wallets:", error);
       }
@@ -180,6 +184,7 @@ const AutoTradeSimple: React.FC = () => {
             <TabsTrigger value="wallets">Wallet Tracking</TabsTrigger>
           </TabsList>
           
+          {/* General tab content */}
           <TabsContent value="general">
             <div className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -301,6 +306,7 @@ const AutoTradeSimple: React.FC = () => {
             </div>
           </TabsContent>
           
+          {/* Strategy tab content */}
           <TabsContent value="strategy">
             <div className="space-y-5">
               <div className="flex items-center justify-between">
@@ -409,6 +415,7 @@ const AutoTradeSimple: React.FC = () => {
             </div>
           </TabsContent>
           
+          {/* Wallets tab content */}
           <TabsContent value="wallets">
             <div className="space-y-4">
               <div className="space-y-2">
