@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -8,7 +7,7 @@ import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import {
   Wallet,
   TrendingUp,
@@ -41,6 +40,12 @@ interface TradingConfig {
   };
 }
 
+// Define a proper interface for the wallets we're tracking
+interface TrackedWallet {
+  address: string;
+  label?: string;
+}
+
 const AutoTradeSimple: React.FC = () => {
   const [config, setConfig] = useState<TradingConfig>({
     enabled: false,
@@ -66,7 +71,6 @@ const AutoTradeSimple: React.FC = () => {
   ]);
   const [newWallet, setNewWallet] = useState("");
   const [activeTab, setActiveTab] = useState("general");
-  const { toast } = useToast();
 
   // Load saved configuration
   useEffect(() => {
@@ -97,15 +101,12 @@ const AutoTradeSimple: React.FC = () => {
       setNewWallet("");
       localStorage.setItem("tracked_wallets", JSON.stringify(updatedWallets));
       
-      toast({
-        title: "Wallet Added",
-        description: "New wallet has been added to tracking list.",
+      toast("Wallet Added", {
+        description: "New wallet has been added to tracking list."
       });
     } else {
-      toast({
-        title: "Invalid Wallet",
-        description: "Please enter a valid Solana wallet address that isn't already being tracked.",
-        variant: "destructive",
+      toast("Invalid Wallet", {
+        description: "Please enter a valid Solana wallet address that isn't already being tracked."
       });
     }
   };
@@ -115,18 +116,16 @@ const AutoTradeSimple: React.FC = () => {
     setTrackedWallets(updatedWallets);
     localStorage.setItem("tracked_wallets", JSON.stringify(updatedWallets));
     
-    toast({
-      title: "Wallet Removed",
-      description: "Wallet has been removed from tracking list.",
+    toast("Wallet Removed", {
+      description: "Wallet has been removed from tracking list."
     });
   };
 
   const handleSaveConfig = () => {
     localStorage.setItem(AUTO_TRADE_CONFIG_KEY, JSON.stringify(config));
     
-    toast({
-      title: "Configuration Saved",
-      description: "Your trading settings have been saved successfully.",
+    toast("Configuration Saved", {
+      description: "Your trading settings have been saved successfully."
     });
   };
 
@@ -147,12 +146,10 @@ const AutoTradeSimple: React.FC = () => {
       enabled: newEnabledState
     });
     
-    toast({
-      title: newEnabledState ? "Auto Trading Enabled" : "Auto Trading Disabled",
+    toast(newEnabledState ? "Auto Trading Enabled" : "Auto Trading Disabled", {
       description: newEnabledState 
         ? "The system will now automatically trade based on your settings." 
-        : "Auto trading has been turned off.",
-      variant: newEnabledState ? "default" : "destructive",
+        : "Auto trading has been turned off."
     });
   };
 

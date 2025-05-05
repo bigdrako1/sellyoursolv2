@@ -29,8 +29,17 @@ const WalletMonitor: React.FC = () => {
     if (savedWallets) {
       try {
         const parsedWallets = JSON.parse(savedWallets);
+        // Ensure we're handling array of strings or objects properly
+        const processedWallets = Array.isArray(parsedWallets) ? parsedWallets.map(w => {
+          // If it's just a string (address), convert to object format
+          if (typeof w === 'string') {
+            return { address: w };
+          }
+          return w;
+        }) : [];
+        
         const smartWalletAddresses = SMART_WALLETS.map(w => w.address);
-        const filteredSavedWallets = parsedWallets.filter(
+        const filteredSavedWallets = processedWallets.filter(
           (w: TrackedWallet) => !smartWalletAddresses.includes(w.address)
         );
         setWallets([...SMART_WALLETS, ...filteredSavedWallets]);
