@@ -12,6 +12,10 @@ interface ApiUsageItem {
   percentage: number;
 }
 
+interface ApiUsageStats {
+  dailyRequests: number;
+}
+
 const ApiUsageMonitor = () => {
   const [usageStats, setUsageStats] = useState({
     totalCalls: 0,
@@ -36,7 +40,7 @@ const ApiUsageMonitor = () => {
     // Update usage stats every minute
     const fetchStats = async () => {
       try {
-        const stats = await getApiUsageStats();
+        const stats = await getApiUsageStats() as ApiUsageStats;
         
         // For the existing usageStats structure
         setUsageStats({
@@ -54,10 +58,30 @@ const ApiUsageMonitor = () => {
         
         // For the API usage items
         setApiUsageItems([
-          { name: "Token Info", requests: Math.floor(stats.dailyRequests * 0.4), limit: 400, percentage: Math.floor((stats.dailyRequests * 0.4) / 400 * 100) },
-          { name: "Transactions", requests: Math.floor(stats.dailyRequests * 0.3), limit: 300, percentage: Math.floor((stats.dailyRequests * 0.3) / 300 * 100) },
-          { name: "Price Data", requests: Math.floor(stats.dailyRequests * 0.2), limit: 200, percentage: Math.floor((stats.dailyRequests * 0.2) / 200 * 100) },
-          { name: "Metadata", requests: Math.floor(stats.dailyRequests * 0.1), limit: 100, percentage: Math.floor((stats.dailyRequests * 0.1) / 100 * 100) },
+          { 
+            name: "Token Info", 
+            requests: Math.floor(stats.dailyRequests * 0.4), 
+            limit: 400, 
+            percentage: Math.floor((stats.dailyRequests * 0.4 / 400) * 100) 
+          },
+          { 
+            name: "Transactions", 
+            requests: Math.floor(stats.dailyRequests * 0.3), 
+            limit: 300, 
+            percentage: Math.floor((stats.dailyRequests * 0.3 / 300) * 100) 
+          },
+          { 
+            name: "Price Data", 
+            requests: Math.floor(stats.dailyRequests * 0.2), 
+            limit: 200, 
+            percentage: Math.floor((stats.dailyRequests * 0.2 / 200) * 100) 
+          },
+          { 
+            name: "Metadata", 
+            requests: Math.floor(stats.dailyRequests * 0.1), 
+            limit: 100, 
+            percentage: Math.floor((stats.dailyRequests * 0.1 / 100) * 100) 
+          },
         ]);
       } catch (error) {
         console.error("Error fetching API usage stats:", error);
