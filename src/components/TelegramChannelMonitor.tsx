@@ -93,7 +93,8 @@ const TelegramChannelMonitor: React.FC = () => {
     if (!newChannelName.trim()) {
       toast("Channel Name Required", {
         description: "Please enter a channel name",
-        variant: "destructive"
+        // Changed 'variant: "destructive"' to proper sonner toast styling
+        style: { backgroundColor: "hsl(var(--destructive))", color: "white" }
       });
       return;
     }
