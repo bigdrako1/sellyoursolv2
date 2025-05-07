@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AlertCircle, ExternalLink, Bell } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/services/toastService";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -66,7 +66,7 @@ const SmartMoneyAlerts: React.FC = () => {
   const [tradeAmount, setTradeAmount] = useState(0.1);
   
   const handleFollow = (alertId: string) => {
-    toast(`Alert ${alertId} followed. You'll be notified of similar activity in the future`);
+    toast.success(`Alert ${alertId} followed. You'll be notified of similar activity in the future`);
   };
   
   const handleTrade = (alert: SmartMoneyAlert) => {
@@ -77,7 +77,7 @@ const SmartMoneyAlerts: React.FC = () => {
   const handleExecuteTrade = () => {
     if (!selectedToken) return;
     
-    toast(`Executed trade for ${tradeAmount} SOL of ${selectedToken.tokenSymbol}`, {
+    toast.success(`Executed trade for ${tradeAmount} SOL of ${selectedToken.tokenSymbol}`, {
       description: "Transaction submitted successfully"
     });
     

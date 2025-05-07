@@ -6,8 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
-import { toast } from "sonner";
 import { MessageSquare, AlertCircle, PlusCircle, Trash2 } from "lucide-react";
+import { toast } from "@/services/toastService";
 
 interface TelegramChannel {
   id: string;
@@ -55,14 +55,14 @@ const TelegramChannelMonitor: React.FC = () => {
   
   const handleConnect = () => {
     setIsConnected(true);
-    toast("Telegram Connected", {
+    toast.success("Telegram Connected", {
       description: "Successfully connected to Telegram API"
     });
   };
   
   const handleDisconnect = () => {
     setIsConnected(false);
-    toast("Telegram Disconnected", {
+    toast.info("Telegram Disconnected", {
       description: "Disconnected from Telegram API"
     });
   };
@@ -76,7 +76,7 @@ const TelegramChannelMonitor: React.FC = () => {
     
     const channel = channels.find(c => c.id === id);
     if (channel) {
-      toast(
+      toast.show(
         channel.active 
           ? `Monitoring paused for ${channel.name}` 
           : `Monitoring activated for ${channel.name}`,
@@ -91,10 +91,8 @@ const TelegramChannelMonitor: React.FC = () => {
   
   const handleAddChannel = () => {
     if (!newChannelName.trim()) {
-      toast("Channel Name Required", {
-        description: "Please enter a channel name",
-        // Changed 'variant: "destructive"' to proper sonner toast styling
-        style: { backgroundColor: "hsl(var(--destructive))", color: "white" }
+      toast.destructive("Channel Name Required", {
+        description: "Please enter a channel name"
       });
       return;
     }
@@ -109,7 +107,7 @@ const TelegramChannelMonitor: React.FC = () => {
     setChannels([...channels, newChannel]);
     setNewChannelName("");
     
-    toast("Channel Added", {
+    toast.success("Channel Added", {
       description: `${newChannelName} has been added to your monitoring list`
     });
   };
@@ -119,7 +117,7 @@ const TelegramChannelMonitor: React.FC = () => {
     setChannels(channels.filter(channel => channel.id !== id));
     
     if (channelToRemove) {
-      toast("Channel Removed", {
+      toast.warning("Channel Removed", {
         description: `${channelToRemove.name} has been removed from your monitoring list`
       });
     }

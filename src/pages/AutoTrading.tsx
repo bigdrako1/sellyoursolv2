@@ -1,9 +1,8 @@
-
-import React, { useState, useEffect } from "react";
+import React, { useEffect } from "react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { toast } from "sonner";
+import { toast } from "@/services/toastService";
 import { testHeliusConnection } from "@/utils/apiUtils";
 import APP_CONFIG, { getActiveApiConfig } from "@/config/appDefinition";
 import TradingStrategy from "@/components/TradingStrategy";
@@ -18,15 +17,24 @@ import TelegramChannelMonitor from "@/components/TelegramChannelMonitor";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Shield, TrendingUp, Bell, Wallet, MessageSquare } from "lucide-react";
+import { useAppStore } from "@/store/appStore";
 
 const AutoTrading = () => {
-  const [apiConnected, setApiConnected] = useState(true); // Default to true to prevent immediate warning
-  const [apiConnectionChecked, setApiConnectionChecked] = useState(false);
-  const [systemLatency, setSystemLatency] = useState<number | null>(null);
-  const [activeTab, setActiveTab] = useState("overview");
-  const [apiKeyConfigured, setApiKeyConfigured] = useState(false);
+  const [activeTab, setActiveTab] = React.useState("overview");
   const apiConfig = getActiveApiConfig();
   const environment = apiConfig.environment || 'development';
+  
+  // Use our global state
+  const { 
+    isConnected, 
+    systemLatency, 
+    apiKeyConfigured, 
+    setConnected, 
+    setSystemLatency, 
+    setApiKeyConfigured 
+  } = useAppStore();
+  
+  const [apiConnectionChecked, setApiConnectionChecked] = React.useState(false);
 
   // Check if Helius API key is already set
   useEffect(() => {
@@ -34,13 +42,13 @@ const AutoTrading = () => {
     if (storedApiKey) {
       setApiKeyConfigured(true);
     }
-  }, []);
+  }, [setApiKeyConfigured]);
 
   // Handle API key configuration
   const handleApiKeySet = (apiKey: string) => {
     if (apiKey) {
       setApiKeyConfigured(true);
-      toast("Your Helius API key has been set up successfully.");
+      toast.success("Your Helius API key has been set up successfully.");
     } else {
       setApiKeyConfigured(false);
     }
@@ -54,10 +62,10 @@ const AutoTrading = () => {
         const connected = await testHeliusConnection();
         const latency = Date.now() - startTime;
         
-        if (apiConnectionChecked && connected !== apiConnected) {
+        if (apiConnectionChecked && connected !== isConnected) {
           // Only show toast when status changes after initial check
           if (connected) {
-            toast(`Successfully connected to trading API (${environment}).`);
+            toast.success(`Successfully connected to trading API (${environment}).`);
           } else {
             toast.error(`Connection to trading API (${environment}) has been lost. Some features may be limited.`);
           }
@@ -66,18 +74,18 @@ const AutoTrading = () => {
           toast.error(`Could not connect to trading API (${environment}). Auto-trading features may be limited.`);
         }
         
-        setApiConnected(connected);
+        setConnected(connected);
         setApiConnectionChecked(true);
         setSystemLatency(latency);
       } catch (error) {
         console.error("API connection test failed:", error);
         
-        if (apiConnected) {
+        if (isConnected) {
           // Only show toast when going from connected to disconnected
           toast.error(`Connection to trading API (${environment}) has been lost. Some features may be limited.`);
         }
         
-        setApiConnected(false);
+        setConnected(false);
         setApiConnectionChecked(true);
       }
     };
@@ -88,7 +96,7 @@ const AutoTrading = () => {
     const intervalId = setInterval(checkApiConnection, 60000); // Check every minute
     
     return () => clearInterval(intervalId);
-  }, [apiConnected, apiConnectionChecked, environment]);
+  }, [isConnected, apiConnectionChecked, environment, setConnected, setSystemLatency]);
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -128,9 +136,9 @@ const AutoTrading = () => {
                     <div className="space-y-4">
                       <div className="flex justify-between">
                         <span className="text-sm text-muted-foreground">API Status</span>
-                        <span className={`${apiConnected ? 'text-green-500' : 'text-red-500'} font-medium flex items-center`}>
-                          <span className={`inline-block w-2 h-2 rounded-full mr-2 ${apiConnected ? 'bg-green-500' : 'bg-red-500'}`}></span>
-                          {apiConnected ? 'Connected' : 'Disconnected'}
+                        <span className={`${isConnected ? 'text-green-500' : 'text-red-500'} font-medium flex items-center`}>
+                          <span className={`inline-block w-2 h-2 rounded-full mr-2 ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></span>
+                          {isConnected ? 'Connected' : 'Disconnected'}
                         </span>
                       </div>
                       
@@ -363,7 +371,7 @@ const AutoTrading = () => {
         </Tabs>
       </main>
       
-      <Footer systemActive={apiConnected} systemLatency={systemLatency} />
+      <Footer systemActive={isConnected} systemLatency={systemLatency} />
     </div>
   );
 };
