@@ -3,6 +3,7 @@ import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { AlertOctagon, RefreshCcw } from 'lucide-react';
+import { toast } from '@/services/toastService';
 
 interface Props {
   children: ReactNode;
@@ -39,6 +40,11 @@ class ErrorBoundary extends Component<Props, State> {
     // Log error to console
     console.error('Component Error:', error);
     console.error('Component Stack:', errorInfo.componentStack);
+    
+    // Show toast notification
+    toast.error('An error occurred in the application', {
+      description: error.message
+    });
     
     this.setState({
       error,

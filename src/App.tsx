@@ -1,6 +1,6 @@
 
 import React from "react";
-import { Toaster as Sonner } from "@/components/ui/sonner";
+import { Toaster } from "sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
@@ -23,6 +23,8 @@ const queryClient = new QueryClient({
       refetchOnWindowFocus: false,
       staleTime: 60000, // 1 minute
       gcTime: 300000, // 5 minutes
+      // Add better error handling
+      useErrorBoundary: true,
     },
   },
 });
@@ -48,7 +50,7 @@ const App: React.FC = () => (
           <BrowserRouter>
             <TooltipProvider>
               <AuthProvider>
-                <Sonner />
+                <Toaster position="top-right" richColors />
                 <Routes>
                   <Route path="/" element={<Index />} />
                   <Route path="/market-analysis" element={
