@@ -113,8 +113,10 @@ const ApiUsageMonitor = () => {
             <span className="text-sm text-muted-foreground">Daily API Calls</span>
             <span className="font-medium">{todayCalls} / {dailyLimit}</span>
           </div>
-          <Progress value={dailyUsagePercent} 
-            className={dailyUsagePercent > 80 ? 'bg-red-200' : 'bg-blue-200'} />
+          <Progress 
+            value={dailyUsagePercent}
+            className={dailyUsagePercent > 80 ? 'bg-red-200' : 'bg-blue-200'} 
+          />
           
           <div className="grid grid-cols-2 gap-4 mt-4">
             <div>

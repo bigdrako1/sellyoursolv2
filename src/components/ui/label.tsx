@@ -16,14 +16,12 @@ export interface LabelProps
 const Label = React.forwardRef<
   React.ElementRef<typeof LabelPrimitive.Root>,
   LabelProps
->(({ className, children, ...props }, ref) => (
+>(({ className, ...props }, ref) => (
   <LabelPrimitive.Root
     ref={ref}
     className={cn(labelVariants(), className)}
     {...props}
-  >
-    {children}
-  </LabelPrimitive.Root>
+  />
 ))
 Label.displayName = LabelPrimitive.Root.displayName
 

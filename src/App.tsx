@@ -23,7 +23,7 @@ const queryClient = new QueryClient({
       refetchOnWindowFocus: false,
       staleTime: 60000, // 1 minute
       gcTime: 300000, // 5 minutes
-      // Remove useErrorBoundary as it's not supported in this version
+      // Removed useErrorBoundary as it's not supported in this version
     },
   },
 });
