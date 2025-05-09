@@ -67,8 +67,9 @@ const AutoTradeSimple: React.FC = () => {
     },
   });
 
-  const [trackedWallets, setTrackedWallets] = useState<string[]>([
-    "B8oMRGgLETGQcksXBawvTDXvr5NLKX1jsBL2bAhXHyQT",
+  // Changed from string[] to TrackedWallet[] to match the interface
+  const [trackedWallets, setTrackedWallets] = useState<TrackedWallet[]>([
+    { address: "B8oMRGgLETGQcksXBawvTDXvr5NLKX1jsBL2bAhXHyQT", label: "Whale Wallet" },
   ]);
   const [newWallet, setNewWallet] = useState("");
   const [activeTab, setActiveTab] = useState("general");
@@ -90,7 +91,11 @@ const AutoTradeSimple: React.FC = () => {
       try {
         const parsedWallets = JSON.parse(savedWallets);
         if (Array.isArray(parsedWallets)) {
-          setTrackedWallets(parsedWallets);
+          // Convert string[] to TrackedWallet[] if needed
+          const formattedWallets = parsedWallets.map(wallet => 
+            typeof wallet === 'string' ? { address: wallet } : wallet
+          );
+          setTrackedWallets(formattedWallets);
         }
       } catch (error) {
         console.error("Error loading tracked wallets:", error);
@@ -99,8 +104,9 @@ const AutoTradeSimple: React.FC = () => {
   }, []);
 
   const handleAddWallet = () => {
-    if (newWallet && newWallet.length >= 32 && !trackedWallets.includes(newWallet)) {
-      const updatedWallets = [...trackedWallets, newWallet];
+    if (newWallet && newWallet.length >= 32 && !trackedWallets.some(w => w.address === newWallet)) {
+      const newTrackedWallet: TrackedWallet = { address: newWallet };
+      const updatedWallets = [...trackedWallets, newTrackedWallet];
       setTrackedWallets(updatedWallets);
       setNewWallet("");
       localStorage.setItem("tracked_wallets", JSON.stringify(updatedWallets));
@@ -115,8 +121,8 @@ const AutoTradeSimple: React.FC = () => {
     }
   };
 
-  const handleRemoveWallet = (wallet: string) => {
-    const updatedWallets = trackedWallets.filter(w => w !== wallet);
+  const handleRemoveWallet = (address: string) => {
+    const updatedWallets = trackedWallets.filter(w => w.address !== address);
     setTrackedWallets(updatedWallets);
     localStorage.setItem("tracked_wallets", JSON.stringify(updatedWallets));
     
@@ -189,9 +195,10 @@ const AutoTradeSimple: React.FC = () => {
             <div className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <Label className="mb-1 block">Trade Amount (SOL)</Label>
+                  <Label htmlFor="tradeAmount" className="mb-1 block">Trade Amount (SOL)</Label>
                   <div className="flex items-center gap-2 mt-1">
                     <Input
+                      id="tradeAmount"
                       type="number"
                       step="0.01"
                       min="0.01"
@@ -207,8 +214,9 @@ const AutoTradeSimple: React.FC = () => {
                 </div>
                 
                 <div>
-                  <Label className="mb-1 block">Max Concurrent Positions</Label>
+                  <Label htmlFor="maxPositions" className="mb-1 block">Max Concurrent Positions</Label>
                   <Input
+                    id="maxPositions"
                     type="number"
                     min="1"
                     max="10"
@@ -223,8 +231,9 @@ const AutoTradeSimple: React.FC = () => {
               </div>
 
               <div className="space-y-2">
-                <Label className="mb-1 block">Risk Level: {config.riskLevel}%</Label>
+                <Label htmlFor="riskSlider" className="mb-1 block">Risk Level: {config.riskLevel}%</Label>
                 <Slider
+                  id="riskSlider"
                   min={10}
                   max={90}
                   step={5}
@@ -255,9 +264,10 @@ const AutoTradeSimple: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <TrendingUp size={16} className="text-blue-400" />
-                  <Label className="cursor-pointer">Smart Money Tracking</Label>
+                  <Label htmlFor="smartMoneyTracking">Smart Money Tracking</Label>
                 </div>
                 <Switch 
+                  id="smartMoneyTracking"
                   checked={config.features.smartMoneyTracking}
                   onCheckedChange={() => handleToggleFeature('smartMoneyTracking')}
                 />
@@ -266,9 +276,10 @@ const AutoTradeSimple: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Wallet size={16} className="text-purple-400" />
-                  <Label className="cursor-pointer">Whale Activity Monitoring</Label>
+                  <Label htmlFor="whaleActivityMonitoring">Whale Activity Monitoring</Label>
                 </div>
                 <Switch 
+                  id="whaleActivityMonitoring"
                   checked={config.features.whaleActivityMonitoring}
                   onCheckedChange={() => handleToggleFeature('whaleActivityMonitoring')}
                 />
@@ -277,9 +288,10 @@ const AutoTradeSimple: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Bot size={16} className="text-green-400" />
-                  <Label className="cursor-pointer">Wallet Action Mimicking</Label>
+                  <Label htmlFor="walletTracking">Wallet Action Mimicking</Label>
                 </div>
                 <Switch 
+                  id="walletTracking"
                   checked={config.features.walletTracking}
                   onCheckedChange={() => handleToggleFeature('walletTracking')}
                 />
@@ -288,9 +300,10 @@ const AutoTradeSimple: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <TrendingUp size={16} className="text-amber-400" />
-                  <Label className="cursor-pointer">Quality Token Trading</Label>
+                  <Label htmlFor="qualityTokenTrading">Quality Token Trading</Label>
                 </div>
                 <Switch 
+                  id="qualityTokenTrading"
                   checked={config.features.qualityTokenTrading}
                   onCheckedChange={() => handleToggleFeature('qualityTokenTrading')}
                 />
@@ -304,9 +317,10 @@ const AutoTradeSimple: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Shield size={16} className="text-green-400" />
-                  <Label className="cursor-pointer">Secure Initial Investment</Label>
+                  <Label htmlFor="secureInitial">Secure Initial Investment</Label>
                 </div>
                 <Switch 
+                  id="secureInitial"
                   checked={config.secureInitial}
                   onCheckedChange={(checked) => setConfig({...config, secureInitial: checked})}
                 />
@@ -314,10 +328,11 @@ const AutoTradeSimple: React.FC = () => {
               
               {config.secureInitial && (
                 <div className="space-y-2 pl-6 border-l-2 border-green-500/20">
-                  <Label className="mb-1 block">
+                  <Label htmlFor="secureThreshold" className="mb-1 block">
                     Secure at Profit %: {config.secureInitialThreshold}%
                   </Label>
                   <Slider
+                    id="secureThreshold"
                     min={10}
                     max={100}
                     step={5}
@@ -334,8 +349,9 @@ const AutoTradeSimple: React.FC = () => {
               )}
               
               <div className="space-y-2">
-                <Label className="mb-1 block">Stop Loss: {config.stopLoss}%</Label>
+                <Label htmlFor="stopLoss" className="mb-1 block">Stop Loss: {config.stopLoss}%</Label>
                 <Slider
+                  id="stopLoss"
                   min={5}
                   max={30}
                   step={1}
@@ -351,8 +367,9 @@ const AutoTradeSimple: React.FC = () => {
               </div>
               
               <div className="space-y-2">
-                <Label className="mb-1 block">Take Profit: {config.takeProfit}%</Label>
+                <Label htmlFor="takeProfit" className="mb-1 block">Take Profit: {config.takeProfit}%</Label>
                 <Slider
+                  id="takeProfit"
                   min={10}
                   max={100}
                   step={5}
@@ -370,9 +387,10 @@ const AutoTradeSimple: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <TrendingUp size={16} className="text-blue-400" />
-                  <Label className="cursor-pointer">Trailing Stop Loss</Label>
+                  <Label htmlFor="trailingStopLoss">Trailing Stop Loss</Label>
                 </div>
                 <Switch 
+                  id="trailingStopLoss"
                   checked={config.trailingStopLoss}
                   onCheckedChange={(checked) => setConfig({...config, trailingStopLoss: checked})}
                 />
@@ -380,10 +398,11 @@ const AutoTradeSimple: React.FC = () => {
               
               {config.trailingStopLoss && (
                 <div className="space-y-2 pl-6 border-l-2 border-blue-500/20">
-                  <Label className="mb-1 block">
+                  <Label htmlFor="trailingDistance" className="mb-1 block">
                     Trailing Distance: {config.trailingStopLossDistance}%
                   </Label>
                   <Slider
+                    id="trailingDistance"
                     min={5}
                     max={25}
                     step={1}
@@ -405,9 +424,10 @@ const AutoTradeSimple: React.FC = () => {
           <TabsContent value="wallets">
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label className="mb-1 block">Add Wallet to Track</Label>
+                <Label htmlFor="newWallet" className="mb-1 block">Add Wallet to Track</Label>
                 <div className="flex space-x-2">
                   <Input
+                    id="newWallet"
                     placeholder="Enter wallet address"
                     value={newWallet}
                     onChange={(e) => setNewWallet(e.target.value)}
@@ -424,12 +444,15 @@ const AutoTradeSimple: React.FC = () => {
                 {trackedWallets.length > 0 ? (
                   <div className="space-y-2">
                     {trackedWallets.map((wallet) => (
-                      <div key={wallet} className="flex items-center justify-between p-2 bg-black/30 rounded">
-                        <div className="text-xs font-mono truncate w-3/4">{wallet}</div>
+                      <div key={wallet.address} className="flex items-center justify-between p-2 bg-black/30 rounded">
+                        <div className="text-xs font-mono truncate w-3/4">
+                          {wallet.address}
+                          {wallet.label && <span className="ml-2 text-gray-400">({wallet.label})</span>}
+                        </div>
                         <Button 
                           variant="ghost" 
                           size="sm" 
-                          onClick={() => handleRemoveWallet(wallet)}
+                          onClick={() => handleRemoveWallet(wallet.address)}
                           className="h-7 px-2 text-red-400 hover:text-red-300 hover:bg-red-900/20"
                         >
                           Remove
