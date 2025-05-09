@@ -4,13 +4,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { ArrowUpRight, Bell, BellOff, Loader2, TrendingUp, AlertCircle } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { ArrowUpRight, Bell, BellOff, Loader2, TrendingUp, AlertCircle, Zap, BarChart3 } from "lucide-react";
+import { toast } from "sonner";
 import { playSound } from "@/utils/soundUtils";
 import { getRecentTokenActivity, getTrendingTokens, getPumpFunTokens, tokenInfoToToken } from "@/services/tokenDataService";
-import type { Token } from "@/types/token.types";
+import type { Token, TokenAlert } from "@/types/token.types";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/AuthContext";
+import { getQualitySummary, getRiskEmoji, getRunnerPotentialGrade } from "@/services/tokenMonitorService";
 
 const TokenAlertMonitor: React.FC = () => {
   const [tokens, setTokens] = useState<Token[]>([]);
@@ -22,7 +23,6 @@ const TokenAlertMonitor: React.FC = () => {
   const [pumpFunLoading, setPumpFunLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("alerts");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const { toast } = useToast();
   const { isAuthenticated } = useAuth();
 
   useEffect(() => {
@@ -37,7 +37,16 @@ const TokenAlertMonitor: React.FC = () => {
         
         if (tokenActivity && Array.isArray(tokenActivity) && tokenActivity.length > 0) {
           // Process token data
-          const tokenData: Token[] = tokenActivity.map(token => tokenInfoToToken(token));
+          const tokenData: Token[] = tokenActivity.map(token => {
+            const processedToken = tokenInfoToToken(token);
+            
+            // Calculate runner potential if quality score exists
+            if (processedToken.qualityScore) {
+              processedToken.runnerPotential = getRunnerPotentialGrade(processedToken.qualityScore);
+            }
+            
+            return processedToken;
+          });
           
           setTokens(tokenData);
           
@@ -77,7 +86,16 @@ const TokenAlertMonitor: React.FC = () => {
         
         if (trending && Array.isArray(trending)) {
           // Convert TokenInfo to Token
-          const trendingTokenData = trending.map(token => tokenInfoToToken(token));
+          const trendingTokenData = trending.map(token => {
+            const processedToken = tokenInfoToToken(token);
+            
+            // Calculate runner potential if quality score exists
+            if (processedToken.qualityScore) {
+              processedToken.runnerPotential = getRunnerPotentialGrade(processedToken.qualityScore);
+            }
+            
+            return processedToken;
+          });
           setTrendingTokens(trendingTokenData);
         }
       } catch (error) {
@@ -104,7 +122,17 @@ const TokenAlertMonitor: React.FC = () => {
         
         if (pumpTokens && Array.isArray(pumpTokens)) {
           // Convert TokenInfo to Token
-          const pumpTokenData = pumpTokens.map(token => tokenInfoToToken(token));
+          const pumpTokenData = pumpTokens.map(token => {
+            const processedToken = tokenInfoToToken(token);
+            processedToken.isPumpFun = true;
+            
+            // Calculate runner potential if quality score exists
+            if (processedToken.qualityScore) {
+              processedToken.runnerPotential = getRunnerPotentialGrade(processedToken.qualityScore);
+            }
+            
+            return processedToken;
+          });
           setPumpFunTokens(pumpTokenData);
         }
       } catch (error) {
@@ -123,19 +151,38 @@ const TokenAlertMonitor: React.FC = () => {
 
   const toggleAlerts = () => {
     setAlertsEnabled(!alertsEnabled);
-    toast({
-      title: alertsEnabled ? "Alerts Disabled" : "Alerts Enabled",
-      description: alertsEnabled 
-        ? "You will no longer receive token alerts" 
-        : "You will now receive alerts for new tokens",
-      variant: "default",
-    });
+    toast(
+      alertsEnabled ? "Alerts Disabled" : "Alerts Enabled",
+      {
+        description: alertsEnabled 
+          ? "You will no longer receive token alerts" 
+          : "You will now receive alerts for new tokens"
+      }
+    );
   };
 
-  const getQualityBadge = (score: number) => {
+  const getQualityBadge = (score?: number) => {
+    if (!score) return null;
     if (score >= 80) return <Badge className="bg-green-500">High Quality</Badge>;
     if (score >= 60) return <Badge className="bg-yellow-500">Good Quality</Badge>;
     return <Badge className="bg-orange-500">Medium Quality</Badge>;
+  };
+
+  const getRunnerPotentialBadge = (potential?: string) => {
+    if (!potential) return null;
+    
+    switch (potential) {
+      case "Very High":
+        return <Badge className="bg-purple-500 flex items-center gap-1"><Zap className="h-3 w-3" /> Very High</Badge>;
+      case "High":
+        return <Badge className="bg-blue-500 flex items-center gap-1"><Zap className="h-3 w-3" /> High</Badge>;
+      case "Medium":
+        return <Badge className="bg-cyan-500 flex items-center gap-1"><BarChart3 className="h-3 w-3" /> Medium</Badge>;
+      case "Low":
+        return <Badge className="bg-yellow-500 flex items-center gap-1"><BarChart3 className="h-3 w-3" /> Low</Badge>;
+      default:
+        return <Badge className="bg-gray-500 flex items-center gap-1"><BarChart3 className="h-3 w-3" /> Very Low</Badge>;
+    }
   };
 
   const getTrendingBadge = (score: number | string[] = 1) => {
@@ -254,22 +301,39 @@ const TokenAlertMonitor: React.FC = () => {
                   <Alert key={token.address} className={`bg-trading-darkAccent border-l-4 ${token.isPumpFun ? 'border-l-pink-500' : 'border-l-trading-highlight'}`}>
                     <div className="flex justify-between">
                       <div>
-                        <AlertTitle className="flex items-center font-bold">
+                        <AlertTitle className="flex items-center font-bold gap-2">
                           {token.name} ({token.symbol})
-                          {index === 0 && <Badge className="ml-2 bg-red-500">NEW</Badge>}
-                          {token.isPumpFun && <Badge className="ml-2 bg-pink-500">Pump.fun</Badge>}
+                          {index === 0 && <Badge className="bg-red-500">NEW</Badge>}
+                          {token.isPumpFun && getPumpFunBadge()}
+                          {token.smartMoneyScore && token.smartMoneyScore >= 5 && 
+                            <Badge className="bg-blue-600">Smart Money</Badge>
+                          }
                         </AlertTitle>
                         <AlertDescription className="text-xs mt-1">
-                          Price: ${token.price.toFixed(8)} | MC: ${token.marketCap.toLocaleString()}
+                          Price: ${token.price?.toFixed(8) || "N/A"} | 
+                          Liquidity: ${token.liquidity?.toLocaleString() || "N/A"}
                         </AlertDescription>
-                        <div className="flex items-center mt-1 text-xs text-gray-400">
-                          <span className="mr-1">Source: {token.source}</span>
-                          <span className="mx-2">•</span>
-                          <span>{formatTimeAgo(token.createdAt)}</span>
+                        <div className="flex flex-wrap items-center mt-1 text-xs text-gray-400 gap-x-2">
+                          <span>Source: {token.source || "Telegram"}</span>
+                          {token.createdAt && <>
+                            <span className="text-gray-600">•</span>
+                            <span>{formatTimeAgo(token.createdAt)}</span>
+                          </>}
+                          {token.holders !== undefined && <>
+                            <span className="text-gray-600">•</span>
+                            <span>Holders: {token.holders}</span>
+                          </>}
+                          {token.runnerPotential && <>
+                            <span className="text-gray-600">•</span>
+                            <span>Potential: {token.runnerPotential}</span>
+                          </>}
                         </div>
                       </div>
                       <div className="flex flex-col items-end">
-                        {getQualityBadge(token.qualityScore)}
+                        <div className="flex gap-1 mb-2">
+                          {getQualityBadge(token.qualityScore)}
+                          {getRunnerPotentialBadge(token.runnerPotential)}
+                        </div>
                         <div className="flex gap-2 mt-2">
                           <button
                             onClick={() => handleViewToken(token.address)}
@@ -321,7 +385,7 @@ const TokenAlertMonitor: React.FC = () => {
                           {getTrendingBadge(token.trendingScore)}
                         </AlertTitle>
                         <AlertDescription className="text-xs mt-1">
-                          Price: ${token.price.toFixed(token.price < 0.01 ? 8 : 4)} 
+                          Price: ${token.price?.toFixed(token.price < 0.01 ? 8 : 4) || "N/A"} 
                           {token.change24h !== undefined && (
                             <span className={token.change24h >= 0 ? "text-green-400" : "text-red-400"}>
                               {" "}({token.change24h >= 0 ? "+" : ""}{token.change24h.toFixed(2)}%)
@@ -330,9 +394,17 @@ const TokenAlertMonitor: React.FC = () => {
                         </AlertDescription>
                         <div className="flex items-center mt-1 text-xs text-gray-400">
                           <span className="mr-1">Sources: {token.source}</span>
+                          {token.runnerPotential && <>
+                            <span className="mx-2 text-gray-600">•</span>
+                            <span>Potential: {token.runnerPotential}</span>
+                          </>}
                         </div>
                       </div>
                       <div className="flex flex-col items-end">
+                        <div className="flex gap-1 mb-2">
+                          {getQualityBadge(token.qualityScore)}
+                          {getRunnerPotentialBadge(token.runnerPotential)}
+                        </div>
                         <div className="flex gap-2 mt-2">
                           <button
                             onClick={() => handleViewToken(token.address)}
@@ -376,7 +448,7 @@ const TokenAlertMonitor: React.FC = () => {
                           {getPumpFunBadge()}
                         </AlertTitle>
                         <AlertDescription className="text-xs mt-1">
-                          Price: ${token.price.toFixed(token.price < 0.01 ? 8 : 4)} 
+                          Price: ${token.price?.toFixed(token.price < 0.01 ? 8 : 4) || "N/A"} 
                           {token.change24h !== undefined && (
                             <span className={token.change24h >= 0 ? "text-green-400" : "text-red-400"}>
                               {" "}({token.change24h >= 0 ? "+" : ""}{token.change24h.toFixed(2)}%)
@@ -385,11 +457,19 @@ const TokenAlertMonitor: React.FC = () => {
                         </AlertDescription>
                         <div className="flex items-center mt-1 text-xs text-gray-400">
                           <span className="mr-1">Source: Pump.fun</span>
-                          {token.createdAt && <span className="mx-2">•</span>}
+                          {token.createdAt && <span className="mx-2 text-gray-600">•</span>}
                           {token.createdAt && <span>{formatTimeAgo(token.createdAt)}</span>}
+                          {token.runnerPotential && <>
+                            <span className="mx-2 text-gray-600">•</span>
+                            <span>Potential: {token.runnerPotential}</span>
+                          </>}
                         </div>
                       </div>
                       <div className="flex flex-col items-end">
+                        <div className="flex gap-1 mb-2">
+                          {getQualityBadge(token.qualityScore)}
+                          {getRunnerPotentialBadge(token.runnerPotential)}
+                        </div>
                         <div className="flex gap-2 mt-2">
                           <button
                             onClick={() => handlePumpFunView(token.address)}

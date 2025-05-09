@@ -1,6 +1,6 @@
 
 import { Token } from "@/types/token.types";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 
 export interface TokenQualityConfig {
   minLiquidity: number;
@@ -10,7 +10,7 @@ export interface TokenQualityConfig {
 
 // Default quality filter configuration
 const defaultQualityConfig: TokenQualityConfig = {
-  minLiquidity: 10000,
+  minLiquidity: 25000, // Updated to $25k per requirements
   minHolders: 50,
   maxRiskLevel: 70
 };
@@ -56,6 +56,20 @@ export const calculateTokenQualityScore = (token: Partial<Token>): number => {
     }
   }
   
+  // KOL mentions and social signals (0-15 points)
+  if (token.socialScore !== undefined) {
+    if (token.socialScore >= 5) score += 15; // 5+ KOL mentions
+    else if (token.socialScore >= 3) score += 10;
+    else if (token.socialScore >= 1) score += 5;
+  }
+  
+  // Smart money wallet signals (0-15 points)
+  if (token.smartMoneyScore !== undefined) {
+    if (token.smartMoneyScore >= 5) score += 15; // 5+ smart money wallets
+    else if (token.smartMoneyScore >= 3) score += 10;
+    else if (token.smartMoneyScore >= 1) score += 5;
+  }
+  
   // Ensure score stays within 0-100 range
   return Math.max(0, Math.min(100, score));
 };
@@ -89,6 +103,19 @@ export const isQualityToken = (
 };
 
 /**
+ * Get a token's "Runner Potential" grade
+ * @param qualityScore Token quality score
+ * @returns Runner potential grade
+ */
+export const getRunnerPotentialGrade = (qualityScore: number): string => {
+  if (qualityScore >= 90) return "Very High";
+  if (qualityScore >= 75) return "High";
+  if (qualityScore >= 60) return "Medium";
+  if (qualityScore >= 45) return "Low";
+  return "Very Low";
+};
+
+/**
  * Monitor a token for significant events
  */
 export const monitorToken = async (token: Token): Promise<void> => {
@@ -106,16 +133,28 @@ export const monitorToken = async (token: Token): Promise<void> => {
       return;
     }
     
-    // Example: Alert on high quality tokens
-    if (token.qualityScore >= 80) {
+    // Calculate runner potential grade
+    const runnerPotential = getRunnerPotentialGrade(token.qualityScore);
+    
+    // Determine if this token should trigger an alert
+    const shouldAlert = 
+      token.qualityScore >= 75 || // High quality score
+      (token.smartMoneyScore !== undefined && token.smartMoneyScore >= 5) || // 5+ smart money buys
+      (token.socialScore !== undefined && token.socialScore >= 5); // 5+ KOL mentions
+    
+    if (shouldAlert) {
       toast({
-        title: "High Quality Token Detected",
+        title: `${runnerPotential} Potential Runner Detected`,
         description: `${token.name} (${token.symbol}) - Quality Score: ${token.qualityScore}`,
-        variant: "default",
+        duration: 5000,
       });
     }
     
-    // Future: Implement real-time monitoring logic here
+    // Store the token in a monitored tokens list (could be localStorage for now)
+    const monitoredTokens = getMonitoredTokens();
+    if (!monitoredTokens.some(t => t.address === token.address)) {
+      saveMonitoredTokens([...monitoredTokens, token]);
+    }
     
   } catch (error) {
     console.error("Error monitoring token:", error);
@@ -141,4 +180,40 @@ export const getRiskEmoji = (qualityScore: number): string => {
   if (qualityScore >= 60) return "🟡"; // Medium risk
   if (qualityScore >= 40) return "🟠"; // High risk
   return "🔴"; // Very high risk
+};
+
+/**
+ * Get monitored tokens from localStorage
+ */
+export const getMonitoredTokens = (): Token[] => {
+  try {
+    const stored = localStorage.getItem("monitored_tokens");
+    return stored ? JSON.parse(stored) : [];
+  } catch (error) {
+    console.error("Error loading monitored tokens:", error);
+    return [];
+  }
+};
+
+/**
+ * Save monitored tokens to localStorage
+ */
+export const saveMonitoredTokens = (tokens: Token[]): void => {
+  try {
+    localStorage.setItem("monitored_tokens", JSON.stringify(tokens));
+  } catch (error) {
+    console.error("Error saving monitored tokens:", error);
+  }
+};
+
+/**
+ * Check if a token should be considered for trading
+ */
+export const isTokenEligibleForTrading = (token: Token): boolean => {
+  return (
+    token.qualityScore !== undefined && 
+    token.qualityScore >= 80 && 
+    token.liquidity !== undefined && 
+    token.liquidity >= 50000
+  );
 };

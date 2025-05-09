@@ -5,7 +5,7 @@ import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import {
   Shield,
   TrendingUp,
@@ -13,7 +13,8 @@ import {
   Bot,
   Save,
   InfoIcon,
-  AlertCircle
+  AlertCircle,
+  Zap
 } from "lucide-react";
 import { 
   secureInitialInvestment, 
@@ -51,8 +52,6 @@ const TradingStrategy: React.FC<TradingStrategyProps> = ({ onSettingsChange }) =
     secureInitialThreshold: 100 // Default to 100% profit (2X) for securing initial
   });
   
-  const { toast } = useToast();
-
   // Load saved settings on mount
   useEffect(() => {
     const savedSettings = localStorage.getItem('trading_settings');
@@ -72,10 +71,10 @@ const TradingStrategy: React.FC<TradingStrategyProps> = ({ onSettingsChange }) =
   const handleToggle = (key: keyof TradingSettings) => {
     // Don't allow disabling secureInitial as we want to always secure at 2X
     if (key === 'secureInitial') {
-      toast({
-        title: "Auto-Securing Enabled",
-        description: "Initial investment is always secured at 2X (100% profit) automatically",
-      });
+      toast(
+        "Auto-Securing Enabled",
+        { description: "Initial investment is always secured at 2X (100% profit) automatically" }
+      );
       return;
     }
     
@@ -117,10 +116,10 @@ const TradingStrategy: React.FC<TradingStrategyProps> = ({ onSettingsChange }) =
     
     localStorage.setItem('trading_settings', JSON.stringify(finalSettings));
     
-    toast({
-      title: "Settings Saved",
-      description: "Your trading settings have been saved successfully",
-    });
+    toast(
+      "Settings Saved",
+      { description: "Your trading settings have been saved successfully" }
+    );
     
     // Apply secure initial settings to any existing positions
     applySecureInitialToPositions();
@@ -145,10 +144,10 @@ const TradingStrategy: React.FC<TradingStrategyProps> = ({ onSettingsChange }) =
     
     if (updated) {
       saveTradingPositions(updatedPositions);
-      toast({
-        title: "Positions Updated",
-        description: "Secure initial settings applied to eligible positions",
-      });
+      toast(
+        "Positions Updated",
+        { description: "Secure initial settings applied to eligible positions" }
+      );
     }
   };
   
@@ -156,7 +155,10 @@ const TradingStrategy: React.FC<TradingStrategyProps> = ({ onSettingsChange }) =
     <Card className="card-with-border">
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle>Trading Strategy</CardTitle>
+          <CardTitle className="flex items-center">
+            <Zap className="h-5 w-5 mr-2 text-yellow-400" />
+            Trading Strategy
+          </CardTitle>
           <Switch
             checked={settings.enabled}
             onCheckedChange={() => handleToggle('enabled')}
@@ -219,7 +221,7 @@ const TradingStrategy: React.FC<TradingStrategyProps> = ({ onSettingsChange }) =
           </div>
           
           <div className="pt-4 border-t border-white/10">
-            <h3 className="text-sm font-medium mb-3">Strategy Settings</h3>
+            <h3 className="text-sm font-medium mb-3">Trading Model Settings</h3>
             
             <div className="space-y-5">
               <div>
@@ -278,13 +280,58 @@ const TradingStrategy: React.FC<TradingStrategyProps> = ({ onSettingsChange }) =
             </div>
           </div>
           
+          <div className="pt-3 border-t border-white/10">
+            <h3 className="text-sm font-medium mb-3">Scale-Out Strategy</h3>
+            <div className="bg-blue-500/10 p-3 rounded-md border border-blue-500/20 space-y-2">
+              <div className="flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                  <div className="h-2 w-2 bg-green-500 rounded-full"></div>
+                  <span className="text-xs">Secure 50% at 2X (100% profit)</span>
+                </div>
+                <Badge variant="outline" className="bg-green-500/20 text-green-400 text-xs">
+                  Default
+                </Badge>
+              </div>
+              
+              <div className="flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                  <div className="h-2 w-2 bg-blue-500 rounded-full"></div>
+                  <span className="text-xs">Scale out 25% at 3X (200% profit)</span>
+                </div>
+                <Badge variant="outline" className="bg-blue-500/20 text-blue-400 text-xs">
+                  Active
+                </Badge>
+              </div>
+              
+              <div className="flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                  <div className="h-2 w-2 bg-purple-500 rounded-full"></div>
+                  <span className="text-xs">Scale out 50% at 5X (400% profit)</span>
+                </div>
+                <Badge variant="outline" className="bg-purple-500/20 text-purple-400 text-xs">
+                  Active
+                </Badge>
+              </div>
+              
+              <div className="flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                  <div className="h-2 w-2 bg-pink-500 rounded-full"></div>
+                  <span className="text-xs">Scale out 75% at 10X (900% profit)</span>
+                </div>
+                <Badge variant="outline" className="bg-pink-500/20 text-pink-400 text-xs">
+                  Active
+                </Badge>
+              </div>
+            </div>
+          </div>
+          
           <div className="flex justify-end pt-2">
             <Button 
               onClick={handleSaveSettings}
               className="flex items-center gap-2"
             >
               <Save size={16} />
-              Save Settings
+              Save Strategy
             </Button>
           </div>
         </div>
