@@ -1,4 +1,3 @@
-
 /**
  * SellYourSOL V2 AI Platform Configuration
  * Central configuration for branding, features, and app settings
@@ -27,6 +26,7 @@ export const APP_CONFIG = {
     webhookIntegration: true,
     apiConfiguration: true,
     multiWallet: true,
+    twitterScraper: true,
   },
   
   // API Configuration
@@ -59,17 +59,6 @@ export const APP_CONFIG = {
     environment: "production",
     defaultApiKey: "a18d2c93-d9fa-4db2-8419-707a4f1782f7", // Updated to use production key
     personalApiKeyDescription: "Your personal API key is used for authentication with Helius API services and to increase rate limits above the default tier. It ensures your requests are prioritized and allows access to premium features."
-  },
-  
-  // Trading configuration
-  features: {
-    autoTrading: true,
-    portfolioTracking: true,
-    marketAnalysis: true,
-    webhookIntegration: true,
-    apiConfiguration: true,
-    multiWallet: true,
-    twitterScraper: true,
   },
   
   // Trading configuration
