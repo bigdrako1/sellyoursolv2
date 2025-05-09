@@ -2,9 +2,9 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { getSolPrice, getToken24hChange } from '@/utils/apiUtils';
-import { Card, CardContent } from '@/components/ui/card';
 import { ArrowUp, ArrowDown, Loader2 } from 'lucide-react';
 import { useCurrencyStore } from '@/store/currencyStore';
+import { getMockTokenData } from '@/services/apiService';
 
 const LivePriceTracker = () => {
   const { currency, currencySymbol } = useCurrencyStore();
@@ -12,6 +12,7 @@ const LivePriceTracker = () => {
   const [priceDirection, setPriceDirection] = useState<'up' | 'down' | null>(null);
   const [lastPrice, setLastPrice] = useState(0);
   const [retryCount, setRetryCount] = useState(0);
+  const [fallbackMode, setFallbackMode] = useState(false);
   
   // Use React Query to fetch the SOL price with retry logic
   const { 
@@ -22,7 +23,15 @@ const LivePriceTracker = () => {
     refetch: refetchSolPrice
   } = useQuery({
     queryKey: ['solPrice', retryCount],
-    queryFn: getSolPrice,
+    queryFn: async () => {
+      try {
+        return await getSolPrice();
+      } catch (error) {
+        console.log('Using fallback price data');
+        setFallbackMode(true);
+        return getMockTokenData(['SOL']).SOL.price;
+      }
+    },
     refetchInterval: 30000, // Refetch every 30 seconds
     refetchOnWindowFocus: false,
     retry: 2,
@@ -37,7 +46,14 @@ const LivePriceTracker = () => {
     error: changeError 
   } = useQuery({
     queryKey: ['sol24hChange', retryCount],
-    queryFn: () => getToken24hChange('SOL'),
+    queryFn: async () => {
+      try {
+        return await getToken24hChange('SOL');
+      } catch (error) {
+        console.log('Using fallback change data');
+        return getMockTokenData(['SOL']).SOL.priceChange24h;
+      }
+    },
     refetchInterval: 60000, // Refetch every minute
     refetchOnWindowFocus: false,
     retry: 2,
@@ -109,7 +125,7 @@ const LivePriceTracker = () => {
   
   return (
     <div className="flex flex-col min-w-[140px]">
-      <div className="text-xs text-gray-400">SOL Price</div>
+      <div className="text-xs text-gray-400">SOL Price {fallbackMode && '(Offline)'}</div>
       <div className="flex items-center justify-between">
         <span className={`text-lg font-bold ${animatePrice ? (priceDirection === 'up' ? 'text-trading-success' : 'text-trading-danger') : ''}`}>
           {currencySymbol}{convertToCurrency(displayPrice).toFixed(2)}

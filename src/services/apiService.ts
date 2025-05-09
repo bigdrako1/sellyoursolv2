@@ -3,6 +3,8 @@
  * Standardized API service with caching capabilities
  */
 
+import { toast } from "@/hooks/use-toast";
+
 type CacheItem<T> = {
   data: T;
   timestamp: number;
@@ -111,6 +113,7 @@ export const fetchApi = async <T>(url: string, config?: RequestConfig): Promise<
       return data;
     } catch (error) {
       if (retriesLeft > 0) {
+        console.log(`Retrying fetch to ${url}, ${retriesLeft} attempts left`);
         // Wait before retry
         await new Promise(resolve => setTimeout(resolve, retryDelay));
         return fetchWithRetry(retriesLeft - 1);
@@ -120,6 +123,36 @@ export const fetchApi = async <T>(url: string, config?: RequestConfig): Promise<
   };
 
   return fetchWithRetry(retries);
+};
+
+/**
+ * Show toast notification for API errors
+ * @param error Error object
+ * @param context Error context
+ */
+export const showApiErrorToast = (error: any, context: string): void => {
+  // Determine if it's a rate limit error
+  const isRateLimit = error?.response?.status === 429 || 
+                      error?.message?.includes('rate limit') ||
+                      error?.message?.includes('too many requests');
+  
+  // Determine if it's a timeout
+  const isTimeout = error?.name === 'AbortError' || 
+                    error?.message?.includes('timeout') ||
+                    error?.message?.includes('aborted');
+  
+  // Only show toast for rate limit errors or timeouts (not connection failures)
+  if (isRateLimit || isTimeout) {
+    const toastMessage = isRateLimit 
+      ? `Rate limit reached for ${context}. Please try again later.`
+      : `Request timeout for ${context}. Network may be slow.`;
+      
+    toast({
+      title: isRateLimit ? "API Rate Limit Exceeded" : "API Request Timeout",
+      description: toastMessage,
+      variant: "destructive",
+    });
+  }
 };
 
 /**
@@ -137,5 +170,35 @@ export const clearCache = (url?: string): void => {
   } else {
     // Clear all cache
     apiCache.clear();
+  }
+};
+
+/**
+ * Mock data when API calls fail
+ */
+export const getMockTokenData = (symbols: string[] = ['SOL']) => {
+  return symbols.reduce((acc, symbol) => {
+    acc[symbol] = {
+      price: symbol === 'SOL' ? 100.00 : Math.random() * 10,
+      priceChange24h: (Math.random() * 20) - 10, // -10% to +10%
+      volume: Math.random() * 1000000,
+      marketCap: Math.random() * 10000000
+    };
+    return acc;
+  }, {} as Record<string, any>);
+};
+
+// Export a test function that can be called to verify API connectivity
+export const testApiConnectivity = async (url: string): Promise<boolean> => {
+  try {
+    await fetch(url, { 
+      method: 'HEAD', 
+      timeout: 5000,
+      signal: AbortSignal.timeout(5000)
+    });
+    return true;
+  } catch (error) {
+    console.error(`Failed to connect to ${url}:`, error);
+    return false;
   }
 };

@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,11 +13,14 @@ import { AlertCircle, RefreshCw, Plus, Trash2, Twitter, Search, ExternalLink } f
 import { 
   useTwitterScraper, 
   TwitterAccount, 
-  ScrapedToken 
+  ScrapedToken,
+  extractContractAddresses 
 } from '@/services/twitterScraperService';
 import { formatDistanceToNow } from 'date-fns';
+import { useToast } from '@/hooks/use-toast';
 
 const TwitterScraper = () => {
+  const { toast } = useToast();
   const { 
     accounts, 
     tokens, 
@@ -39,6 +42,13 @@ const TwitterScraper = () => {
   const filteredTokens = filterProcessed 
     ? tokens.filter(token => !token.processed)
     : tokens;
+
+  // Test the contract address extraction function
+  useEffect(() => {
+    // Demo test the extraction function
+    const testExtract = extractContractAddresses("Check this token DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263 it's amazing!");
+    console.log("Contract extraction test:", testExtract);
+  }, []);
   
   // Handle adding a new account
   const handleAddAccount = () => {
@@ -53,8 +63,39 @@ const TwitterScraper = () => {
       enabled: true
     });
     
+    toast({
+      title: "Account added",
+      description: `Now monitoring @${newAccountUsername.trim()} for Solana contracts`,
+    });
+    
     setNewAccountUsername('');
     setNewAccountDisplayName('');
+  };
+  
+  // Test scan function
+  const handleTestScan = async () => {
+    try {
+      toast({
+        title: "Scanning accounts",
+        description: "Looking for contract addresses in recent tweets...",
+      });
+      
+      await checkAllAccounts();
+      
+      if (tokens.length === 0) {
+        toast({
+          title: "No tokens found",
+          description: "No contract addresses were found in recent tweets.",
+        });
+      }
+    } catch (error) {
+      console.error("Error during test scan:", error);
+      toast({
+        title: "Scan failed",
+        description: "There was an error scanning for contract addresses.",
+        variant: "destructive",
+      });
+    }
   };
   
   return (
@@ -71,8 +112,8 @@ const TwitterScraper = () => {
       <CardContent className="p-0">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="w-full border-b rounded-none">
-            <TabsTrigger value="tokens" className="flex-1">Found Tokens</TabsTrigger>
-            <TabsTrigger value="accounts" className="flex-1">Monitored Accounts</TabsTrigger>
+            <TabsTrigger value="tokens" className="flex-1">Found Tokens ({tokens.length})</TabsTrigger>
+            <TabsTrigger value="accounts" className="flex-1">Monitored Accounts ({accounts.length})</TabsTrigger>
             <TabsTrigger value="settings" className="flex-1">Settings</TabsTrigger>
           </TabsList>
           
@@ -98,7 +139,7 @@ const TwitterScraper = () => {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={checkAllAccounts}
+                  onClick={handleTestScan}
                   disabled={isChecking}
                 >
                   <RefreshCw className={`h-4 w-4 mr-1 ${isChecking ? 'animate-spin' : ''}`} />

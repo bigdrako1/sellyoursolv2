@@ -13,6 +13,7 @@ import WebhookMonitor from "@/components/WebhookMonitor";
 import TwitterScraper from "@/components/TwitterScraper";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/AuthContext";
+import DebugPanel from "@/components/DebugPanel";
 
 const Settings = () => {
   const [activeTab, setActiveTab] = useState("general");
@@ -57,6 +58,7 @@ const Settings = () => {
           <TabsTrigger value="detection">Detection</TabsTrigger>
           <TabsTrigger value="notifications">Notifications</TabsTrigger>
           <TabsTrigger value="advanced">Advanced</TabsTrigger>
+          <TabsTrigger value="diagnostics">Diagnostics</TabsTrigger>
         </TabsList>
 
         <TabsContent value="general" className="space-y-6">
@@ -92,6 +94,24 @@ const Settings = () => {
               Warning: Changing these settings can affect system performance.
             </p>
             <Button variant="destructive">Reset All Settings</Button>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="diagnostics" className="space-y-6">
+          <DebugPanel />
+          <Card className="p-6">
+            <h3 className="text-xl font-bold mb-4">Console Logging</h3>
+            <p className="mb-4">
+              Enable detailed console logging for troubleshooting.
+            </p>
+            <div className="flex gap-4">
+              <Button onClick={() => console.log("Test log - this will appear in the console")}>
+                Test Console Log
+              </Button>
+              <Button onClick={() => console.error("Test error - this will appear in the console")}>
+                Test Console Error
+              </Button>
+            </div>
           </Card>
         </TabsContent>
       </Tabs>
