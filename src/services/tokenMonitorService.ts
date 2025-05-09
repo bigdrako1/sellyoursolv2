@@ -1,4 +1,3 @@
-
 import { Token } from "@/types/token.types";
 import { toast } from "sonner";
 
@@ -143,8 +142,7 @@ export const monitorToken = async (token: Token): Promise<void> => {
       (token.socialScore !== undefined && token.socialScore >= 5); // 5+ KOL mentions
     
     if (shouldAlert) {
-      toast({
-        title: `${runnerPotential} Potential Runner Detected`,
+      toast(`${runnerPotential} Potential Runner Detected`, {
         description: `${token.name} (${token.symbol}) - Quality Score: ${token.qualityScore}`,
         duration: 5000,
       });
