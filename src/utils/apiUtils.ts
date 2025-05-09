@@ -1,14 +1,24 @@
 
 import { toast } from "@/hooks/use-toast";
+import APP_CONFIG, { getActiveApiConfig } from "@/config/appDefinition";
 
-// API keys (should be moved to environment variables in production)
-export const HELIUS_API_KEY = "a18d2c93-d9fa-4db2-8419-707a4f1782f7";
+// Get active API config
+const apiConfig = getActiveApiConfig();
+
+// API keys (from config)
+export const HELIUS_API_KEY = apiConfig.apiKey || "a18d2c93-d9fa-4db2-8419-707a4f1782f7";
 export const BIRDEYE_API_KEY = "67f79318c29e4eda99c3184c2ac65116";
 export const MORALIS_API_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJub25jZSI6ImZlMjk1MDllLWQ0YWMtNDI0YS1hMDg4LTBhZTgwNTdkNzgyNyIsIm9yZ0lkIjoiNDQzOTg4IiwidXNlcklkIjoiNDU2ODA3IiwidHlwZUlkIjoiZGYxNjU0MWYtNTJhNy00MGFiLWFiN2EtODYxZTliYmZiN2U4IiwidHlwZSI6IlBST0pFQ1QiLCJpYXQiOjE3NDU2ODIzODUsImV4cCI6NDkwMTQ0MjM4NX0.eAg55zBFSaFEnnuKA_EmP-u-61Hkb6YqM8v1YhWduAo";
 
 // API endpoints
-export const HELIUS_RPC_URL = `https://mainnet.helius-rpc.com/?api-key=${HELIUS_API_KEY}`;
-export const HELIUS_API_BASE = "https://api.helius.xyz/v0";
+export const HELIUS_RPC_URL = apiConfig.rpcUrl || `https://mainnet.helius-rpc.com/?api-key=${HELIUS_API_KEY}`;
+export const HELIUS_API_BASE = apiConfig.baseUrl || "https://api.helius.xyz/v0";
+export const HELIUS_WS_URL = apiConfig.wsUrl || `wss://mainnet.helius-rpc.com/?api-key=${HELIUS_API_KEY}`;
+export const HELIUS_SECURE_RPC = apiConfig.secureRpcUrl || "https://christye-baw30v-fast-mainnet.helius-rpc.com";
+export const HELIUS_STAKED_RPC = apiConfig.stakedRpcUrl || `https://staked.helius-rpc.com?api-key=${HELIUS_API_KEY}`;
+export const PARSE_TX_URL = apiConfig.parseTransactionsUrl || `https://api.helius.xyz/v0/transactions/?api-key=${HELIUS_API_KEY}`;
+export const TX_HISTORY_URL = apiConfig.transactionHistoryUrl || `https://api.helius.xyz/v0/addresses/{address}/transactions/?api-key=${HELIUS_API_KEY}`;
+
 export const BIRDEYE_API_BASE = "https://public-api.birdeye.so";
 export const JUPITER_API_BASE = "https://price.jup.ag/v4";
 

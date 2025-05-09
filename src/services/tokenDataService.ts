@@ -1,14 +1,19 @@
+
 import { HeliusTokenData, HeliusTokenResponse } from '@/utils/heliusTypes';
 import { Token, WalletActivity } from '@/types/token.types';
-import { HELIUS_API_KEY, BIRDEYE_API_KEY } from '@/utils/apiUtils';
+import { 
+  HELIUS_API_KEY, 
+  HELIUS_RPC_URL, 
+  HELIUS_API_BASE,
+  BIRDEYE_API_KEY 
+} from '@/utils/apiUtils';
 
 const BIRDEYE_API_BASE = "https://public-api.birdeye.so";
 
 // Test Helius API connection
 export const testHeliusConnection = async (): Promise<boolean> => {
   try {
-    const url = `https://mainnet.helius-rpc.com/?api-key=${HELIUS_API_KEY}`;
-    const response = await fetch(url, {
+    const response = await fetch(HELIUS_RPC_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -35,7 +40,7 @@ export const testHeliusConnection = async (): Promise<boolean> => {
 // Utility function to fetch token metadata from Helius API
 export const fetchTokenMetadata = async (tokenAddress: string): Promise<HeliusTokenData | null> => {
   try {
-    const url = `https://api.helius.xyz/v0/tokens/metadata?api-key=${HELIUS_API_KEY}`;
+    const url = `${HELIUS_API_BASE}/tokens/metadata?api-key=${HELIUS_API_KEY}`;
     const response = await fetch(url, {
       method: 'POST',
       headers: {

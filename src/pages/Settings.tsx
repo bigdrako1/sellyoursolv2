@@ -10,6 +10,7 @@ import ConnectedServices from "@/components/ConnectedServices";
 import TokenDetectionBotControl from "@/components/TokenDetectionBotControl";
 import SmartMoneyDetectionSystem from "@/components/SmartMoneyDetectionSystem";
 import WebhookMonitor from "@/components/WebhookMonitor";
+import TwitterScraper from "@/components/TwitterScraper";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -75,6 +76,7 @@ const Settings = () => {
         </TabsContent>
 
         <TabsContent value="detection" className="space-y-6">
+          <TwitterScraper />
           <TokenDetectionBotControl />
           <SmartMoneyDetectionSystem />
         </TabsContent>

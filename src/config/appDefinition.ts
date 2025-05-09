@@ -34,9 +34,14 @@ export const APP_CONFIG = {
     provider: "Helius",
     // Production endpoints
     production: {
-      baseUrl: "https://api.helius.xyz/v1",
-      rpcUrl: "https://mainnet.helius-rpc.com",
-      wsUrl: "wss://mainnet.helius-rpc.com",
+      baseUrl: "https://api.helius.xyz/v0",
+      rpcUrl: "https://mainnet.helius-rpc.com/?api-key=a18d2c93-d9fa-4db2-8419-707a4f1782f7",
+      wsUrl: "wss://mainnet.helius-rpc.com/?api-key=a18d2c93-d9fa-4db2-8419-707a4f1782f7",
+      secureRpcUrl: "https://christye-baw30v-fast-mainnet.helius-rpc.com",
+      stakedRpcUrl: "https://staked.helius-rpc.com?api-key=a18d2c93-d9fa-4db2-8419-707a4f1782f7",
+      eclipseUrl: "https://eclipse.helius-rpc.com/",
+      parseTransactionsUrl: "https://api.helius.xyz/v0/transactions/?api-key=a18d2c93-d9fa-4db2-8419-707a4f1782f7",
+      transactionHistoryUrl: "https://api.helius.xyz/v0/addresses/{address}/transactions/?api-key=a18d2c93-d9fa-4db2-8419-707a4f1782f7",
       apiKey: "a18d2c93-d9fa-4db2-8419-707a4f1782f7",
       environment: "production",
     },
@@ -54,6 +59,17 @@ export const APP_CONFIG = {
     environment: "production",
     defaultApiKey: "a18d2c93-d9fa-4db2-8419-707a4f1782f7", // Updated to use production key
     personalApiKeyDescription: "Your personal API key is used for authentication with Helius API services and to increase rate limits above the default tier. It ensures your requests are prioritized and allows access to premium features."
+  },
+  
+  // Trading configuration
+  features: {
+    autoTrading: true,
+    portfolioTracking: true,
+    marketAnalysis: true,
+    webhookIntegration: true,
+    apiConfiguration: true,
+    multiWallet: true,
+    twitterScraper: true,
   },
   
   // Trading configuration
