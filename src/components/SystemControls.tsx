@@ -4,7 +4,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Settings, Zap, Bot, BarChart2, Activity, AlertTriangle } from "lucide-react";
 import { Link } from "react-router-dom";
 
-interface SystemControlsProps {
+export interface SystemControlsProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
   systemActive: boolean;

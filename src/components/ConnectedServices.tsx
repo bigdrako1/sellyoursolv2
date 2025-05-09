@@ -3,7 +3,7 @@ import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import APP_CONFIG from "@/config/appDefinition";
 
-interface ConnectedServicesProps {
+export interface ConnectedServicesProps {
   servicesStatus: {
     solanaRpc: boolean;
     heliusApi: boolean;

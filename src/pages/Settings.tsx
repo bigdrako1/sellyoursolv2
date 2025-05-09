@@ -16,6 +16,17 @@ import { useAuth } from "@/contexts/AuthContext";
 const Settings = () => {
   const [activeTab, setActiveTab] = useState("general");
   const { user } = useAuth();
+  
+  // Add state for system control props
+  const [systemControlActiveTab, setSystemControlActiveTab] = useState("dashboard");
+  const [systemActive, setSystemActive] = useState(true);
+  
+  // Add state for services status
+  const [servicesStatus, setServicesStatus] = useState({
+    solanaRpc: true,
+    heliusApi: false,
+    webhooks: true,
+  });
 
   useEffect(() => {
     // Check for URL hash to set active tab
@@ -28,6 +39,10 @@ const Settings = () => {
   const handleTabChange = (value: string) => {
     setActiveTab(value);
     window.location.hash = value;
+  };
+  
+  const toggleSystemActive = () => {
+    setSystemActive(!systemActive);
   };
 
   return (
@@ -44,8 +59,13 @@ const Settings = () => {
         </TabsList>
 
         <TabsContent value="general" className="space-y-6">
-          <SystemControls />
-          <ConnectedServices />
+          <SystemControls 
+            activeTab={systemControlActiveTab} 
+            setActiveTab={setSystemControlActiveTab} 
+            systemActive={systemActive} 
+            toggleSystemActive={toggleSystemActive} 
+          />
+          <ConnectedServices servicesStatus={servicesStatus} />
         </TabsContent>
 
         <TabsContent value="apis" className="space-y-6">
