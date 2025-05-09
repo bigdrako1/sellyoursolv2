@@ -191,11 +191,17 @@ export const getMockTokenData = (symbols: string[] = ['SOL']) => {
 // Export a test function that can be called to verify API connectivity
 export const testApiConnectivity = async (url: string): Promise<boolean> => {
   try {
+    // Create AbortController for timeout implementation
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+    
     await fetch(url, { 
-      method: 'HEAD', 
-      timeout: 5000,
-      signal: AbortSignal.timeout(5000)
+      method: 'HEAD',
+      signal: controller.signal
     });
+    
+    // Clear the timeout if the fetch completes successfully
+    clearTimeout(timeoutId);
     return true;
   } catch (error) {
     console.error(`Failed to connect to ${url}:`, error);
