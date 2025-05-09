@@ -67,11 +67,11 @@ const AutoTradeSimple: React.FC = () => {
     },
   });
 
-  // Changed from string[] to TrackedWallet[] to match the interface
   const [trackedWallets, setTrackedWallets] = useState<TrackedWallet[]>([
     { address: "B8oMRGgLETGQcksXBawvTDXvr5NLKX1jsBL2bAhXHyQT", label: "Whale Wallet" },
   ]);
   const [newWallet, setNewWallet] = useState("");
+  const [newWalletLabel, setNewWalletLabel] = useState("");
   const [activeTab, setActiveTab] = useState("general");
 
   // Load saved configuration
@@ -105,10 +105,14 @@ const AutoTradeSimple: React.FC = () => {
 
   const handleAddWallet = () => {
     if (newWallet && newWallet.length >= 32 && !trackedWallets.some(w => w.address === newWallet)) {
-      const newTrackedWallet: TrackedWallet = { address: newWallet };
+      const newTrackedWallet: TrackedWallet = { 
+        address: newWallet,
+        label: newWalletLabel || undefined
+      };
       const updatedWallets = [...trackedWallets, newTrackedWallet];
       setTrackedWallets(updatedWallets);
       setNewWallet("");
+      setNewWalletLabel("");
       localStorage.setItem("tracked_wallets", JSON.stringify(updatedWallets));
       
       toast("Wallet Added", {
@@ -425,6 +429,13 @@ const AutoTradeSimple: React.FC = () => {
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="newWallet" className="mb-1 block">Add Wallet to Track</Label>
+                <Input
+                  id="newWalletLabel"
+                  placeholder="Wallet Label (optional)"
+                  value={newWalletLabel}
+                  onChange={(e) => setNewWalletLabel(e.target.value)}
+                  className="bg-black/20 border-white/10 mb-2"
+                />
                 <div className="flex space-x-2">
                   <Input
                     id="newWallet"
