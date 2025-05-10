@@ -2,21 +2,21 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { 
+import {
   connectWallet,
   disconnectWallet,
   getConnectedWallet,
   signMessage,
   detectWallets,
   verifyWalletSignature,
-  WalletProviderInfo 
+  WalletProviderInfo
 } from '@/utils/solanaWalletUtils';
 
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
-  signIn: (walletName?: string) => Promise<void>;
+  signIn: (walletName?: string) => Promise<{ address?: string } | undefined>;
   signOut: () => Promise<void>;
   isAuthenticated: boolean;
   walletAddress: string | null;
@@ -48,7 +48,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setDetectingWallets(true);
     try {
       const result = await detectWallets();
-      
+
       setWalletsDetected(result.available);
       setInstalledWallets(result.installedWallets);
       setLoadableWallets(result.loadableWallets);
@@ -63,14 +63,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     // Check for Solana wallets
     refreshWalletsStatus();
-    
+
     // Check for connected wallet on mount
     const savedWallet = getConnectedWallet();
     if (savedWallet.address) {
       setWalletAddress(savedWallet.address);
       setWalletProvider(savedWallet.provider);
     }
-    
+
     // Load user data from localStorage if available
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
@@ -82,53 +82,52 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         localStorage.removeItem('user');
       }
     }
-    
+
     setLoading(false);
   }, []);
 
-  const signIn = async (walletName?: string) => {
+  const signIn = async (walletName?: string): Promise<{ address?: string } | undefined> => {
     try {
       setLoading(true);
-      
+
       // Check for available wallets
       await refreshWalletsStatus();
-      
+
       // Check if wallets are available
       if (!walletsDetected && installedWallets.length === 0) {
         console.error("No Solana wallets detected");
         throw new Error("No Solana wallets detected. Please install a Solana wallet extension");
       }
-      
-      // If the wallet is not connected yet, connect it
-      if (!walletAddress) {
+
+      // Step 1: Connect to wallet (if not already connected)
+      let connectedAddress = walletAddress;
+
+      if (!connectedAddress) {
         try {
           // If a specific wallet was requested, use that one
           let walletToUse = walletName;
-          
+
           // If no specific wallet was requested, use the first detected wallet
           if (!walletToUse && installedWallets.length > 0) {
             walletToUse = installedWallets[0].name;
           }
-          
+
           if (!walletToUse) {
             throw new Error("No wallet specified and no wallets detected");
           }
-          
+
           // Connect to wallet
           console.log(`Connecting to wallet: ${walletToUse}`);
           const result = await connectWallet(walletToUse);
-          
+
           if (result.success && result.address) {
             // Set the wallet address
             console.log("Wallet connected:", result);
+            connectedAddress = result.address;
             setWalletAddress(result.address);
             setWalletProvider(result.walletName || walletToUse);
-            
-            // Show toast notification that wallet was connected
-            toast({
-              title: "Wallet Connected",
-              description: `Connected to ${result.walletName || walletToUse}: ${result.address.slice(0, 6)}...${result.address.slice(-4)}`,
-            });
+
+            // We don't show a toast here anymore since we'll show a combined one after authentication
           } else {
             console.error("Connection failed:", result.error);
             throw new Error(result.error || "Failed to connect to wallet");
@@ -141,61 +140,66 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           throw new Error(`Failed to connect to wallet: ${err instanceof Error ? err.message : 'Unknown error'}`);
         }
       }
-      
+
+      // Step 2: Authenticate with signature (combined with connection)
       // Generate a timestamp and nonce for the message
       const timestamp = new Date().getTime();
       const nonce = Math.floor(Math.random() * 1000000).toString();
-      
+
       // Create a unique message for the user to sign with their wallet
-      const message = `Sign this message to authenticate with Token Monitor: ${timestamp}-${nonce}`;
-      
+      const message = `Sign this message to authenticate with SellYourSOL V2: ${timestamp}-${nonce}`;
+
       try {
         console.log("Requesting signature for message:", message);
         // Have the user sign the message with their wallet
         const signResult = await signMessage(message);
-        
+
         if (!signResult.success || !signResult.signature) {
           console.error("Signature failed:", signResult.error);
           throw new Error(signResult.error || "Failed to sign message");
         }
-        
+
         console.log("Message signed successfully, verifying signature...");
         // Verify the signature
         const isValid = await verifyWalletSignature(
-          walletAddress as string,
+          connectedAddress as string,
           message,
           signResult.signature
         );
-        
+
         if (!isValid) {
           console.error("Signature verification failed");
           throw new Error("Signature verification failed");
         }
-        
+
         console.log("Signature verified successfully");
         // Create a simple user object with the wallet data
         const userData = {
-          id: walletAddress,
-          wallet_address: walletAddress,
+          id: connectedAddress,
+          wallet_address: connectedAddress,
           wallet_provider: walletProvider,
           auth_method: "wallet_signature",
           signature: Array.from(signResult.signature),
           timestamp: timestamp,
           nonce: nonce
         };
-        
+
         // Store user data in localStorage
         localStorage.setItem('user', JSON.stringify(userData));
-        
+
         // Set the user state
         setUser(userData as any);
         setIsAuthenticated(true);
-        
+
+        // Show a combined toast for both connection and authentication
         toast({
-          title: "Authentication Successful",
-          description: "Successfully authenticated with wallet",
+          title: "Wallet Connected & Authenticated",
+          description: `Connected to ${walletProvider}: ${connectedAddress.slice(0, 6)}...${connectedAddress.slice(-4)}`,
           variant: "default",
         });
+
+        // Return the connected address
+        return { address: connectedAddress };
       } catch (err) {
         console.error("Error in message signing:", err);
         if (err instanceof Error && err.message.includes('User rejected')) {
@@ -226,15 +230,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       setWalletAddress(null);
       setWalletProvider(null);
-      
+
       // Clear user data from localStorage
       localStorage.removeItem('user');
-      
+
       // Reset state
       setUser(null);
       setSession(null);
       setIsAuthenticated(false);
-      
+
       toast({
         title: "Signed Out",
         description: "Successfully signed out",

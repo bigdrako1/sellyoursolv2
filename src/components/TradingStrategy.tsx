@@ -14,12 +14,10 @@ import {
   Bot,
   Save,
   InfoIcon,
-  AlertCircle,
   Zap
 } from "lucide-react";
-import { 
-  secureInitialInvestment, 
-  TradingPosition,
+import {
+  secureInitialInvestment,
   loadTradingPositions,
   saveTradingPositions
 } from "@/utils/tradingUtils";
@@ -52,7 +50,7 @@ const TradingStrategy: React.FC<TradingStrategyProps> = ({ onSettingsChange }) =
     secureInitial: true,
     secureInitialThreshold: 100 // Default to 100% profit (2X) for securing initial
   });
-  
+
   // Load saved settings on mount
   useEffect(() => {
     const savedSettings = localStorage.getItem('trading_settings');
@@ -68,7 +66,7 @@ const TradingStrategy: React.FC<TradingStrategyProps> = ({ onSettingsChange }) =
       }
     }
   }, []);
-  
+
   const handleToggle = (key: keyof TradingSettings) => {
     // Don't allow disabling secureInitial as we want to always secure at 2X
     if (key === 'secureInitial') {
@@ -78,35 +76,35 @@ const TradingStrategy: React.FC<TradingStrategyProps> = ({ onSettingsChange }) =
       );
       return;
     }
-    
+
     const newSettings = {
       ...settings,
       [key]: !settings[key]
     };
-    
+
     setSettings(newSettings);
     if (onSettingsChange) {
       onSettingsChange(newSettings);
     }
   };
-  
+
   const handleSliderChange = (key: keyof TradingSettings, value: number[]) => {
     // Don't allow changing secureInitialThreshold as we want to fix it at 100% (2X)
     if (key === 'secureInitialThreshold') {
       return;
     }
-    
+
     const newSettings = {
       ...settings,
       [key]: value[0]
     };
-    
+
     setSettings(newSettings);
     if (onSettingsChange) {
       onSettingsChange(newSettings);
     }
   };
-  
+
   const handleSaveSettings = () => {
     // Ensure secureInitial is always true and threshold is 100% (2X)
     const finalSettings = {
@@ -114,26 +112,26 @@ const TradingStrategy: React.FC<TradingStrategyProps> = ({ onSettingsChange }) =
       secureInitial: true,
       secureInitialThreshold: 100
     };
-    
+
     localStorage.setItem('trading_settings', JSON.stringify(finalSettings));
-    
+
     toast(
       "Settings Saved",
       { description: "Your trading settings have been saved successfully" }
     );
-    
+
     // Apply secure initial settings to any existing positions
     applySecureInitialToPositions();
   };
-  
+
   // Apply secure initial settings to existing positions
   const applySecureInitialToPositions = () => {
     const positions = loadTradingPositions();
-    
+
     if (positions.length === 0) {
       return;
     }
-    
+
     let updated = false;
     const updatedPositions = positions.map(position => {
       if (position.status === 'active' && !position.securedInitial && position.currentPrice > position.entryPrice) {
@@ -142,7 +140,7 @@ const TradingStrategy: React.FC<TradingStrategyProps> = ({ onSettingsChange }) =
       }
       return position;
     });
-    
+
     if (updated) {
       saveTradingPositions(updatedPositions);
       toast(
@@ -151,7 +149,7 @@ const TradingStrategy: React.FC<TradingStrategyProps> = ({ onSettingsChange }) =
       );
     }
   };
-  
+
   return (
     <Card className="card-with-border">
       <CardHeader>
@@ -182,7 +180,7 @@ const TradingStrategy: React.FC<TradingStrategyProps> = ({ onSettingsChange }) =
                   onCheckedChange={() => handleToggle('smartMoneyTracking')}
                 />
               </div>
-              
+
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Wallet className="h-4 w-4 text-purple-400" />
@@ -194,7 +192,7 @@ const TradingStrategy: React.FC<TradingStrategyProps> = ({ onSettingsChange }) =
                   onCheckedChange={() => handleToggle('whaleActivityMonitoring')}
                 />
               </div>
-              
+
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Bot className="h-4 w-4 text-green-400" />
@@ -206,7 +204,7 @@ const TradingStrategy: React.FC<TradingStrategyProps> = ({ onSettingsChange }) =
                   onCheckedChange={() => handleToggle('walletTracking')}
                 />
               </div>
-              
+
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <TrendingUp className="h-4 w-4 text-amber-400" />
@@ -220,10 +218,10 @@ const TradingStrategy: React.FC<TradingStrategyProps> = ({ onSettingsChange }) =
               </div>
             </div>
           </div>
-          
+
           <div className="pt-4 border-t border-white/10">
             <h3 className="text-sm font-medium mb-3">Trading Model Settings</h3>
-            
+
             <div className="space-y-5">
               <div>
                 <div className="flex justify-between mb-1">
@@ -239,7 +237,7 @@ const TradingStrategy: React.FC<TradingStrategyProps> = ({ onSettingsChange }) =
                   className="mb-2"
                 />
               </div>
-              
+
               <div>
                 <div className="flex justify-between mb-1">
                   <Label htmlFor="stopLoss">Stop Loss: {settings.stopLoss}%</Label>
@@ -254,7 +252,7 @@ const TradingStrategy: React.FC<TradingStrategyProps> = ({ onSettingsChange }) =
                   className="mb-2"
                 />
               </div>
-              
+
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Shield className="h-4 w-4 text-green-400" />
@@ -266,7 +264,7 @@ const TradingStrategy: React.FC<TradingStrategyProps> = ({ onSettingsChange }) =
                   disabled={true}
                 />
               </div>
-              
+
               <div className="space-y-2 pl-6 border-l-2 border-green-500/20">
                 <div className="flex items-center gap-2">
                   <InfoIcon className="h-4 w-4 text-blue-400" />
@@ -280,7 +278,7 @@ const TradingStrategy: React.FC<TradingStrategyProps> = ({ onSettingsChange }) =
               </div>
             </div>
           </div>
-          
+
           <div className="pt-3 border-t border-white/10">
             <h3 className="text-sm font-medium mb-3">Scale-Out Strategy</h3>
             <div className="bg-blue-500/10 p-3 rounded-md border border-blue-500/20 space-y-2">
@@ -293,7 +291,7 @@ const TradingStrategy: React.FC<TradingStrategyProps> = ({ onSettingsChange }) =
                   Default
                 </Badge>
               </div>
-              
+
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-2">
                   <div className="h-2 w-2 bg-blue-500 rounded-full"></div>
@@ -303,7 +301,7 @@ const TradingStrategy: React.FC<TradingStrategyProps> = ({ onSettingsChange }) =
                   Active
                 </Badge>
               </div>
-              
+
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-2">
                   <div className="h-2 w-2 bg-purple-500 rounded-full"></div>
@@ -313,7 +311,7 @@ const TradingStrategy: React.FC<TradingStrategyProps> = ({ onSettingsChange }) =
                   Active
                 </Badge>
               </div>
-              
+
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-2">
                   <div className="h-2 w-2 bg-pink-500 rounded-full"></div>
@@ -325,9 +323,9 @@ const TradingStrategy: React.FC<TradingStrategyProps> = ({ onSettingsChange }) =
               </div>
             </div>
           </div>
-          
+
           <div className="flex justify-end pt-2">
-            <Button 
+            <Button
               onClick={handleSaveSettings}
               className="flex items-center gap-2"
             >

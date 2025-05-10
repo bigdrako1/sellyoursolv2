@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { AlertCircle, ExternalLink, TrendingUp, Check, Loader2 } from "lucide-react";
-import { toast } from "@/components/ui/sonner";
+import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -53,13 +53,13 @@ const TradeAlerts: React.FC = () => {
   const [tradeAmount, setTradeAmount] = useState(0.1);
   const [isProcessing, setIsProcessing] = useState(false);
   const [trackPosition, setTrackPosition] = useState(true);
-  
+
   const formatTimeAgo = (timestamp: string) => {
     const date = new Date(timestamp);
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
     const diffMins = Math.floor(diffMs / 60000);
-    
+
     if (diffMins < 60) {
       return `${diffMins}m ago`;
     } else {
@@ -67,7 +67,7 @@ const TradeAlerts: React.FC = () => {
       return `${diffHours}h ago`;
     }
   };
-  
+
   const getAlertBadge = (type: string) => {
     switch (type) {
       case "price_gain":
@@ -82,21 +82,21 @@ const TradeAlerts: React.FC = () => {
         return <Badge>Alert</Badge>;
     }
   };
-  
+
   const handleTradeClick = (alert: TradeAlert) => {
     setSelectedToken(alert);
     setTradeDialogOpen(true);
   };
-  
+
   const handleExecuteTrade = async () => {
     if (!selectedToken) return;
-    
+
     setIsProcessing(true);
-    
+
     try {
       // Execute the trade using our internal trading function
       const result = await executeTrade(selectedToken.tokenAddress, tradeAmount);
-      
+
       if (result.success) {
         // If tracking is enabled, create a position to track
         if (trackPosition) {
@@ -108,29 +108,29 @@ const TradeAlerts: React.FC = () => {
             tradeAmount * 100, // Convert to USD for demo
             "Alert Signal"
           );
-          
+
           console.log("Created position:", position);
         }
-        
+
         toast.success(`Successfully traded ${tradeAmount} SOL for ${selectedToken.tokenSymbol}`, {
           description: "Transaction completed successfully"
         });
       } else {
-        toast.error("Trade failed", { 
-          description: result.error || "Please try again later" 
+        toast.error("Trade failed", {
+          description: result.error || "Please try again later"
         });
       }
     } catch (error) {
       console.error("Trade execution error:", error);
-      toast.error("Trade failed", { 
-        description: "An unexpected error occurred" 
+      toast.error("Trade failed", {
+        description: "An unexpected error occurred"
       });
     } finally {
       setIsProcessing(false);
       setTradeDialogOpen(false);
     }
   };
-  
+
   return (
     <Card className="card-with-border">
       <CardHeader>
@@ -158,17 +158,17 @@ const TradeAlerts: React.FC = () => {
                   {alert.tokenName} {alert.detail}
                 </div>
                 <div className="mt-2 flex gap-1">
-                  <Button 
-                    size="sm" 
+                  <Button
+                    size="sm"
                     className="text-xs h-7 flex-grow"
                     onClick={() => handleTradeClick(alert)}
                   >
                     <TrendingUp className="h-3 w-3 mr-1" />
                     Trade
                   </Button>
-                  <Button 
-                    size="icon" 
-                    variant="outline" 
+                  <Button
+                    size="icon"
+                    variant="outline"
                     className="bg-black/20 border-white/10 h-7 w-7"
                     onClick={() => window.open(`https://birdeye.so/token/${alert.tokenAddress}?chain=solana`, '_blank')}
                   >
@@ -193,7 +193,7 @@ const TradeAlerts: React.FC = () => {
               Trade {selectedToken?.tokenSymbol}
             </DialogTitle>
           </DialogHeader>
-          
+
           {selectedToken && (
             <div className="space-y-4">
               <div className="bg-black/20 p-3 rounded-md">
@@ -212,7 +212,7 @@ const TradeAlerts: React.FC = () => {
                   <span>{selectedToken.type.replace('_', ' ')}</span>
                 </div>
               </div>
-              
+
               <div>
                 <Label htmlFor="amount">Amount (SOL)</Label>
                 <div className="mt-1">
@@ -241,7 +241,7 @@ const TradeAlerts: React.FC = () => {
                   <span>1.0</span>
                 </div>
               </div>
-              
+
               <div className="flex items-center justify-between">
                 <Label htmlFor="trackPosition" className="cursor-pointer">Track position in portfolio</Label>
                 <input
@@ -252,7 +252,7 @@ const TradeAlerts: React.FC = () => {
                   className="form-checkbox h-4 w-4"
                 />
               </div>
-              
+
               <div className="bg-blue-900/20 border border-blue-500/20 rounded-md p-3">
                 <p className="text-xs text-blue-300">
                   This trade will be executed directly within the app using our optimal routing algorithm.
@@ -261,12 +261,12 @@ const TradeAlerts: React.FC = () => {
               </div>
             </div>
           )}
-          
+
           <DialogFooter>
             <Button variant="outline" onClick={() => setTradeDialogOpen(false)}>
               Cancel
             </Button>
-            <Button 
+            <Button
               onClick={handleExecuteTrade}
               disabled={isProcessing || !tradeAmount}
               className="relative"

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Neutral Pepe - Yellow with Slight Smile -->
+  <defs>
+    <linearGradient id="yellowGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFC107" />
+      <stop offset="50%" stop-color="#FFB300" />
+      <stop offset="100%" stop-color="#FFA000" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Pepe Head -->
+  <ellipse cx="100" cy="110" rx="70" ry="65" fill="#FFC107" />
+  
+  <!-- Eyes -->
+  <ellipse cx="75" cy="95" rx="15" ry="20" fill="white" />
+  <ellipse cx="125" cy="95" rx="15" ry="20" fill="white" />
+  <circle cx="75" cy="95" r="8" fill="black" />
+  <circle cx="125" cy="95" r="8" fill="black" />
+  <circle cx="72" cy="92" r="3" fill="white" />
+  <circle cx="122" cy="92" r="3" fill="white" />
+  
+  <!-- Mouth - Slight Smile -->
+  <path d="M80 130 Q100 140 120 130" stroke="#111" stroke-width="3" fill="none" />
+</svg>

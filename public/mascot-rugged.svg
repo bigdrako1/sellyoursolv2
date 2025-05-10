@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Rugged Pepe - Black with Tears and Bandages -->
+  <defs>
+    <linearGradient id="blackGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#424242" />
+      <stop offset="50%" stop-color="#212121" />
+      <stop offset="100%" stop-color="#000000" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Pepe Head -->
+  <ellipse cx="100" cy="110" rx="70" ry="65" fill="#212121" />
+  
+  <!-- Eyes -->
+  <ellipse cx="75" cy="95" rx="15" ry="20" fill="white" />
+  <ellipse cx="125" cy="95" rx="15" ry="20" fill="white" />
+  <circle cx="75" cy="95" r="8" fill="black" />
+  <circle cx="125" cy="95" r="8" fill="black" />
+  <circle cx="72" cy="92" r="3" fill="white" />
+  <circle cx="122" cy="92" r="3" fill="white" />
+  
+  <!-- Mouth - Devastated -->
+  <path d="M70 145 Q100 120 130 145" stroke="#111" stroke-width="4" fill="none" />
+  
+  <!-- Tears -->
+  <path d="M65 105 Q60 120 65 135" stroke="#2196F3" stroke-width="3" />
+  <path d="M135 105 Q140 120 135 135" stroke="#2196F3" stroke-width="3" />
+  <circle cx="65" cy="140" r="3" fill="#2196F3" />
+  <circle cx="135" cy="140" r="3" fill="#2196F3" />
+  
+  <!-- Bandages -->
+  <rect x="85" y="70" width="30" height="10" rx="2" fill="#EEEEEE" />
+  <rect x="95" y="65" width="10" height="20" rx="2" fill="#EEEEEE" />
+  <line x1="90" y1="75" x2="110" y2="75" stroke="#BDBDBD" stroke-width="1" />
+  <line x1="100" y1="65" x2="100" y2="85" stroke="#BDBDBD" stroke-width="1" />
+</svg>

@@ -14,16 +14,16 @@ interface SystemSettings {
   minimumVolume: number;
   minimumHolders: number;
   maximumRiskScore: number;
-  
+
   // Token detection settings
   qualityThreshold: number;
   trendingTokenWeight: number;
   smartMoneyWeight: number;
-  
+
   // Wallet tracking settings
   autoTrackProfitableWallets: boolean;
   walletTrackingThreshold: number;
-  
+
   // Currency settings
   currency: "USD" | "EUR" | "GBP" | "JPY" | "KES";
 }
@@ -38,10 +38,10 @@ interface UIState {
 interface SettingsState {
   // System settings
   systemSettings: SystemSettings;
-  
+
   // UI state
   uiState: UIState;
-  
+
   // Actions - System settings
   setSystemActive: (isActive: boolean) => void;
   setMonitoringEnabled: (isEnabled: boolean) => void;
@@ -60,15 +60,15 @@ interface SettingsState {
   setAutoTrackProfitableWallets: (isEnabled: boolean) => void;
   setWalletTrackingThreshold: (value: number) => void;
   setCurrency: (currency: SystemSettings['currency']) => void;
-  
+
   // Actions - UI state
   setActiveSettingsTab: (tab: string) => void;
   setActiveSystemControlTab: (tab: string) => void;
   setTimeRange: (range: "24h" | "7d" | "30d" | "all") => void;
-  
+
   // Bulk actions
   resetSettings: () => void;
-  
+
   // Convenience methods
   getSetting: <K extends keyof SystemSettings>(key: K) => SystemSettings[K];
   getUIState: <K extends keyof UIState>(key: K) => UIState[K];
@@ -107,7 +107,7 @@ const getCurrencySymbol = (currency: SystemSettings['currency']): string => {
 
 const defaultUIState: UIState = {
   activeSettingsTab: "general",
-  activeSystemControlTab: "dashboard",
+  activeSystemControlTab: "overview",
   timeRange: "7d",
   currencySymbol: getCurrencySymbol(defaultSystemSettings.currency),
 };
@@ -122,96 +122,96 @@ export const useSettingsStore = create<SettingsState>()(
       // Initial state
       systemSettings: defaultSystemSettings,
       uiState: defaultUIState,
-      
+
       // Actions - System settings
-      setSystemActive: (isActive) => set((state) => ({ 
-        systemSettings: { ...state.systemSettings, systemActive: isActive } 
+      setSystemActive: (isActive) => set((state) => ({
+        systemSettings: { ...state.systemSettings, systemActive: isActive }
       })),
-      
-      setMonitoringEnabled: (isEnabled) => set((state) => ({ 
-        systemSettings: { ...state.systemSettings, monitoringEnabled: isEnabled } 
+
+      setMonitoringEnabled: (isEnabled) => set((state) => ({
+        systemSettings: { ...state.systemSettings, monitoringEnabled: isEnabled }
       })),
-      
-      setAutoTradeEnabled: (isEnabled) => set((state) => ({ 
-        systemSettings: { ...state.systemSettings, autoTradeEnabled: isEnabled } 
+
+      setAutoTradeEnabled: (isEnabled) => set((state) => ({
+        systemSettings: { ...state.systemSettings, autoTradeEnabled: isEnabled }
       })),
-      
-      setNotificationsEnabled: (isEnabled) => set((state) => ({ 
-        systemSettings: { ...state.systemSettings, notificationsEnabled: isEnabled } 
+
+      setNotificationsEnabled: (isEnabled) => set((state) => ({
+        systemSettings: { ...state.systemSettings, notificationsEnabled: isEnabled }
       })),
-      
-      setSoundEnabled: (isEnabled) => set((state) => ({ 
-        systemSettings: { ...state.systemSettings, soundEnabled: isEnabled } 
+
+      setSoundEnabled: (isEnabled) => set((state) => ({
+        systemSettings: { ...state.systemSettings, soundEnabled: isEnabled }
       })),
-      
-      setMaximumInvestment: (value) => set((state) => ({ 
-        systemSettings: { ...state.systemSettings, maximumInvestment: value } 
+
+      setMaximumInvestment: (value) => set((state) => ({
+        systemSettings: { ...state.systemSettings, maximumInvestment: value }
       })),
-      
-      setRiskLevel: (value) => set((state) => ({ 
-        systemSettings: { ...state.systemSettings, riskLevel: value } 
+
+      setRiskLevel: (value) => set((state) => ({
+        systemSettings: { ...state.systemSettings, riskLevel: value }
       })),
-      
-      setMinimumLiquidity: (value) => set((state) => ({ 
-        systemSettings: { ...state.systemSettings, minimumLiquidity: value } 
+
+      setMinimumLiquidity: (value) => set((state) => ({
+        systemSettings: { ...state.systemSettings, minimumLiquidity: value }
       })),
-      
-      setMinimumVolume: (value) => set((state) => ({ 
-        systemSettings: { ...state.systemSettings, minimumVolume: value } 
+
+      setMinimumVolume: (value) => set((state) => ({
+        systemSettings: { ...state.systemSettings, minimumVolume: value }
       })),
-      
-      setMinimumHolders: (value) => set((state) => ({ 
-        systemSettings: { ...state.systemSettings, minimumHolders: value } 
+
+      setMinimumHolders: (value) => set((state) => ({
+        systemSettings: { ...state.systemSettings, minimumHolders: value }
       })),
-      
-      setMaximumRiskScore: (value) => set((state) => ({ 
-        systemSettings: { ...state.systemSettings, maximumRiskScore: value } 
+
+      setMaximumRiskScore: (value) => set((state) => ({
+        systemSettings: { ...state.systemSettings, maximumRiskScore: value }
       })),
-      
+
       setQualityThreshold: (value) => set((state) => ({
         systemSettings: { ...state.systemSettings, qualityThreshold: value }
       })),
-      
+
       setTrendingTokenWeight: (value) => set((state) => ({
         systemSettings: { ...state.systemSettings, trendingTokenWeight: value }
       })),
-      
+
       setSmartMoneyWeight: (value) => set((state) => ({
         systemSettings: { ...state.systemSettings, smartMoneyWeight: value }
       })),
-      
+
       setAutoTrackProfitableWallets: (isEnabled) => set((state) => ({
         systemSettings: { ...state.systemSettings, autoTrackProfitableWallets: isEnabled }
       })),
-      
+
       setWalletTrackingThreshold: (value) => set((state) => ({
         systemSettings: { ...state.systemSettings, walletTrackingThreshold: value }
       })),
-      
+
       setCurrency: (currency) => set((state) => ({
         systemSettings: { ...state.systemSettings, currency },
         uiState: { ...state.uiState, currencySymbol: getCurrencySymbol(currency) }
       })),
-      
+
       // Actions - UI state
-      setActiveSettingsTab: (tab) => set((state) => ({ 
+      setActiveSettingsTab: (tab) => set((state) => ({
         uiState: { ...state.uiState, activeSettingsTab: tab }
       })),
-      
-      setActiveSystemControlTab: (tab) => set((state) => ({ 
+
+      setActiveSystemControlTab: (tab) => set((state) => ({
         uiState: { ...state.uiState, activeSystemControlTab: tab }
       })),
-      
+
       setTimeRange: (range) => set((state) => ({
         uiState: { ...state.uiState, timeRange: range }
       })),
-      
+
       // Bulk actions
       resetSettings: () => set({
         systemSettings: defaultSystemSettings,
         uiState: defaultUIState,
       }),
-      
+
       // Convenience methods
       getSetting: (key) => get().systemSettings[key],
       getUIState: (key) => get().uiState[key],

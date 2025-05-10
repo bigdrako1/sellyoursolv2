@@ -1,7 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
 import Header from "@/components/Header";
-import Footer from "@/components/Footer";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -46,7 +45,7 @@ const Webhooks = () => {
   const [editingWebhook, setEditingWebhook] = useState<WebhookConfig | null>(null);
   const [customPayload, setCustomPayload] = useState(defaultPayload);
   const { toast } = useToast();
-  
+
   // Initialize webhooks from localStorage on component mount
   useEffect(() => {
     const savedWebhooks = localStorage.getItem('webhooks');
@@ -58,12 +57,12 @@ const Webhooks = () => {
       }
     }
   }, []);
-  
+
   // Save webhooks to localStorage whenever they change
   useEffect(() => {
     localStorage.setItem('webhooks', JSON.stringify(webhooks));
   }, [webhooks]);
-  
+
   const handleAddWebhook = () => {
     if (!newWebhookUrl.trim()) {
       toast({
@@ -73,7 +72,7 @@ const Webhooks = () => {
       });
       return;
     }
-    
+
     const newWebhook: WebhookConfig = {
       id: Date.now().toString(),
       name: newWebhookName.trim() || `Webhook ${webhooks.length + 1}`,
@@ -83,59 +82,59 @@ const Webhooks = () => {
       status: 'active',
       payload: customPayload
     };
-    
+
     setWebhooks([...webhooks, newWebhook]);
     setNewWebhookUrl('');
     setNewWebhookName('');
     setNewWebhookDesc('');
     setCustomPayload(defaultPayload);
-    
+
     toast({
       title: "Webhook Added",
       description: "Your webhook has been added successfully."
     });
   };
-  
+
   const handleUpdateWebhook = () => {
     if (!editingWebhook) return;
-    
-    const updatedWebhooks = webhooks.map(webhook => 
+
+    const updatedWebhooks = webhooks.map(webhook =>
       webhook.id === editingWebhook.id ? editingWebhook : webhook
     );
-    
+
     setWebhooks(updatedWebhooks);
     setEditingWebhook(null);
-    
+
     toast({
       title: "Webhook Updated",
       description: "Your webhook has been updated successfully."
     });
   };
-  
+
   const handleDeleteWebhook = (id: string) => {
     const updatedWebhooks = webhooks.filter(webhook => webhook.id !== id);
     setWebhooks(updatedWebhooks);
-    
+
     toast({
       title: "Webhook Deleted",
       description: "Your webhook has been removed."
     });
   };
-  
+
   const handleTestWebhook = (webhook: WebhookConfig) => {
     // Mock webhook trigger
     toast({
       title: "Testing Webhook",
       description: `Sending test request to ${webhook.name}`
     });
-    
+
     // Update the webhook with a new lastTriggered timestamp
-    const updatedWebhooks = webhooks.map(w => 
+    const updatedWebhooks = webhooks.map(w =>
       w.id === webhook.id ? { ...w, lastTriggered: new Date().toISOString() } : w
     );
-    
+
     setWebhooks(updatedWebhooks);
-    
+
     // Simulate webhook response after a delay
     setTimeout(() => {
       toast({
@@ -144,7 +143,7 @@ const Webhooks = () => {
       });
     }, 1500);
   };
-  
+
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
     toast({
@@ -152,21 +151,21 @@ const Webhooks = () => {
       description: "Copied to clipboard"
     });
   };
-  
+
   return (
     <div className="min-h-screen flex flex-col bg-trading-dark text-white">
       <Header />
-      
+
       <main className="flex-grow container mx-auto px-4 pb-10">
         <div className="py-6">
           <h1 className="text-3xl font-bold">Webhooks</h1>
           <p className="text-gray-400 mt-2">Configure and manage webhooks to receive token alerts</p>
-          
+
           <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Sidebar with token alert configuration */}
             <div className="lg:col-span-1">
               <TokenAlert onAlertToggle={(enabled) => console.log("Alerts toggled:", enabled)} initiallyEnabled={true} />
-              
+
               <Card className="mt-6 p-6 bg-trading-darkAccent">
                 <h3 className="text-lg font-bold mb-2 flex items-center">
                   <Webhook className="mr-2 h-5 w-5" />
@@ -175,7 +174,7 @@ const Webhooks = () => {
                 <p className="text-gray-400 text-sm mb-4">
                   Use these variables in your webhook payload to dynamically insert token data:
                 </p>
-                
+
                 <div className="space-y-2 text-sm">
                   {[
                     { name: '{{token_address}}', desc: 'Token contract address' },
@@ -207,7 +206,7 @@ const Webhooks = () => {
                 </div>
               </Card>
             </div>
-            
+
             {/* Main content */}
             <div className="lg:col-span-2">
               <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -215,11 +214,11 @@ const Webhooks = () => {
                   <TabsTrigger value="config">Configuration</TabsTrigger>
                   <TabsTrigger value="monitor">Monitor</TabsTrigger>
                 </TabsList>
-                
+
                 <TabsContent value="config" className="mt-0">
                   <Card className="p-6 bg-trading-darkAccent">
                     <h3 className="text-lg font-bold mb-4">Your Webhooks</h3>
-                    
+
                     {webhooks.length === 0 ? (
                       <div className="text-center py-10 text-gray-400">
                         <Webhook className="mx-auto h-12 w-12 mb-4 opacity-50" />
@@ -239,7 +238,7 @@ const Webhooks = () => {
                                 )}
                                 <div className="flex items-center mt-2 text-xs text-gray-400">
                                   <div className={`w-2 h-2 rounded-full mr-2 ${
-                                    webhook.status === 'active' ? 'bg-green-500' : 
+                                    webhook.status === 'active' ? 'bg-green-500' :
                                     webhook.status === 'error' ? 'bg-red-500' : 'bg-yellow-500'
                                   }`}></div>
                                   <span className="capitalize">{webhook.status}</span>
@@ -249,25 +248,25 @@ const Webhooks = () => {
                                 </div>
                               </div>
                               <div className="flex space-x-2">
-                                <Button 
-                                  variant="ghost" 
+                                <Button
+                                  variant="ghost"
                                   size="icon"
                                   onClick={() => handleTestWebhook(webhook)}
                                   title="Test webhook"
                                 >
                                   <Play className="h-4 w-4" />
                                 </Button>
-                                <Button 
-                                  variant="ghost" 
+                                <Button
+                                  variant="ghost"
                                   size="icon"
                                   onClick={() => setEditingWebhook(webhook)}
                                   title="Edit webhook"
                                 >
                                   <RotateCw className="h-4 w-4" />
                                 </Button>
-                                <Button 
-                                  variant="ghost" 
-                                  size="icon" 
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
                                   onClick={() => handleDeleteWebhook(webhook.id)}
                                   className="text-red-500 hover:text-red-600"
                                   title="Delete webhook"
@@ -280,57 +279,57 @@ const Webhooks = () => {
                         ))}
                       </div>
                     )}
-                    
+
                     {editingWebhook ? (
                       <>
                         <Separator className="my-6" />
-                        
+
                         <h3 className="text-lg font-bold mb-4">Update Webhook</h3>
-                        
+
                         <div className="space-y-4">
                           <div>
                             <label className="text-sm font-medium mb-1 block">Name</label>
-                            <Input 
+                            <Input
                               placeholder="Webhook name"
                               value={editingWebhook.name}
                               onChange={(e) => setEditingWebhook({...editingWebhook, name: e.target.value})}
                               className="bg-black/30 border-white/10"
                             />
                           </div>
-                          
+
                           <div>
                             <label className="text-sm font-medium mb-1 block">URL</label>
-                            <Input 
+                            <Input
                               placeholder="https://example.com/webhook"
                               value={editingWebhook.url}
                               onChange={(e) => setEditingWebhook({...editingWebhook, url: e.target.value})}
                               className="bg-black/30 border-white/10"
                             />
                           </div>
-                          
+
                           <div>
                             <label className="text-sm font-medium mb-1 block">Description (Optional)</label>
-                            <Input 
+                            <Input
                               placeholder="Webhook description"
                               value={editingWebhook.description}
                               onChange={(e) => setEditingWebhook({...editingWebhook, description: e.target.value})}
                               className="bg-black/30 border-white/10"
                             />
                           </div>
-                          
+
                           <div>
                             <label className="text-sm font-medium mb-1 block">Payload Template</label>
-                            <Textarea 
+                            <Textarea
                               placeholder="Webhook payload JSON template"
                               value={editingWebhook.payload}
                               onChange={(e) => setEditingWebhook({...editingWebhook, payload: e.target.value})}
                               className="bg-black/30 border-white/10 font-mono h-40"
                             />
                           </div>
-                          
+
                           <div className="flex justify-end space-x-4 mt-4">
-                            <Button 
-                              variant="outline" 
+                            <Button
+                              variant="outline"
                               onClick={() => setEditingWebhook(null)}
                               className="border-white/10"
                             >
@@ -348,50 +347,50 @@ const Webhooks = () => {
                     ) : (
                       <>
                         <Separator className="my-6" />
-                        
+
                         <h3 className="text-lg font-bold mb-4">Add New Webhook</h3>
-                        
+
                         <div className="space-y-4">
                           <div>
                             <label className="text-sm font-medium mb-1 block">Name</label>
-                            <Input 
+                            <Input
                               placeholder="Webhook name"
                               value={newWebhookName}
                               onChange={(e) => setNewWebhookName(e.target.value)}
                               className="bg-black/30 border-white/10"
                             />
                           </div>
-                          
+
                           <div>
                             <label className="text-sm font-medium mb-1 block">URL</label>
-                            <Input 
+                            <Input
                               placeholder="https://example.com/webhook"
                               value={newWebhookUrl}
                               onChange={(e) => setNewWebhookUrl(e.target.value)}
                               className="bg-black/30 border-white/10"
                             />
                           </div>
-                          
+
                           <div>
                             <label className="text-sm font-medium mb-1 block">Description (Optional)</label>
-                            <Input 
+                            <Input
                               placeholder="Webhook description"
                               value={newWebhookDesc}
                               onChange={(e) => setNewWebhookDesc(e.target.value)}
                               className="bg-black/30 border-white/10"
                             />
                           </div>
-                          
+
                           <div>
                             <label className="text-sm font-medium mb-1 block">Payload Template</label>
-                            <Textarea 
+                            <Textarea
                               placeholder="Webhook payload JSON template"
                               value={customPayload}
                               onChange={(e) => setCustomPayload(e.target.value)}
                               className="bg-black/30 border-white/10 font-mono h-40"
                             />
                           </div>
-                          
+
                           <Button
                             onClick={handleAddWebhook}
                             className="w-full bg-blue-600 hover:bg-blue-700 mt-4"
@@ -404,7 +403,7 @@ const Webhooks = () => {
                     )}
                   </Card>
                 </TabsContent>
-                
+
                 <TabsContent value="monitor" className="mt-0">
                   <WebhookMonitor />
                 </TabsContent>
@@ -413,8 +412,6 @@ const Webhooks = () => {
           </div>
         </div>
       </main>
-      
-      <Footer systemActive={true} systemLatency={42} />
     </div>
   );
 };

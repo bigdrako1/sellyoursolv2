@@ -16,9 +16,12 @@ import MarketAnalysis from "@/pages/MarketAnalysis";
 import Auth from "@/pages/Auth";
 import NotFound from "@/pages/NotFound";
 import Layout from "@/components/Layout";
-import TelegramMonitorPage from "@/pages/TelegramMonitor";
 import TokensPage from "@/pages/Tokens";
-import WalletsPage from "@/pages/Wallets";
+
+// Import pages
+import AutoTrading from "@/pages/AutoTrading";
+import WalletTracking from "@/pages/WalletTracking";
+import ConsolidatedDashboard from "@/pages/ConsolidatedDashboard";
 
 // Create Query Client
 const queryClient = new QueryClient({
@@ -41,6 +44,10 @@ const router = createBrowserRouter([
         element: <Index />,
       },
       {
+        path: "dashboard",
+        element: <ConsolidatedDashboard />,
+      },
+      {
         path: "settings",
         element: <Settings />,
       },
@@ -53,16 +60,16 @@ const router = createBrowserRouter([
         element: <MarketAnalysis />,
       },
       {
-        path: "telegram-monitor",
-        element: <TelegramMonitorPage />,
-      },
-      {
         path: "tokens",
         element: <TokensPage />,
       },
       {
-        path: "wallets",
-        element: <WalletsPage />,
+        path: "auto-trading",
+        element: <AutoTrading />,
+      },
+      {
+        path: "wallet-tracking",
+        element: <WalletTracking />,
       }
     ],
   },

@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Legendary Pepe - Bright Green with Crown and Flying Cash -->
+  <defs>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="3" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+    <linearGradient id="greenGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4CAF50" />
+      <stop offset="50%" stop-color="#2E7D32" />
+      <stop offset="100%" stop-color="#1B5E20" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Pepe Head -->
+  <ellipse cx="100" cy="110" rx="70" ry="65" fill="#4CAF50" />
+  
+  <!-- Eyes -->
+  <ellipse cx="75" cy="95" rx="15" ry="20" fill="white" />
+  <ellipse cx="125" cy="95" rx="15" ry="20" fill="white" />
+  <circle cx="75" cy="95" r="8" fill="black" />
+  <circle cx="125" cy="95" r="8" fill="black" />
+  <circle cx="72" cy="92" r="3" fill="white" />
+  <circle cx="122" cy="92" r="3" fill="white" />
+  
+  <!-- Mouth - Ecstatic Smile -->
+  <path d="M70 130 Q100 155 130 130" stroke="#111" stroke-width="4" fill="none" />
+  
+  <!-- Crown -->
+  <path d="M70 70 L85 55 L100 70 L115 55 L130 70 L70 70" fill="#FFD700" stroke="#FFC107" stroke-width="2" />
+  <circle cx="85" cy="60" r="3" fill="#FF5722" />
+  <circle cx="100" cy="65" r="3" fill="#2196F3" />
+  <circle cx="115" cy="60" r="3" fill="#4CAF50" />
+  
+  <!-- Flying Cash -->
+  <g>
+    <rect x="135" y="90" width="25" height="12" rx="2" fill="#43A047" />
+    <rect x="140" y="94" width="15" height="4" rx="1" fill="#A5D6A7" />
+    <text x="147" y="101" font-size="7" fill="white" text-anchor="middle">$</text>
+  </g>
+  <g transform="translate(-10, 10) rotate(-15)">
+    <rect x="50" y="90" width="25" height="12" rx="2" fill="#43A047" />
+    <rect x="55" y="94" width="15" height="4" rx="1" fill="#A5D6A7" />
+    <text x="62" y="101" font-size="7" fill="white" text-anchor="middle">$</text>
+  </g>
+</svg>

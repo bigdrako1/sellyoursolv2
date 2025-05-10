@@ -13,7 +13,7 @@ interface WelcomeScreenProps {
 
 const WelcomeScreen = ({ onConnect, onDisconnect }: WelcomeScreenProps) => {
   const { isAuthenticated, walletAddress } = useAuth();
-  
+
   return (
     <div className="flex flex-col items-center justify-center mt-20">
       <div className="mb-8 text-center">
@@ -26,31 +26,19 @@ const WelcomeScreen = ({ onConnect, onDisconnect }: WelcomeScreenProps) => {
       <div className="w-full max-w-md">
         <WalletConnect onConnect={onConnect} onDisconnect={onDisconnect} />
       </div>
-      
-      {/* Only show authentication button if wallet is connected but user is not authenticated */}
-      {walletAddress && !isAuthenticated && (
-        <div className="mt-6">
-          <Link to="/auth">
-            <Button className="bg-trading-highlight hover:bg-trading-highlight/80">
-              <LogIn className="h-4 w-4 mr-2" />
-              Complete Wallet Authentication
-            </Button>
-          </Link>
-        </div>
-      )}
-      
+
       <div className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-8 w-full max-w-4xl">
-        <FeatureCard 
+        <FeatureCard
           title="AI-Powered Trading"
           description="Our algorithms adapt to market conditions in real-time for optimal performance."
           icon="🤖"
         />
-        <FeatureCard 
+        <FeatureCard
           title="Portfolio Management"
           description="Track assets, monitor performance, and analyze ROI on Solana."
           icon="📊"
         />
-        <FeatureCard 
+        <FeatureCard
           title="24/7 Automation"
           description="Set your strategy once and let our system handle the rest."
           icon="⏰"

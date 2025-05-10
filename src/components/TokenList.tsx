@@ -12,16 +12,16 @@ const TokenList = () => {
   const [tokens, setTokens] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [marketOverview, setMarketOverview] = useState<any>(null);
-  
+
   useEffect(() => {
     const fetchMarketData = async () => {
       try {
         // Fetch market overview data for trending tokens and gainers/losers
         const overview = await getMarketOverview();
-        
+
         if (overview) {
           setMarketOverview(overview);
-          
+
           // Create a combined list of trending tokens
           if (overview.trending) {
             const trendingList = overview.trending.map((symbol: string) => ({
@@ -33,7 +33,7 @@ const TokenList = () => {
               volume: 0,
               isTrending: true
             }));
-            
+
             setTokens(trendingList);
           }
         }
@@ -41,10 +41,10 @@ const TokenList = () => {
         console.error("Error fetching market data:", error);
       }
     };
-    
+
     fetchMarketData();
   }, []);
-  
+
   // Helper function to find token name based on symbol
   const getTokenName = (symbol: string): string => {
     const tokenNames: Record<string, string> = {
@@ -58,10 +58,10 @@ const TokenList = () => {
       DAISY: "Daisy",
       RNDR: "Render Token"
     };
-    
+
     return tokenNames[symbol] || symbol;
   };
-  
+
   // Helper function to find change24h for a token
   const getChange24h = (symbol: string, overview: any): number => {
     // First check if it's in gainers
@@ -69,23 +69,23 @@ const TokenList = () => {
       const gainer = overview.gainers.find((g: any) => g.symbol === symbol);
       if (gainer) return gainer.change24h;
     }
-    
+
     // Then check if it's in losers
     if (overview.losers) {
       const loser = overview.losers.find((l: any) => l.symbol === symbol);
       if (loser) return loser.change24h;
     }
-    
+
     // Default to a random change
     return Math.random() * 20 - 5;
   };
-  
+
   // Filter tokens based on search term
-  const filteredTokens = tokens.filter(token => 
+  const filteredTokens = tokens.filter(token =>
     token.symbol.toLowerCase().includes(searchTerm.toLowerCase()) ||
     token.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
-  
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
@@ -140,9 +140,25 @@ const TokenList = () => {
                       {formatCurrency(token.volume || 0)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right">
-                      {token.isTrending && (
-                        <Badge className="bg-trading-highlight">Trending</Badge>
-                      )}
+                      <div className="flex items-center justify-end space-x-2">
+                        {token.isTrending && (
+                          <Badge className="bg-trading-highlight">Trending</Badge>
+                        )}
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-8 px-2 py-1 text-xs"
+                          onClick={() => window.open(`https://birdeye.so/token/${token.symbol}?chain=solana`, '_blank')}
+                        >
+                          View
+                        </Button>
+                        <Button
+                          size="sm"
+                          className="h-8 px-2 py-1 text-xs bg-green-600 hover:bg-green-700"
+                        >
+                          Trade
+                        </Button>
+                      </div>
                     </td>
                   </tr>
                 ))

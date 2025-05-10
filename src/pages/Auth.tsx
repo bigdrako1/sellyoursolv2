@@ -42,10 +42,10 @@ export default function Auth() {
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl text-center">
-            Connect Wallet
+            Connect & Sign In
           </CardTitle>
           <CardDescription className="text-center">
-            Connect your Solana wallet to continue
+            Connect your Solana wallet and sign a message to authenticate
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4">
@@ -57,7 +57,7 @@ export default function Auth() {
           ) : installedWallets.length > 0 ? (
             <div className="grid gap-3">
               {installedWallets.map((wallet) => (
-                <Button 
+                <Button
                   key={wallet.name}
                   onClick={() => handleAuth(wallet.name)}
                   disabled={loading}
@@ -69,14 +69,14 @@ export default function Auth() {
                   ) : (
                     <Wallet className="h-4 w-4" />
                   )}
-                  Connect with {wallet.name}
+                  Connect & Sign In with {wallet.name}
                 </Button>
               ))}
             </div>
           ) : (
             <div className="flex flex-col items-center py-4 space-y-4">
               <p className="text-center text-amber-500">No Solana wallets detected</p>
-              <Button 
+              <Button
                 onClick={handleRefreshWallets}
                 variant="outline"
                 className="gap-2"
@@ -85,7 +85,7 @@ export default function Auth() {
                 Refresh Wallet Detection
               </Button>
               <p className="text-xs text-gray-500 text-center max-w-xs mt-4">
-                To use this application, you need to install a Solana wallet extension 
+                To use this application, you need to install a Solana wallet extension
                 like Phantom or Solflare in your browser.
               </p>
             </div>

@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="800" height="1000" viewBox="0 0 800 1000" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Dark forest background -->
+  <rect width="800" height="1000" fill="#0A3D0A"/>
+
+  <!-- Background pattern -->
+  <pattern id="diagonalHatch" patternUnits="userSpaceOnUse" width="10" height="10" patternTransform="rotate(45)">
+    <line x1="0" y1="0" x2="0" y2="10" stroke="#0F4F0F" stroke-width="1" opacity="0.2"/>
+  </pattern>
+  <rect width="800" height="1000" fill="url(#diagonalHatch)"/>
+
+  <!-- Background trees - far -->
+  <path d="M0 0L50 100L0 100V0Z" fill="#0F4F0F" opacity="0.3"/>
+  <path d="M100 0L150 100L50 100L100 0Z" fill="#0F4F0F" opacity="0.3"/>
+  <path d="M200 0L250 100L150 100L200 0Z" fill="#0F4F0F" opacity="0.3"/>
+  <path d="M300 0L350 100L250 100L300 0Z" fill="#0F4F0F" opacity="0.3"/>
+  <path d="M400 0L450 100L350 100L400 0Z" fill="#0F4F0F" opacity="0.3"/>
+  <path d="M500 0L550 100L450 100L500 0Z" fill="#0F4F0F" opacity="0.3"/>
+  <path d="M600 0L650 100L550 100L600 0Z" fill="#0F4F0F" opacity="0.3"/>
+  <path d="M700 0L750 100L650 100L700 0Z" fill="#0F4F0F" opacity="0.3"/>
+  <path d="M800 0L800 100L750 100L800 0Z" fill="#0F4F0F" opacity="0.3"/>
+
+  <!-- Background trees - middle -->
+  <path d="M0 100L100 250L0 250V100Z" fill="#0F4F0F" opacity="0.4"/>
+  <path d="M200 100L300 250L100 250L200 100Z" fill="#0F4F0F" opacity="0.4"/>
+  <path d="M400 100L500 250L300 250L400 100Z" fill="#0F4F0F" opacity="0.4"/>
+  <path d="M600 100L700 250L500 250L600 100Z" fill="#0F4F0F" opacity="0.4"/>
+  <path d="M800 100L800 250L700 250L800 100Z" fill="#0F4F0F" opacity="0.4"/>
+
+  <!-- Background trees - close -->
+  <path d="M0 250L150 450L0 450V250Z" fill="#0F4F0F" opacity="0.5"/>
+  <path d="M300 250L450 450L150 450L300 250Z" fill="#0F4F0F" opacity="0.5"/>
+  <path d="M600 250L750 450L450 450L600 250Z" fill="#0F4F0F" opacity="0.5"/>
+  <path d="M800 250L800 450L750 450L800 250Z" fill="#0F4F0F" opacity="0.5"/>
+
+  <!-- Foreground trees -->
+  <path d="M0 450L200 700L0 700V450Z" fill="#0F4F0F" opacity="0.6"/>
+  <path d="M400 450L600 700L200 700L400 450Z" fill="#0F4F0F" opacity="0.6"/>
+  <path d="M800 450L800 700L600 700L800 450Z" fill="#0F4F0F" opacity="0.6"/>
+
+  <!-- Ground -->
+  <rect x="0" y="700" width="800" height="300" fill="#0A3D0A"/>
+
+  <!-- Light rays -->
+  <path d="M200 0L300 1000" stroke="#FFFFFF" stroke-width="2" opacity="0.05"/>
+  <path d="M500 0L400 1000" stroke="#FFFFFF" stroke-width="2" opacity="0.05"/>
+  <path d="M700 0L600 1000" stroke="#FFFFFF" stroke-width="3" opacity="0.05"/>
+</svg>

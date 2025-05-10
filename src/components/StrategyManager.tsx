@@ -8,15 +8,17 @@ import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { 
-  Settings, 
-  Save, 
-  Plus, 
+import {
+  Settings,
+  Save,
+  Plus,
   BarChart2,
-  Activity, 
+  Activity,
   Zap,
-  Bot
+  Bot,
+  LineChart
 } from "lucide-react";
+import { Link } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { secureInitialInvestment } from "@/utils/tradingUtils";
 
@@ -81,10 +83,10 @@ const StrategyManager = () => {
       type: "tracking"
     }
   ]);
-  
+
   const [activeStrategy, setActiveStrategy] = useState<Strategy | null>(strategies[0]);
   const [activeTab, setActiveTab] = useState("active");
-  
+
   // Load strategies from localStorage on component mount
   useEffect(() => {
     const savedStrategies = localStorage.getItem("trading_strategies");
@@ -101,19 +103,19 @@ const StrategyManager = () => {
       }
     }
   }, []);
-  
+
   const toggleStrategy = (strategyId: string) => {
-    const updatedStrategies = strategies.map(strategy => 
-      strategy.id === strategyId 
-        ? { ...strategy, enabled: !strategy.enabled } 
+    const updatedStrategies = strategies.map(strategy =>
+      strategy.id === strategyId
+        ? { ...strategy, enabled: !strategy.enabled }
         : strategy
     );
-    
+
     setStrategies(updatedStrategies);
-    
+
     // Update localStorage
     localStorage.setItem("trading_strategies", JSON.stringify(updatedStrategies));
-    
+
     // Show toast when enabling/disabling a strategy
     const strategy = strategies.find(s => s.id === strategyId);
     if (strategy) {
@@ -124,29 +126,29 @@ const StrategyManager = () => {
       });
     }
   };
-  
+
   const saveStrategySettings = (updatedStrategy: Strategy) => {
-    const updatedStrategies = strategies.map(strategy => 
+    const updatedStrategies = strategies.map(strategy =>
       strategy.id === updatedStrategy.id ? updatedStrategy : strategy
     );
-    
+
     setStrategies(updatedStrategies);
     setActiveStrategy(updatedStrategy);
-    
+
     // Update localStorage
     localStorage.setItem("trading_strategies", JSON.stringify(updatedStrategies));
-    
+
     // Show success toast
     toast({
       title: "Settings Saved",
       description: `${updatedStrategy.name} settings have been updated.`,
     });
   };
-  
+
   const handleStrategySelect = (strategy: Strategy) => {
     setActiveStrategy(strategy);
   };
-  
+
   const getStrategyIcon = (type: string) => {
     switch (type) {
       case "ai":
@@ -159,7 +161,7 @@ const StrategyManager = () => {
         return <Activity className="text-gray-400" size={18} />;
     }
   };
-  
+
   const filteredStrategies = activeTab === "active"
     ? strategies.filter(s => s.enabled)
     : activeTab === "inactive"
@@ -187,15 +189,15 @@ const StrategyManager = () => {
                 <TabsTrigger value="inactive">Inactive</TabsTrigger>
               </TabsList>
             </Tabs>
-            
+
             <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
               {filteredStrategies.map(strategy => (
-                <div 
+                <div
                   key={strategy.id}
                   onClick={() => handleStrategySelect(strategy)}
                   className={`p-3 rounded-lg cursor-pointer transition-colors ${
-                    activeStrategy?.id === strategy.id 
-                      ? 'bg-white/10' 
+                    activeStrategy?.id === strategy.id
+                      ? 'bg-white/10'
                       : 'bg-black/20 hover:bg-black/30'
                   }`}
                 >
@@ -204,20 +206,20 @@ const StrategyManager = () => {
                       {getStrategyIcon(strategy.type)}
                       <span className="font-medium">{strategy.name}</span>
                     </div>
-                    <Switch 
-                      checked={strategy.enabled} 
+                    <Switch
+                      checked={strategy.enabled}
                       onCheckedChange={() => toggleStrategy(strategy.id)}
-                      className="data-[state=checked]:bg-trading-highlight" 
+                      className="data-[state=checked]:bg-trading-highlight"
                     />
                   </div>
-                  
+
                   <p className="text-xs text-gray-400 mb-2">{strategy.description}</p>
-                  
+
                   <div className="flex justify-between text-xs">
                     {strategy.performance !== null ? (
                       <div className={`flex items-center gap-1 ${
-                        strategy.performance > 70 ? 'text-trading-success' : 
-                        strategy.performance > 50 ? 'text-trading-warning' : 
+                        strategy.performance > 70 ? 'text-trading-success' :
+                        strategy.performance > 50 ? 'text-trading-warning' :
                         'text-trading-danger'
                       }`}>
                         <Activity size={12} />
@@ -237,7 +239,7 @@ const StrategyManager = () => {
             </div>
           </CardContent>
         </Card>
-        
+
         <Card className="md:w-2/3 bg-trading-darkAccent border-white/5">
           {activeStrategy ? (
             <>
@@ -261,7 +263,7 @@ const StrategyManager = () => {
                   </div>
                 </div>
               </CardHeader>
-              
+
               <CardContent>
                 <div className="space-y-6 mt-2">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -280,7 +282,7 @@ const StrategyManager = () => {
                         <div className="text-lg font-medium text-gray-400">No data available</div>
                       )}
                     </div>
-                    
+
                     <div className="bg-black/20 p-4 rounded-lg">
                       <div className="text-sm text-gray-400 mb-1">Trading Volume</div>
                       {activeStrategy.tradingVolume !== null ? (
@@ -292,7 +294,7 @@ const StrategyManager = () => {
                         <div className="text-lg font-medium text-gray-400">No data available</div>
                       )}
                     </div>
-                    
+
                     <div className="bg-black/20 p-4 rounded-lg">
                       <div className="text-sm text-gray-400 mb-1">Risk Level</div>
                       <div className="text-2xl font-bold mb-1">{activeStrategy.riskLevel}%</div>
@@ -301,75 +303,75 @@ const StrategyManager = () => {
                       </div>
                     </div>
                   </div>
-                  
+
                   <div className="space-y-4">
                     <div>
                       <div className="flex justify-between mb-2">
                         <Label htmlFor="profitTarget">Profit Target: {activeStrategy.profitTarget}%</Label>
                       </div>
-                      <Slider 
+                      <Slider
                         id="profitTarget"
-                        min={1} 
-                        max={30} 
+                        min={1}
+                        max={30}
                         step={1}
                         value={[activeStrategy.profitTarget]}
                         onValueChange={(value) => setActiveStrategy({...activeStrategy, profitTarget: value[0]})}
                         className="mb-6"
                       />
                     </div>
-                    
+
                     <div>
                       <div className="flex justify-between mb-2">
                         <Label htmlFor="stopLoss">Stop Loss: {activeStrategy.stopLoss}%</Label>
                       </div>
-                      <Slider 
+                      <Slider
                         id="stopLoss"
-                        min={1} 
-                        max={20} 
+                        min={1}
+                        max={20}
                         step={1}
                         value={[activeStrategy.stopLoss]}
                         onValueChange={(value) => setActiveStrategy({...activeStrategy, stopLoss: value[0]})}
                         className="mb-6"
                       />
                     </div>
-                    
+
                     <div>
                       <div className="flex justify-between mb-2">
                         <Label htmlFor="riskLevel">Risk Level: {activeStrategy.riskLevel}%</Label>
                       </div>
-                      <Slider 
+                      <Slider
                         id="riskLevel"
-                        min={10} 
-                        max={90} 
+                        min={10}
+                        max={90}
                         step={5}
                         value={[activeStrategy.riskLevel]}
                         onValueChange={(value) => setActiveStrategy({...activeStrategy, riskLevel: value[0]})}
                         className="mb-6"
                       />
                     </div>
-                    
+
                     <div className="flex justify-between items-center mb-4">
                       <Label htmlFor="secureInitial" className="flex items-center gap-2">
                         <span className={activeStrategy.secureInitial ? 'text-trading-success' : 'text-gray-400'}>
                           Secure Initial Investment
                         </span>
                       </Label>
-                      <Switch 
+                      <Switch
                         id="secureInitial"
                         checked={activeStrategy.secureInitial}
                         onCheckedChange={(checked) => setActiveStrategy({...activeStrategy, secureInitial: checked})}
                       />
                     </div>
-                    
+
                     {activeStrategy.secureInitial && (
                       <div>
                         <div className="flex justify-between mb-2">
                           <Label htmlFor="securePercentage">Secure Initial Percentage: {activeStrategy.secureInitialPercentage}%</Label>
                         </div>
-                        <Slider 
+                        <Slider
                           id="securePercentage"
-                          min={25} 
-                          max={100} 
+                          min={25}
+                          max={100}
                           step={25}
                           value={[activeStrategy.secureInitialPercentage]}
                           onValueChange={(value) => setActiveStrategy({...activeStrategy, secureInitialPercentage: value[0]})}
@@ -378,10 +380,20 @@ const StrategyManager = () => {
                       </div>
                     )}
                   </div>
-                  
-                  <div className="flex justify-end pt-4">
-                    <Button 
-                      onClick={() => saveStrategySettings(activeStrategy)} 
+
+                  <div className="flex justify-between pt-4">
+                    <Link to="/backtesting">
+                      <Button
+                        variant="outline"
+                        className="flex items-center gap-2"
+                      >
+                        <Activity size={14} />
+                        Backtest Strategies
+                      </Button>
+                    </Link>
+
+                    <Button
+                      onClick={() => saveStrategySettings(activeStrategy)}
                       className="flex items-center gap-2"
                     >
                       <Save size={14} />

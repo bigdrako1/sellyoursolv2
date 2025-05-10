@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="300" height="300" viewBox="0 0 300 300" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Pepe in suit with money guns - more accurate to the screenshot -->
+
+  <!-- Head -->
+  <ellipse cx="150" cy="120" rx="70" ry="60" fill="#4CAF50"/>
+
+  <!-- Eyes -->
+  <ellipse cx="125" cy="105" rx="20" ry="25" fill="white"/>
+  <ellipse cx="175" cy="105" rx="20" ry="25" fill="white"/>
+  <circle cx="125" cy="105" r="12" fill="black"/>
+  <circle cx="175" cy="105" r="12" fill="black"/>
+  <circle cx="120" cy="100" r="5" fill="white"/>
+  <circle cx="170" cy="100" r="5" fill="white"/>
+
+  <!-- Mouth - Wide Happy Smile -->
+  <path d="M110 140C110 140 130 170 150 170C170 170 190 140 190 140" stroke="#111" stroke-width="6" fill="none"/>
+
+  <!-- Suit -->
+  <path d="M100 150V220H200V150C200 150 180 180 150 180C120 180 100 150 100 150Z" fill="#1B5E20"/>
+  <path d="M100 150V170C100 170 120 200 150 200C180 200 200 170 200 170V150C200 150 180 180 150 180C120 180 100 150 100 150Z" fill="#2E7D32"/>
+
+  <!-- Shirt -->
+  <path d="M130 150V190H170V150C170 150 160 160 150 160C140 160 130 150 130 150Z" fill="white"/>
+
+  <!-- Bow Tie -->
+  <path d="M140 150H160V160H140V150Z" fill="#FF5252"/>
+  <path d="M135 150L145 155L135 160V150Z" fill="#FF5252"/>
+  <path d="M165 150L155 155L165 160V150Z" fill="#FF5252"/>
+
+  <!-- Money Gun Left -->
+  <g transform="translate(60, 170) rotate(-30)">
+    <rect x="0" y="0" width="50" height="25" rx="3" fill="#FFD700"/>
+    <rect x="50" y="5" width="20" height="15" rx="2" fill="#B8860B"/>
+    <text x="25" y="18" font-size="16" fill="black" font-weight="bold" text-anchor="middle">$</text>
+  </g>
+
+  <!-- Money Gun Right -->
+  <g transform="translate(190, 170) rotate(30)">
+    <rect x="0" y="0" width="50" height="25" rx="3" fill="#FFD700"/>
+    <rect x="50" y="5" width="20" height="15" rx="2" fill="#B8860B"/>
+    <text x="25" y="18" font-size="16" fill="black" font-weight="bold" text-anchor="middle">$</text>
+  </g>
+
+  <!-- Flying Money Left -->
+  <g transform="translate(30, 130) rotate(-15)">
+    <rect x="0" y="0" width="40" height="20" rx="2" fill="#43A047"/>
+    <rect x="5" y="3" width="30" height="14" rx="1" fill="#A5D6A7"/>
+    <text x="20" y="14" font-size="10" fill="white" text-anchor="middle">$</text>
+  </g>
+
+  <g transform="translate(40, 100) rotate(-25)">
+    <rect x="0" y="0" width="40" height="20" rx="2" fill="#43A047"/>
+    <rect x="5" y="3" width="30" height="14" rx="1" fill="#A5D6A7"/>
+    <text x="20" y="14" font-size="10" fill="white" text-anchor="middle">$</text>
+  </g>
+
+  <g transform="translate(20, 160) rotate(-5)">
+    <rect x="0" y="0" width="40" height="20" rx="2" fill="#43A047"/>
+    <rect x="5" y="3" width="30" height="14" rx="1" fill="#A5D6A7"/>
+    <text x="20" y="14" font-size="10" fill="white" text-anchor="middle">$</text>
+  </g>
+
+  <!-- Flying Money Right -->
+  <g transform="translate(220, 130) rotate(15)">
+    <rect x="0" y="0" width="40" height="20" rx="2" fill="#43A047"/>
+    <rect x="5" y="3" width="30" height="14" rx="1" fill="#A5D6A7"/>
+    <text x="20" y="14" font-size="10" fill="white" text-anchor="middle">$</text>
+  </g>
+
+  <g transform="translate(210, 100) rotate(25)">
+    <rect x="0" y="0" width="40" height="20" rx="2" fill="#43A047"/>
+    <rect x="5" y="3" width="30" height="14" rx="1" fill="#A5D6A7"/>
+    <text x="20" y="14" font-size="10" fill="white" text-anchor="middle">$</text>
+  </g>
+
+  <g transform="translate(230, 160) rotate(5)">
+    <rect x="0" y="0" width="40" height="20" rx="2" fill="#43A047"/>
+    <rect x="5" y="3" width="30" height="14" rx="1" fill="#A5D6A7"/>
+    <text x="20" y="14" font-size="10" fill="white" text-anchor="middle">$</text>
+  </g>
+</svg>

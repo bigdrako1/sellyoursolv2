@@ -29,8 +29,8 @@ const AnalyticsCard = ({ title, value, trend, description, icon }: AnalyticsCard
           <p className="text-xs text-gray-400 mt-1">{description}</p>
         </div>
         <div className={`p-2 rounded-full ${
-          title.includes('ROI') ? 'bg-trading-success/20' : 
-          title.includes('Tokens') ? 'bg-trading-highlight/20' : 
+          title.includes('ROI') ? 'bg-trading-success/20' :
+          title.includes('Tokens') ? 'bg-trading-highlight/20' :
           title.includes('Quality') ? 'bg-trading-success/20' : 'bg-amber-500/20'
         }`}>
           {icon}
@@ -52,33 +52,17 @@ const TradingAnalyticsDashboard = ({ timeRange = "7d" }: TradingAnalyticsDashboa
     averageRoi: { value: '+24%', trend: 5, description: 'From qualified tokens' },
     alertAccuracy: { value: '89%', trend: -2, description: 'True positive rate' }
   };
-  
+
   const securityStats = {
     rugsIdentified: 14,
     honeypotsPrevented: 8,
     safeTokens: 32,
     totalScanned: 54
   };
-  
+
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <AnalyticsCard
-          title="Tokens Scanned"
-          value={metricsData.scannedTokens.value}
-          trend={metricsData.scannedTokens.trend}
-          description={metricsData.scannedTokens.description}
-          icon={<Users className="h-5 w-5 text-trading-highlight" />}
-        />
-        
-        <AnalyticsCard
-          title="Quality Tokens Found"
-          value={metricsData.qualityTokens.value}
-          trend={metricsData.qualityTokens.trend}
-          description={metricsData.qualityTokens.description}
-          icon={<CheckCircle className="h-5 w-5 text-trading-success" />}
-        />
-        
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <AnalyticsCard
           title="Average ROI"
           value={metricsData.averageRoi.value}
@@ -86,7 +70,15 @@ const TradingAnalyticsDashboard = ({ timeRange = "7d" }: TradingAnalyticsDashboa
           description={metricsData.averageRoi.description}
           icon={<TrendingUp className="h-5 w-5 text-trading-success" />}
         />
-        
+
+        <AnalyticsCard
+          title="Quality Tokens Found"
+          value={metricsData.qualityTokens.value}
+          trend={metricsData.qualityTokens.trend}
+          description={metricsData.qualityTokens.description}
+          icon={<CheckCircle className="h-5 w-5 text-trading-success" />}
+        />
+
         <AnalyticsCard
           title="Alert Accuracy"
           value={metricsData.alertAccuracy.value}
@@ -95,7 +87,7 @@ const TradingAnalyticsDashboard = ({ timeRange = "7d" }: TradingAnalyticsDashboa
           icon={<AlertTriangle className="h-5 w-5 text-amber-400" />}
         />
       </div>
-      
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Card className="bg-trading-darkAccent border-trading-highlight/20">
           <CardHeader>
@@ -109,34 +101,34 @@ const TradingAnalyticsDashboard = ({ timeRange = "7d" }: TradingAnalyticsDashboa
                   <span className="text-sm">Rug Pulls Identified</span>
                   <span className="text-sm font-medium text-trading-danger">{securityStats.rugsIdentified}</span>
                 </div>
-                <Progress 
-                  value={(securityStats.rugsIdentified / securityStats.totalScanned) * 100} 
-                  className="h-2 bg-gray-700" 
+                <Progress
+                  value={(securityStats.rugsIdentified / securityStats.totalScanned) * 100}
+                  className="h-2 bg-gray-700"
                 />
               </div>
-              
+
               <div>
                 <div className="flex justify-between mb-1">
                   <span className="text-sm">Honeypots Prevented</span>
                   <span className="text-sm font-medium text-amber-400">{securityStats.honeypotsPrevented}</span>
                 </div>
-                <Progress 
-                  value={(securityStats.honeypotsPrevented / securityStats.totalScanned) * 100} 
-                  className="h-2 bg-gray-700" 
+                <Progress
+                  value={(securityStats.honeypotsPrevented / securityStats.totalScanned) * 100}
+                  className="h-2 bg-gray-700"
                 />
               </div>
-              
+
               <div>
                 <div className="flex justify-between mb-1">
                   <span className="text-sm">Safe Tokens</span>
                   <span className="text-sm font-medium text-trading-success">{securityStats.safeTokens}</span>
                 </div>
-                <Progress 
-                  value={(securityStats.safeTokens / securityStats.totalScanned) * 100} 
-                  className="h-2 bg-gray-700" 
+                <Progress
+                  value={(securityStats.safeTokens / securityStats.totalScanned) * 100}
+                  className="h-2 bg-gray-700"
                 />
               </div>
-              
+
               <div className="pt-2 mt-4 border-t border-trading-highlight/10">
                 <div className="flex items-center justify-between">
                   <span className="text-sm">Token Quality Score (Average)</span>
@@ -154,7 +146,7 @@ const TradingAnalyticsDashboard = ({ timeRange = "7d" }: TradingAnalyticsDashboa
             </div>
           </CardContent>
         </Card>
-        
+
         <Card className="bg-trading-darkAccent border-trading-highlight/20">
           <CardHeader>
             <CardTitle className="text-lg">Token Performance</CardTitle>
@@ -172,7 +164,7 @@ const TradingAnalyticsDashboard = ({ timeRange = "7d" }: TradingAnalyticsDashboa
                 <div key={i} className="flex items-center justify-between p-2 hover:bg-trading-dark/50 rounded-md">
                   <div className="flex items-center">
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold mr-3
-                      ${token.risk === 'low' ? 'bg-gradient-to-br from-teal-500 to-green-600' : 
+                      ${token.risk === 'low' ? 'bg-gradient-to-br from-teal-500 to-green-600' :
                         token.risk === 'medium' ? 'bg-gradient-to-br from-yellow-500 to-orange-600' :
                           'bg-gradient-to-br from-red-500 to-pink-600'}`}>
                       {token.symbol.charAt(0)}
