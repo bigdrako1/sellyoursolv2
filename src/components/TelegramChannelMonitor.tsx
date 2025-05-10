@@ -1,15 +1,18 @@
-
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
-import { MessageSquare, AlertCircle, PlusCircle, Trash2, Check, RefreshCw } from "lucide-react";
+import { MessageSquare, AlertCircle, PlusCircle, Trash2, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { TelegramSource } from "@/types/token.types";
+import { isAuthenticatedWithTelegram } from "@/services/telegramAuthService";
+import TelegramAuthentication from "@/components/TelegramAuthentication";
+import { processMessageForTokens } from "@/services/telegramMessageParsingService";
 
+// Default monitored channels
 const MONITORED_CHANNELS: TelegramSource[] = [
   {
     id: "c1",
@@ -110,6 +113,13 @@ const TelegramChannelMonitor: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [syncInterval, setSyncInterval] = useState(2); // Default 2 minutes
   
+  // Check if authenticated with Telegram
+  const checkAuthStatus = useCallback(() => {
+    const isAuth = isAuthenticatedWithTelegram();
+    setIsConnected(isAuth);
+    return isAuth;
+  }, []);
+  
   // Load saved channels on mount
   useEffect(() => {
     const loadChannels = () => {
@@ -117,9 +127,6 @@ const TelegramChannelMonitor: React.FC = () => {
         const savedChannels = localStorage.getItem('telegram_channels');
         if (savedChannels) {
           setChannels(JSON.parse(savedChannels));
-          if (JSON.parse(savedChannels).length > 0) {
-            setIsConnected(true);
-          }
         } else {
           // Load demo channels if nothing saved
           setChannels(MONITORED_CHANNELS);
@@ -131,8 +138,11 @@ const TelegramChannelMonitor: React.FC = () => {
       }
     };
     
-    loadChannels();
-  }, []);
+    const isAuth = checkAuthStatus();
+    if (isAuth) {
+      loadChannels();
+    }
+  }, [checkAuthStatus]);
   
   // Save channels whenever they change
   useEffect(() => {
@@ -141,36 +151,12 @@ const TelegramChannelMonitor: React.FC = () => {
     }
   }, [channels]);
   
-  const handleConnect = () => {
-    setIsLoading(true);
+  const handleAuthenticationChange = (isAuthenticated: boolean) => {
+    setIsConnected(isAuthenticated);
     
-    // Simulate connection process
-    setTimeout(() => {
-      setIsConnected(true);
-      setIsLoading(false);
-      
-      if (channels.length === 0) {
-        setChannels(MONITORED_CHANNELS);
-      }
-      
-      toast.success("Telegram Connected", {
-        description: "Successfully connected to Telegram API"
-      });
-    }, 1500);
-  };
-  
-  const handleDisconnect = () => {
-    setIsLoading(true);
-    
-    // Simulate disconnection process
-    setTimeout(() => {
-      setIsConnected(false);
-      setIsLoading(false);
-      
-      toast.info("Telegram Disconnected", {
-        description: "Disconnected from Telegram API"
-      });
-    }, 800);
+    if (isAuthenticated && channels.length === 0) {
+      setChannels(MONITORED_CHANNELS);
+    }
   };
   
   const handleToggleChannel = (id: string) => {
@@ -248,6 +234,24 @@ const TelegramChannelMonitor: React.FC = () => {
     }, 2000);
   };
   
+  const processMessageExample = () => {
+    // Example of how to process a message using the service
+    const exampleMessage = {
+      text: "New token alert: 8nVWMuHDXH667Kb5JZLhvQQfnkZf3WzKkEPYNDgGe1iF pump is looking good!",
+      sourceId: "c1"
+    };
+    
+    const { tokens, shouldProcess } = processMessageForTokens(
+      exampleMessage.sourceId,
+      exampleMessage.text
+    );
+    
+    if (shouldProcess) {
+      console.log("Found new token:", tokens[0]);
+      // In a real implementation, this would trigger token analysis
+    }
+  };
+  
   return (
     <Card className="card-with-border">
       <CardHeader>
@@ -264,30 +268,7 @@ const TelegramChannelMonitor: React.FC = () => {
       <CardContent>
         <div className="space-y-4">
           {!isConnected ? (
-            <div className="bg-blue-900/20 p-4 rounded-md border border-blue-900/30 space-y-3">
-              <div className="flex items-start gap-2">
-                <AlertCircle className="h-5 w-5 text-blue-400 flex-shrink-0 mt-0.5" />
-                <div>
-                  <h4 className="font-medium text-sm">Connect to Telegram</h4>
-                  <p className="text-xs text-gray-400 mt-1">
-                    Connect your Telegram account to monitor channels for token alerts.
-                    The system will automatically detect token addresses shared in these channels.
-                  </p>
-                </div>
-              </div>
-              <Button 
-                onClick={handleConnect} 
-                className="w-full"
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <>
-                    <span className="h-4 w-4 rounded-full border-2 border-t-transparent border-blue-500 animate-spin mr-2"></span>
-                    Connecting...
-                  </>
-                ) : "Connect Telegram"}
-              </Button>
-            </div>
+            <TelegramAuthentication onAuthenticationChange={handleAuthenticationChange} />
           ) : (
             <>
               <div className="flex items-center justify-between bg-green-900/20 p-3 rounded-md border border-green-900/30">
@@ -309,15 +290,6 @@ const TelegramChannelMonitor: React.FC = () => {
                       <RefreshCw className="h-3 w-3 mr-1" />
                     )}
                     Sync Now
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="bg-black/20 border-white/10 text-xs"
-                    onClick={handleDisconnect}
-                    disabled={isLoading}
-                  >
-                    Disconnect
                   </Button>
                 </div>
               </div>

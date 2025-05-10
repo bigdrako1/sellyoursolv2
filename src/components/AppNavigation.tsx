@@ -41,9 +41,6 @@ interface NavItemProps {
 }
 
 export const NavItem = ({ to, icon, label, isActive, size = "default" }: NavItemProps) => {
-  // Since the Lucide-react icons already have the size prop set in the navItems array,
-  // we don't need to manually clone and set the size again.
-  // Just render the icon as is.
   return (
     <Link 
       to={to} 

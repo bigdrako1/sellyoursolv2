@@ -3,6 +3,7 @@ import React from "react";
 import TelegramMonitor from "@/components/TelegramMonitor";
 import TelegramChannelMonitor from "@/components/TelegramChannelMonitor";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import TelegramAuthentication from "@/components/TelegramAuthentication";
 
 const TelegramMonitorPage = () => {
   return (
@@ -13,6 +14,7 @@ const TelegramMonitorPage = () => {
         <TabsList>
           <TabsTrigger value="main">Main Monitor</TabsTrigger>
           <TabsTrigger value="channels">Channel Monitor</TabsTrigger>
+          <TabsTrigger value="auth">Authentication</TabsTrigger>
         </TabsList>
         
         <TabsContent value="main">
@@ -21,6 +23,12 @@ const TelegramMonitorPage = () => {
         
         <TabsContent value="channels">
           <TelegramChannelMonitor />
+        </TabsContent>
+        
+        <TabsContent value="auth">
+          <div className="max-w-md mx-auto">
+            <TelegramAuthentication />
+          </div>
         </TabsContent>
       </Tabs>
     </div>

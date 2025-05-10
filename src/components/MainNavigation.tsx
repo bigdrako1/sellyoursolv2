@@ -1,10 +1,9 @@
 
 import React from "react";
-import { Link } from "react-router-dom";
 import { navItems, NavItem, useNavigation } from "@/components/AppNavigation";
 
 const MainNavigation = () => {
-  const { currentPath, isActivePath } = useNavigation();
+  const { currentPath } = useNavigation();
   
   return (
     <nav className="hidden md:flex items-center space-x-1">
