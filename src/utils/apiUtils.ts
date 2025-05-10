@@ -36,7 +36,7 @@ interface ApiUsageStats {
 }
 
 // Keep track of API usage
-let apiUsageStats: ApiUsageStats = {
+const apiUsageStats: ApiUsageStats = {
   dailyRequests: 0,
   apiCalls: {},
   requestsPerEndpoint: {},

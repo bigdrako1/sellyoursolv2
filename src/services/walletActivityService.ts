@@ -2,7 +2,7 @@ import { WalletActivity } from "@/types/token.types";
 import { trackWalletActivities } from "./tokenDataService";
 
 // Cache for wallet activities
-let activityCache = new Map<string, {
+const activityCache = new Map<string, {
   activities: WalletActivity[];
   timestamp: number;
 }>();

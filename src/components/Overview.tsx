@@ -32,8 +32,8 @@ const Overview = ({ totalProfit = 0, activeStrategies = 0, pendingTrades = 0, to
               // Process transaction data to calculate PnL
               // This is simplified - in a real implementation, we would need to track
               // buys and sells to calculate actual realized and unrealized profit
-              let calculatedRealizedProfit = 0;
-              let calculatedUnrealizedProfit = 0;
+              const calculatedRealizedProfit = 0;
+              const calculatedUnrealizedProfit = 0;
               
               setRealizedProfit(calculatedRealizedProfit);
               setUnrealizedProfit(calculatedUnrealizedProfit);
