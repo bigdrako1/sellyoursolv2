@@ -1,7 +1,7 @@
 
 import React from 'react';
 import TelegramAuthentication from '@/components/TelegramAuthentication';
-import TelegramChannelMonitor from '@/components/TelegramChannelMonitor';
+import TelegramChannelMonitor from '@/components/TelegramMonitor';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from '@/components/ui/card';
 

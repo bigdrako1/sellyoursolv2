@@ -12,6 +12,9 @@ import { TelegramSource } from "@/types/token.types";
 import { isAuthenticatedWithTelegram } from "@/services/telegramAuthService";
 import TelegramAuthentication from "@/components/TelegramAuthentication";
 import { processMessageForTokens } from "@/services/telegramMessageParsingService";
+import TelegramChannelList from "@/components/telegram/TelegramChannelList";
+import TelegramAddChannel from "@/components/telegram/TelegramAddChannel";
+import TelegramSyncSettings from "@/components/telegram/TelegramSyncSettings";
 
 // Default monitored channels
 const MONITORED_CHANNELS: TelegramSource[] = [
@@ -59,51 +62,6 @@ const MONITORED_CHANNELS: TelegramSource[] = [
     isConnected: true,
     lastChecked: new Date().toISOString(),
     tokenCount: 9
-  },
-  {
-    id: "c6",
-    name: "GMGN ALERT BOT2",
-    description: "Token performance tracking",
-    isActive: true,
-    isConnected: true,
-    lastChecked: new Date().toISOString(),
-    tokenCount: 14
-  },
-  {
-    id: "c7",
-    name: "SOLANA ACTIVITY TRACKER",
-    description: "Track Solana ecosystem activity",
-    isActive: true,
-    isConnected: true,
-    lastChecked: new Date().toISOString(),
-    tokenCount: 31
-  },
-  {
-    id: "c8",
-    name: "ORTSAA",
-    description: "Token alerts and signals",
-    isActive: true,
-    isConnected: true,
-    lastChecked: new Date().toISOString(),
-    tokenCount: 5
-  },
-  {
-    id: "c9",
-    name: "BUGSIE CHANNEL",
-    description: "Token signals and calls",
-    isActive: true,
-    isConnected: true,
-    lastChecked: new Date().toISOString(),
-    tokenCount: 18
-  },
-  {
-    id: "c10",
-    name: "TREYS",
-    description: "Crypto trading calls",
-    isActive: true,
-    isConnected: true,
-    lastChecked: new Date().toISOString(),
-    tokenCount: 7
   }
 ];
 
@@ -235,24 +193,6 @@ const TelegramChannelMonitor: React.FC = () => {
     }, 2000);
   };
   
-  const processMessageExample = () => {
-    // Example of how to process a message using the service
-    const exampleMessage = {
-      text: "New token alert: 8nVWMuHDXH667Kb5JZLhvQQfnkZf3WzKkEPYNDgGe1iF pump is looking good!",
-      sourceId: "c1"
-    };
-    
-    const { tokens, shouldProcess } = processMessageForTokens(
-      exampleMessage.sourceId,
-      exampleMessage.text
-    );
-    
-    if (shouldProcess) {
-      console.log("Found new token:", tokens[0]);
-      // In a real implementation, this would trigger token analysis
-    }
-  };
-  
   return (
     <Card className="card-with-border">
       <CardHeader>
@@ -295,103 +235,22 @@ const TelegramChannelMonitor: React.FC = () => {
                 </div>
               </div>
               
-              <div className="flex flex-wrap items-center gap-2 p-3 rounded-md bg-blue-900/10 border border-blue-900/20">
-                <div className="text-xs text-gray-400">Check channels every:</div>
-                <div className="flex items-center gap-1">
-                  <Button 
-                    variant={syncInterval === 1 ? "default" : "outline"} 
-                    size="sm" 
-                    className="text-xs h-7"
-                    onClick={() => setSyncInterval(1)}
-                  >
-                    1m
-                  </Button>
-                  <Button 
-                    variant={syncInterval === 2 ? "default" : "outline"} 
-                    size="sm" 
-                    className="text-xs h-7"
-                    onClick={() => setSyncInterval(2)}
-                  >
-                    2m
-                  </Button>
-                  <Button 
-                    variant={syncInterval === 5 ? "default" : "outline"} 
-                    size="sm" 
-                    className="text-xs h-7"
-                    onClick={() => setSyncInterval(5)}
-                  >
-                    5m
-                  </Button>
-                </div>
-                <div className="ml-auto text-xs text-gray-400">
-                  Last sync: {new Date().toLocaleTimeString()}
-                </div>
-              </div>
+              <TelegramSyncSettings 
+                syncInterval={syncInterval} 
+                setSyncInterval={setSyncInterval} 
+              />
               
-              <div className="space-y-2">
-                <Label htmlFor="newChannel" className="block">Add New Channel</Label>
-                <div className="flex gap-2">
-                  <Input 
-                    id="newChannel"
-                    placeholder="Enter channel name or link" 
-                    value={newChannelName}
-                    onChange={(e) => setNewChannelName(e.target.value)}
-                    className="bg-black/20 border-white/10"
-                  />
-                  <Button onClick={handleAddChannel}>
-                    <PlusCircle className="h-4 w-4 mr-2" />
-                    Add
-                  </Button>
-                </div>
-              </div>
+              <TelegramAddChannel 
+                newChannelName={newChannelName}
+                setNewChannelName={setNewChannelName}
+                handleAddChannel={handleAddChannel}
+              />
               
-              <div className="bg-black/20 rounded-md p-2">
-                <div className="flex justify-between items-center mb-2">
-                  <div className="text-sm font-medium">Monitored Channels ({channels.filter(c => c.isActive).length}/{channels.length})</div>
-                  <Badge variant="outline" className="bg-blue-500/10 text-blue-400">
-                    {channels.reduce((sum, channel) => sum + (channel.tokenCount || 0), 0)} tokens detected
-                  </Badge>
-                </div>
-                <div className="space-y-1.5 max-h-64 overflow-y-auto pr-1">
-                  {channels.map((channel) => (
-                    <div 
-                      key={channel.id} 
-                      className="flex items-center justify-between p-2 rounded bg-black/30"
-                    >
-                      <div className="overflow-hidden">
-                        <div className="font-medium text-sm flex items-center">
-                          {channel.name}
-                          {channel.tokenCount > 0 && (
-                            <Badge variant="outline" className="ml-2 text-[10px] px-1 py-0 h-4 bg-blue-500/10 text-blue-300">
-                              {channel.tokenCount}
-                            </Badge>
-                          )}
-                        </div>
-                        {channel.description && (
-                          <div className="text-xs text-gray-400 truncate max-w-[240px]">{channel.description}</div>
-                        )}
-                        <div className="text-[10px] text-gray-500">
-                          Last checked: {new Date(channel.lastChecked || Date.now()).toLocaleTimeString()}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Switch 
-                          checked={channel.isActive}
-                          onCheckedChange={() => handleToggleChannel(channel.id)}
-                        />
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7 text-red-400 hover:text-red-300 hover:bg-red-900/20"
-                          onClick={() => handleRemoveChannel(channel.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              <TelegramChannelList 
+                channels={channels}
+                handleToggleChannel={handleToggleChannel}
+                handleRemoveChannel={handleRemoveChannel}
+              />
             </>
           )}
         </div>

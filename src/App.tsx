@@ -6,15 +6,13 @@ import {
 } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from "@/contexts/AuthContext";
-import { Toaster } from "@/components/ui/toaster";
+import { Toaster } from "sonner";
 
 // Pages
 import Index from "@/pages/Index";
 import Settings from "@/pages/Settings";
 import Portfolio from "@/pages/Portfolio";
-import AutoTrading from "@/pages/AutoTrading";
 import MarketAnalysis from "@/pages/MarketAnalysis";
-import Webhooks from "@/pages/Webhooks";
 import Auth from "@/pages/Auth";
 import NotFound from "@/pages/NotFound";
 import Layout from "@/components/Layout";
@@ -51,16 +49,8 @@ const router = createBrowserRouter([
         element: <Portfolio />,
       },
       {
-        path: "auto-trading",
-        element: <AutoTrading />,
-      },
-      {
         path: "market-analysis",
         element: <MarketAnalysis />,
-      },
-      {
-        path: "webhooks",
-        element: <Webhooks />,
       },
       {
         path: "telegram-monitor",
@@ -84,14 +74,12 @@ const router = createBrowserRouter([
 
 function App() {
   return (
-    <React.StrictMode>
-      <QueryClientProvider client={queryClient}>
-        <AuthProvider>
-          <RouterProvider router={router} />
-          <Toaster />
-        </AuthProvider>
-      </QueryClientProvider>
-    </React.StrictMode>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <RouterProvider router={router} />
+        <Toaster />
+      </AuthProvider>
+    </QueryClientProvider>
   );
 }
 
