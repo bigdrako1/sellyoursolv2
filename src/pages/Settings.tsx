@@ -3,7 +3,6 @@ import React, { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import ApiKeyDescription from "@/components/ApiKeyDescription";
 import SystemControls from "@/components/SystemControls";
-import { Button } from "@/components/ui/button";
 import ApiUsageMonitor from "@/components/ApiUsageMonitor";
 import HeliusSetup from "@/components/HeliusSetup";
 import ConnectedServices from "@/components/ConnectedServices";
@@ -14,6 +13,10 @@ import TwitterScraper from "@/components/TwitterScraper";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/AuthContext";
 import DebugPanel from "@/components/DebugPanel";
+import NotificationSettings from "@/components/NotificationSettings";
+import AdvancedSettings from "@/components/AdvancedSettings";
+import WalletMonitor from "@/components/WalletMonitor";
+import TradingStrategy from "@/components/TradingStrategy";
 
 const Settings = () => {
   const [activeTab, setActiveTab] = useState("general");
@@ -33,7 +36,7 @@ const Settings = () => {
   useEffect(() => {
     // Check for URL hash to set active tab
     const hash = window.location.hash?.substring(1);
-    if (hash && ["general", "apis", "detection", "notifications", "advanced"].includes(hash)) {
+    if (hash && ["general", "apis", "detection", "notifications", "advanced", "diagnostics", "trading", "wallets"].includes(hash)) {
       setActiveTab(hash);
     }
   }, []);
@@ -57,6 +60,8 @@ const Settings = () => {
           <TabsTrigger value="apis">API Keys</TabsTrigger>
           <TabsTrigger value="detection">Detection</TabsTrigger>
           <TabsTrigger value="notifications">Notifications</TabsTrigger>
+          <TabsTrigger value="trading">Trading</TabsTrigger>
+          <TabsTrigger value="wallets">Wallets</TabsTrigger>
           <TabsTrigger value="advanced">Advanced</TabsTrigger>
           <TabsTrigger value="diagnostics">Diagnostics</TabsTrigger>
         </TabsList>
@@ -84,17 +89,20 @@ const Settings = () => {
         </TabsContent>
 
         <TabsContent value="notifications" className="space-y-6">
+          <NotificationSettings />
           <WebhookMonitor />
         </TabsContent>
 
+        <TabsContent value="trading" className="space-y-6">
+          <TradingStrategy />
+        </TabsContent>
+
+        <TabsContent value="wallets" className="space-y-6">
+          <WalletMonitor />
+        </TabsContent>
+
         <TabsContent value="advanced" className="space-y-6">
-          <Card className="p-6">
-            <h3 className="text-xl font-bold mb-4">Advanced Settings</h3>
-            <p className="mb-4">
-              Warning: Changing these settings can affect system performance.
-            </p>
-            <Button variant="destructive">Reset All Settings</Button>
-          </Card>
+          <AdvancedSettings />
         </TabsContent>
         
         <TabsContent value="diagnostics" className="space-y-6">
