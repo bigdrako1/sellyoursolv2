@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Telegram, Plus, RefreshCw, Eye, EyeOff, Trash2, MessageCircle, Settings, ExternalLink } from "lucide-react";
+import { Loader2, MessageSquare, Plus, RefreshCw, Eye, EyeOff, Trash2, MessageCircle, Settings, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 
 // Sample monitored channels
@@ -123,7 +123,7 @@ const TelegramMonitor = () => {
     <Card>
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <CardTitle className="text-xl flex items-center gap-2">
-          <Telegram className="h-5 w-5 text-blue-400" />
+          <MessageSquare className="h-5 w-5 text-blue-400" />
           Telegram Channel Monitor
         </CardTitle>
       </CardHeader>
@@ -150,7 +150,7 @@ const TelegramMonitor = () => {
                     </>
                   ) : (
                     <>
-                      <Telegram className="h-4 w-4 mr-2" />
+                      <MessageSquare className="h-4 w-4 mr-2" />
                       Connect Telegram
                     </>
                   )}

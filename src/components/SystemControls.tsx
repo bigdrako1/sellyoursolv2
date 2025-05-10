@@ -1,7 +1,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Settings, Zap, Bot, BarChart2, Activity, AlertTriangle, Telegram } from "lucide-react";
+import { Settings, Zap, Bot, BarChart2, Activity, AlertTriangle, MessageSquare } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useSettingsStore } from "@/store/settingsStore";
 
@@ -44,7 +44,7 @@ const SystemControls = ({
               className="gap-1 bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 border-blue-500/30"
               size="sm"
             >
-              <Telegram size={14} />
+              <MessageSquare size={14} />
               <span className="hidden md:inline">Telegram Monitor</span>
             </Button>
           </Link>
