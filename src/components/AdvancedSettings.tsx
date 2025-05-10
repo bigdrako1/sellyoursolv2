@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -26,15 +25,15 @@ const AdvancedSettings = () => {
   const [isImporting, setIsImporting] = useState(false);
   
   const handleResetAllSettings = () => {
-    // Fixed: Changed the toast structure to match sonner's API
-    toast({
-      description: "This action will reset all settings to default values. Are you sure?",
+    // Updated toast implementation to match Sonner's API correctly
+    toast("Reset settings confirmation", {
       action: {
         label: "Reset All",
         onClick: () => {
           toast.success("Settings reset successfully");
         },
       },
+      description: "This action will reset all settings to default values. Are you sure?",
     });
   };
   
