@@ -41,13 +41,9 @@ interface NavItemProps {
 }
 
 export const NavItem = ({ to, icon, label, isActive, size = "default" }: NavItemProps) => {
-  // Clone the icon with appropriate size
-  const iconElement = React.isValidElement(icon) 
-    ? React.cloneElement(icon as React.ReactElement, { 
-        size: size === "small" ? 16 : 18 
-      }) 
-    : null;
-
+  // Since the Lucide-react icons already have the size prop set in the navItems array,
+  // we don't need to manually clone and set the size again.
+  // Just render the icon as is.
   return (
     <Link 
       to={to} 
@@ -59,7 +55,7 @@ export const NavItem = ({ to, icon, label, isActive, size = "default" }: NavItem
         size === "small" && "text-sm"
       )}
     >
-      {iconElement}
+      {icon}
       <span>{label}</span>
     </Link>
   );
@@ -99,16 +95,23 @@ export const MobileNavigation = () => {
   
   return (
     <div className="flex flex-col space-y-1">
-      {navItems.map((item) => (
-        <NavItem 
-          key={item.path}
-          to={item.path}
-          icon={item.icon}
-          label={item.label}
-          isActive={currentPath === item.path}
-          size="small"
-        />
-      ))}
+      {navItems.map((item) => {
+        // For mobile, we need to create new icons with smaller size
+        const mobileIcon = React.isValidElement(item.icon) 
+          ? React.cloneElement(item.icon as React.ReactElement, { size: 16 })
+          : item.icon;
+          
+        return (
+          <NavItem 
+            key={item.path}
+            to={item.path}
+            icon={mobileIcon}
+            label={item.label}
+            isActive={currentPath === item.path}
+            size="small"
+          />
+        );
+      })}
     </div>
   );
 };
