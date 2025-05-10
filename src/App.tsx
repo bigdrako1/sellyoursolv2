@@ -15,6 +15,8 @@ import NotFound from "@/pages/NotFound";
 import Layout from "@/components/Layout";
 import TelegramMonitorPage from "@/pages/TelegramMonitor";
 import { Toaster } from "sonner";
+import TokensPage from "@/pages/Tokens";
+import WalletsPage from "@/pages/Wallets";
 
 const router = createBrowserRouter([
   {
@@ -49,6 +51,14 @@ const router = createBrowserRouter([
       {
         path: "telegram-monitor",
         element: <TelegramMonitorPage />,
+      },
+      {
+        path: "tokens",
+        element: <TokensPage />,
+      },
+      {
+        path: "wallets",
+        element: <WalletsPage />,
       }
     ],
   },

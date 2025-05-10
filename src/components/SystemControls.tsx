@@ -1,8 +1,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Settings, Zap, Bot, BarChart2, Activity, AlertTriangle, MessageSquare } from "lucide-react";
-import { Link } from "react-router-dom";
+import { BarChart2, Zap, Bot, Activity, AlertTriangle } from "lucide-react";
 import { useSettingsStore } from "@/store/settingsStore";
 
 export interface SystemControlsProps {
@@ -37,18 +36,7 @@ const SystemControls = ({
           </TabsList>
         </Tabs>
         
-        <div className="flex items-center gap-2">
-          <Link to="/telegram-monitor">
-            <Button
-              variant="outline"
-              className="gap-1 bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 border-blue-500/30"
-              size="sm"
-            >
-              <MessageSquare size={14} />
-              <span className="hidden md:inline">Telegram Monitor</span>
-            </Button>
-          </Link>
-          
+        <div className="flex items-center gap-2">          
           <Button 
             onClick={toggleSystemActive}
             variant="outline"
@@ -70,12 +58,6 @@ const SystemControls = ({
               </>
             )}
           </Button>
-          <Link to="/settings">
-            <Button variant="outline" size="sm" className="gap-1 bg-trading-darkAccent hover:bg-white/10 border-white/10">
-              <Settings size={14} />
-              <span className="hidden md:inline">Settings</span>
-            </Button>
-          </Link>
         </div>
       </div>
     </div>
