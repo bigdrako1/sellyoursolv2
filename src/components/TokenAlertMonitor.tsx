@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,6 +11,12 @@ import type { Token, TokenAlert } from "@/types/token.types";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/AuthContext";
 import { getQualitySummary, getRiskEmoji, getRunnerPotentialGrade } from "@/services/tokenMonitorService";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Slider } from "@/components/ui/slider";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Check, Wallet } from "lucide-react";
+import { executeTrade } from "@/utils/tradingUtils";
 
 const TokenAlertMonitor: React.FC = () => {
   const [tokens, setTokens] = useState<Token[]>([]);
@@ -23,6 +28,11 @@ const TokenAlertMonitor: React.FC = () => {
   const [pumpFunLoading, setPumpFunLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("alerts");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [tradeDialogOpen, setTradeDialogOpen] = useState(false);
+  const [selectedToken, setSelectedToken] = useState<Token | null>(null);
+  const [tradeAmount, setTradeAmount] = useState(0.1);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [trackPosition, setTrackPosition] = useState(true);
   const { isAuthenticated } = useAuth();
 
   useEffect(() => {
@@ -222,12 +232,42 @@ const TokenAlertMonitor: React.FC = () => {
     window.open(`https://birdeye.so/token/${address}?chain=solana`, '_blank');
   };
 
-  const handleSwapToken = (address: string) => {
-    window.open(`https://jup.ag/swap/SOL-${address}`, '_blank');
+  const handleSwapToken = (token: Token) => {
+    setSelectedToken(token);
+    setTradeDialogOpen(true);
   };
   
   const handlePumpFunView = (address: string) => {
     window.open(`https://pump.fun/token/${address}`, '_blank');
+  };
+  
+  const handleExecuteTrade = async () => {
+    if (!selectedToken) return;
+    
+    setIsProcessing(true);
+    
+    try {
+      // Execute trade using our internal trading function
+      const result = await executeTrade(selectedToken.address, tradeAmount);
+      
+      if (result.success) {
+        toast.success(`Successfully traded ${tradeAmount} SOL for ${selectedToken.symbol}`, {
+          description: "Transaction completed successfully"
+        });
+      } else {
+        toast.error("Trade failed", { 
+          description: result.error || "Please try again later" 
+        });
+      }
+    } catch (error) {
+      console.error("Trade execution error:", error);
+      toast.error("Trade failed", { 
+        description: "An unexpected error occurred" 
+      });
+    } finally {
+      setIsProcessing(false);
+      setTradeDialogOpen(false);
+    }
   };
 
   if (!isAuthenticated) {
@@ -342,10 +382,10 @@ const TokenAlertMonitor: React.FC = () => {
                             Chart <ArrowUpRight className="h-3 w-3 ml-1" />
                           </button>
                           <button
-                            onClick={() => handleSwapToken(token.address)}
+                            onClick={() => handleSwapToken(token)}
                             className="text-xs flex items-center text-green-400 hover:underline"
                           >
-                            Swap <ArrowUpRight className="h-3 w-3 ml-1" />
+                            Swap <Wallet className="h-3 w-3 ml-1" />
                           </button>
                           {token.isPumpFun && (
                             <button
@@ -413,10 +453,10 @@ const TokenAlertMonitor: React.FC = () => {
                             Chart <ArrowUpRight className="h-3 w-3 ml-1" />
                           </button>
                           <button
-                            onClick={() => handleSwapToken(token.address)}
+                            onClick={() => handleSwapToken(token)}
                             className="text-xs flex items-center text-green-400 hover:underline"
                           >
-                            Swap <ArrowUpRight className="h-3 w-3 ml-1" />
+                            Swap <Wallet className="h-3 w-3 ml-1" />
                           </button>
                         </div>
                       </div>
@@ -484,10 +524,10 @@ const TokenAlertMonitor: React.FC = () => {
                             Chart <ArrowUpRight className="h-3 w-3 ml-1" />
                           </button>
                           <button
-                            onClick={() => handleSwapToken(token.address)}
+                            onClick={() => handleSwapToken(token)}
                             className="text-xs flex items-center text-green-400 hover:underline"
                           >
-                            Swap <ArrowUpRight className="h-3 w-3 ml-1" />
+                            Swap <Wallet className="h-3 w-3 ml-1" />
                           </button>
                         </div>
                       </div>
@@ -498,6 +538,110 @@ const TokenAlertMonitor: React.FC = () => {
             )}
           </TabsContent>
         </Tabs>
+
+        {/* Trade Dialog */}
+        <Dialog open={tradeDialogOpen} onOpenChange={setTradeDialogOpen}>
+          <DialogContent className="sm:max-w-[425px] bg-gray-900">
+            <DialogHeader>
+              <DialogTitle>
+                Trade {selectedToken?.symbol}
+              </DialogTitle>
+            </DialogHeader>
+            
+            {selectedToken && (
+              <div className="space-y-4">
+                <div className="bg-black/20 p-3 rounded-md">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-400">Token:</span>
+                    <span>{selectedToken.name} (${selectedToken.symbol})</span>
+                  </div>
+                  {selectedToken.price && (
+                    <div className="flex justify-between text-sm mt-1">
+                      <span className="text-gray-400">Price:</span>
+                      <span>${selectedToken.price.toFixed(8)}</span>
+                    </div>
+                  )}
+                  {selectedToken.runnerPotential && (
+                    <div className="flex justify-between text-sm mt-1">
+                      <span className="text-gray-400">Potential:</span>
+                      <span>{selectedToken.runnerPotential}</span>
+                    </div>
+                  )}
+                </div>
+                
+                <div>
+                  <Label htmlFor="amount">Amount (SOL)</Label>
+                  <div className="mt-1">
+                    <Input
+                      id="amount"
+                      type="number"
+                      value={tradeAmount}
+                      onChange={(e) => setTradeAmount(parseFloat(e.target.value) || 0)}
+                      className="bg-black/20 border-white/10"
+                      min={0.01}
+                      step={0.01}
+                    />
+                  </div>
+                  <Slider
+                    value={[tradeAmount]}
+                    min={0.01}
+                    max={1}
+                    step={0.01}
+                    onValueChange={(value) => setTradeAmount(value[0])}
+                    className="mt-2"
+                  />
+                  <div className="flex justify-between text-xs text-gray-400 mt-1">
+                    <span>0.01</span>
+                    <span>0.25</span>
+                    <span>0.5</span>
+                    <span>1.0</span>
+                  </div>
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="trackPosition" className="cursor-pointer">Track position in portfolio</Label>
+                  <input
+                    id="trackPosition"
+                    type="checkbox"
+                    checked={trackPosition}
+                    onChange={(e) => setTrackPosition(e.target.checked)}
+                    className="form-checkbox h-4 w-4"
+                  />
+                </div>
+                
+                <div className="bg-blue-900/20 border border-blue-500/20 rounded-md p-3">
+                  <p className="text-xs text-blue-300">
+                    This trade will be executed directly within the app using our optimal routing algorithm.
+                    {trackPosition && " Your position will be tracked in your portfolio."}
+                  </p>
+                </div>
+              </div>
+            )}
+            
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setTradeDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button 
+                onClick={handleExecuteTrade}
+                disabled={isProcessing || !tradeAmount}
+                className="relative"
+              >
+                {isProcessing ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    <Check className="h-4 w-4 mr-2" />
+                    Execute Trade
+                  </>
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </CardContent>
     </Card>
   );
