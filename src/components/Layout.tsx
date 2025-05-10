@@ -7,8 +7,27 @@ import SystemControls from "@/components/SystemControls";
 import { useSettingsStore } from "@/store/settingsStore";
 
 const Layout = () => {
-  const systemActive = useSettingsStore((state) => state.systemState.systemActive);
-  const toggleSystemActive = useSettingsStore((state) => state.toggleSystemActive);
+  const systemActive = useSettingsStore((state) => state.systemSettings.systemActive);
+  const setSystemActive = useSettingsStore((state) => state.setSystemActive);
+  
+  const toggleSystemActive = () => setSystemActive(!systemActive);
+  
+  // Track system latency state
+  const [systemLatency, setSystemLatency] = React.useState<number | null>(null);
+  
+  // Simulate latency updates
+  React.useEffect(() => {
+    if (systemActive) {
+      const interval = setInterval(() => {
+        // Simulate random latency between 20-120ms
+        setSystemLatency(Math.floor(Math.random() * 100) + 20);
+      }, 5000);
+      
+      return () => clearInterval(interval);
+    } else {
+      setSystemLatency(null);
+    }
+  }, [systemActive]);
   
   return (
     <div className="min-h-screen flex flex-col bg-trading-dark text-white">
@@ -22,7 +41,7 @@ const Layout = () => {
           <Outlet />
         </div>
       </main>
-      <Footer />
+      <Footer systemActive={systemActive} systemLatency={systemLatency} />
     </div>
   );
 };
