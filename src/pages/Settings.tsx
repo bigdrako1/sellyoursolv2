@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import ApiKeyDescription from "@/components/ApiKeyDescription";
@@ -22,17 +22,26 @@ import TradingTabContent from "@/components/TradingTabContent";
 import WalletsTabContent from "@/components/WalletsTabContent";
 import AnalyticsTabContent from "@/components/AnalyticsTabContent";
 import { toast } from "sonner";
+import { useSettingsStore } from "@/store/settingsStore";
 
 const Settings = () => {
-  const [activeTab, setActiveTab] = useState("general");
   const { user } = useAuth();
   
-  // System control state
-  const [systemControlActiveTab, setSystemControlActiveTab] = useState("dashboard");
-  const [systemActive, setSystemActive] = useState(true);
+  // Get settings from our store
+  const {
+    uiState,
+    systemSettings,
+    setActiveSettingsTab,
+    setSystemActive,
+  } = useSettingsStore((state) => ({
+    uiState: state.uiState,
+    systemSettings: state.systemSettings,
+    setActiveSettingsTab: state.setActiveSettingsTab,
+    setSystemActive: state.setSystemActive,
+  }));
   
   // Services status state
-  const [servicesStatus, setServicesStatus] = useState({
+  const [servicesStatus, setServicesStatus] = React.useState({
     solanaRpc: true,
     heliusApi: false,
     webhooks: true,
@@ -42,24 +51,25 @@ const Settings = () => {
     // Check for URL hash to set active tab
     const hash = window.location.hash?.substring(1);
     if (hash && ["general", "apis", "detection", "notifications", "advanced", "diagnostics", "trading", "wallets", "analytics"].includes(hash)) {
-      setActiveTab(hash);
+      setActiveSettingsTab(hash);
     }
-  }, []);
+  }, [setActiveSettingsTab]);
 
   const handleTabChange = (value: string) => {
-    setActiveTab(value);
+    setActiveSettingsTab(value);
     window.location.hash = value;
   };
   
   const toggleSystemActive = () => {
-    setSystemActive(!systemActive);
+    const newStatus = !systemSettings.systemActive;
+    setSystemActive(newStatus);
     toast(
-      systemActive ? "System paused" : "System activated",
+      newStatus ? "System activated" : "System paused",
       {
-        description: systemActive ? "All automated processes have been paused" : "All automated processes are now running",
+        description: newStatus ? "All automated processes are now running" : "All automated processes have been paused",
         action: {
           label: "Undo",
-          onClick: () => setSystemActive(systemActive),
+          onClick: () => setSystemActive(!newStatus),
         },
       }
     );
@@ -67,7 +77,7 @@ const Settings = () => {
 
   // Render the system control content based on active tab
   const renderSystemControlContent = () => {
-    switch (systemControlActiveTab) {
+    switch (uiState.activeSystemControlTab) {
       case "dashboard":
         return <DashboardTabContent />;
       case "trading":
@@ -85,7 +95,7 @@ const Settings = () => {
     <div className="container mx-auto py-6">
       <h2 className="text-3xl font-bold mb-6">Settings</h2>
 
-      <Tabs value={activeTab} onValueChange={handleTabChange} className="mb-8">
+      <Tabs value={uiState.activeSettingsTab} onValueChange={handleTabChange} className="mb-8">
         <TabsList className="w-full mb-6 flex flex-wrap gap-1">
           <TabsTrigger value="general">General</TabsTrigger>
           <TabsTrigger value="apis">API Keys</TabsTrigger>
@@ -100,9 +110,7 @@ const Settings = () => {
 
         <TabsContent value="general" className="space-y-6">
           <SystemControls 
-            activeTab={systemControlActiveTab} 
-            setActiveTab={setSystemControlActiveTab} 
-            systemActive={systemActive} 
+            systemActive={systemSettings.systemActive} 
             toggleSystemActive={toggleSystemActive} 
           />
           

@@ -1,13 +1,15 @@
 
-import React, { useState } from "react";
+import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import TradingAnalyticsDashboard from "@/components/TradingAnalyticsDashboard";
 import { Badge } from "@/components/ui/badge";
 import { BarChart3, LineChart, PieChart, TrendingUp, Wallet, CalendarCheck } from "lucide-react";
+import { useSettingsStore } from "@/store/settingsStore";
 
 const AnalyticsTabContent = () => {
-  const [timeRange, setTimeRange] = useState<"24h" | "7d" | "30d" | "all">("7d");
+  const timeRange = useSettingsStore((state) => state.uiState.timeRange);
+  const setTimeRange = useSettingsStore((state) => state.setTimeRange);
   
   return (
     <div className="space-y-6">

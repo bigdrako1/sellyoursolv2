@@ -3,20 +3,20 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Settings, Zap, Bot, BarChart2, Activity, AlertTriangle } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useSettingsStore } from "@/store/settingsStore";
 
 export interface SystemControlsProps {
-  activeTab: string;
-  setActiveTab: (tab: string) => void;
   systemActive: boolean;
   toggleSystemActive: () => void;
 }
 
 const SystemControls = ({ 
-  activeTab, 
-  setActiveTab, 
   systemActive, 
   toggleSystemActive 
 }: SystemControlsProps) => {
+  const activeTab = useSettingsStore((state) => state.uiState.activeSystemControlTab);
+  const setActiveTab = useSettingsStore((state) => state.setActiveSystemControlTab);
+  
   return (
     <div className="flex flex-col gap-4">
       <div className="flex justify-between items-center">
