@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -242,7 +241,6 @@ const SmartMoneyDetectionSystem: React.FC = () => {
                             }}
                             onClick={(e) => e.stopPropagation()}
                             className="mr-2"
-                            size="sm"
                           />
                           {expandedWallet === wallet.address ? (
                             <ChevronUp className="h-4 w-4 text-gray-500" />
