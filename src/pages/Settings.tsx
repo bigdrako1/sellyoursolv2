@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button"; // Added missing Button import
+import { Button } from "@/components/ui/button";
 import ApiKeyDescription from "@/components/ApiKeyDescription";
 import SystemControls from "@/components/SystemControls";
 import ApiUsageMonitor from "@/components/ApiUsageMonitor";
@@ -18,6 +18,8 @@ import NotificationSettings from "@/components/NotificationSettings";
 import AdvancedSettings from "@/components/AdvancedSettings";
 import WalletMonitor from "@/components/WalletMonitor";
 import TradingStrategy from "@/components/TradingStrategy";
+import TradingAnalyticsDashboard from "@/components/TradingAnalyticsDashboard";
+import TrackingWallets from "@/components/TrackingWallets";
 
 const Settings = () => {
   const [activeTab, setActiveTab] = useState("general");
@@ -37,7 +39,7 @@ const Settings = () => {
   useEffect(() => {
     // Check for URL hash to set active tab
     const hash = window.location.hash?.substring(1);
-    if (hash && ["general", "apis", "detection", "notifications", "advanced", "diagnostics", "trading", "wallets"].includes(hash)) {
+    if (hash && ["general", "apis", "detection", "notifications", "advanced", "diagnostics", "trading", "wallets", "analytics"].includes(hash)) {
       setActiveTab(hash);
     }
   }, []);
@@ -56,13 +58,14 @@ const Settings = () => {
       <h2 className="text-3xl font-bold mb-6">Settings</h2>
 
       <Tabs value={activeTab} onValueChange={handleTabChange} className="mb-8">
-        <TabsList className="w-full mb-6">
+        <TabsList className="w-full mb-6 flex flex-wrap gap-1">
           <TabsTrigger value="general">General</TabsTrigger>
           <TabsTrigger value="apis">API Keys</TabsTrigger>
           <TabsTrigger value="detection">Detection</TabsTrigger>
           <TabsTrigger value="notifications">Notifications</TabsTrigger>
           <TabsTrigger value="trading">Trading</TabsTrigger>
           <TabsTrigger value="wallets">Wallets</TabsTrigger>
+          <TabsTrigger value="analytics">Analytics</TabsTrigger>
           <TabsTrigger value="advanced">Advanced</TabsTrigger>
           <TabsTrigger value="diagnostics">Diagnostics</TabsTrigger>
         </TabsList>
@@ -100,6 +103,11 @@ const Settings = () => {
 
         <TabsContent value="wallets" className="space-y-6">
           <WalletMonitor />
+          <TrackingWallets />
+        </TabsContent>
+        
+        <TabsContent value="analytics" className="space-y-6">
+          <TradingAnalyticsDashboard />
         </TabsContent>
 
         <TabsContent value="advanced" className="space-y-6">
