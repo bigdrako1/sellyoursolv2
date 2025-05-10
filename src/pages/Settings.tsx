@@ -20,6 +20,11 @@ import WalletMonitor from "@/components/WalletMonitor";
 import TradingStrategy from "@/components/TradingStrategy";
 import TradingAnalyticsDashboard from "@/components/TradingAnalyticsDashboard";
 import TrackingWallets from "@/components/TrackingWallets";
+import DashboardTabContent from "@/components/DashboardTabContent";
+import TradingTabContent from "@/components/TradingTabContent";
+import WalletsTabContent from "@/components/WalletsTabContent";
+import AnalyticsTabContent from "@/components/AnalyticsTabContent";
+import { toast } from "sonner";
 
 const Settings = () => {
   const [activeTab, setActiveTab] = useState("general");
@@ -51,6 +56,32 @@ const Settings = () => {
   
   const toggleSystemActive = () => {
     setSystemActive(!systemActive);
+    toast(
+      systemActive ? "System paused" : "System activated",
+      {
+        description: systemActive ? "All automated processes have been paused" : "All automated processes are now running",
+        action: {
+          label: "Undo",
+          onClick: () => setSystemActive(systemActive),
+        },
+      }
+    );
+  };
+
+  // Function to render the appropriate tab content based on systemControlActiveTab
+  const renderSystemControlContent = () => {
+    switch (systemControlActiveTab) {
+      case "dashboard":
+        return <DashboardTabContent />;
+      case "trading":
+        return <TradingTabContent />;
+      case "wallets":
+        return <WalletsTabContent />;
+      case "analytics":
+        return <AnalyticsTabContent />;
+      default:
+        return <DashboardTabContent />;
+    }
   };
 
   return (
@@ -77,6 +108,10 @@ const Settings = () => {
             systemActive={systemActive} 
             toggleSystemActive={toggleSystemActive} 
           />
+          
+          {/* Render the content based on selected tab */}
+          {renderSystemControlContent()}
+          
           <ConnectedServices servicesStatus={servicesStatus} />
         </TabsContent>
 
