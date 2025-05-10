@@ -17,9 +17,6 @@ import DebugPanel from "@/components/DebugPanel";
 import NotificationSettings from "@/components/NotificationSettings";
 import AdvancedSettings from "@/components/AdvancedSettings";
 import WalletMonitor from "@/components/WalletMonitor";
-import TradingStrategy from "@/components/TradingStrategy";
-import TradingAnalyticsDashboard from "@/components/TradingAnalyticsDashboard";
-import TrackingWallets from "@/components/TrackingWallets";
 import DashboardTabContent from "@/components/DashboardTabContent";
 import TradingTabContent from "@/components/TradingTabContent";
 import WalletsTabContent from "@/components/WalletsTabContent";
@@ -30,11 +27,11 @@ const Settings = () => {
   const [activeTab, setActiveTab] = useState("general");
   const { user } = useAuth();
   
-  // Add state for system control props
+  // System control state
   const [systemControlActiveTab, setSystemControlActiveTab] = useState("dashboard");
   const [systemActive, setSystemActive] = useState(true);
   
-  // Add state for services status
+  // Services status state
   const [servicesStatus, setServicesStatus] = useState({
     solanaRpc: true,
     heliusApi: false,
@@ -68,7 +65,7 @@ const Settings = () => {
     );
   };
 
-  // Function to render the appropriate tab content based on systemControlActiveTab
+  // Render the system control content based on active tab
   const renderSystemControlContent = () => {
     switch (systemControlActiveTab) {
       case "dashboard":
@@ -109,7 +106,6 @@ const Settings = () => {
             toggleSystemActive={toggleSystemActive} 
           />
           
-          {/* Render the content based on selected tab */}
           {renderSystemControlContent()}
           
           <ConnectedServices servicesStatus={servicesStatus} />
@@ -133,16 +129,16 @@ const Settings = () => {
         </TabsContent>
 
         <TabsContent value="trading" className="space-y-6">
-          <TradingStrategy />
+          <TradingTabContent />
         </TabsContent>
 
         <TabsContent value="wallets" className="space-y-6">
           <WalletMonitor />
-          <TrackingWallets />
+          <WalletsTabContent />
         </TabsContent>
         
         <TabsContent value="analytics" className="space-y-6">
-          <TradingAnalyticsDashboard />
+          <AnalyticsTabContent />
         </TabsContent>
 
         <TabsContent value="advanced" className="space-y-6">

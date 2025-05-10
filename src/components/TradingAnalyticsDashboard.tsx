@@ -1,42 +1,11 @@
-
 import React from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { TrendingUp, TrendingDown, AlertTriangle, CheckCircle, Users, DollarSign } from 'lucide-react';
-import { Progress } from '@/components/ui/progress';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-interface AnalyticsCardProps {
-  title: string;
-  value: string;
-  trend: number;
-  description: string;
-  icon: React.ReactNode;
+interface TradingAnalyticsDashboardProps {
+  timeRange?: "24h" | "7d" | "30d" | "all";
 }
 
-const AnalyticsCard = ({ title, value, trend, description, icon }: AnalyticsCardProps) => {
-  return (
-    <Card className="bg-trading-darkAccent border-trading-highlight/20">
-      <CardContent className="pt-6">
-        <div className="flex items-start justify-between">
-          <div>
-            <p className="text-sm font-medium text-gray-400">{title}</p>
-            <div className="flex items-baseline mt-1">
-              <h3 className="text-2xl font-bold">{value}</h3>
-              <span className={`ml-2 text-sm font-medium ${trend >= 0 ? 'text-trading-success' : 'text-trading-danger'}`}>
-                {trend >= 0 ? '+' : ''}{trend}%
-              </span>
-            </div>
-            <p className="text-xs text-gray-500 mt-1">{description}</p>
-          </div>
-          <div className="p-2 rounded-full bg-trading-highlight/10">
-            {icon}
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
-};
-
-const TradingAnalyticsDashboard = () => {
+const TradingAnalyticsDashboard = ({ timeRange = "7d" }: TradingAnalyticsDashboardProps) => {
   // Sample data for the analytics dashboard
   const metricsData = {
     scannedTokens: { value: '186', trend: 12, description: 'Last 24 hours' },
