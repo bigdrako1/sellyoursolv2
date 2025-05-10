@@ -63,6 +63,7 @@ const ConnectedServices: React.FC<ConnectedServicesProps> = ({ servicesStatus: i
       if (showToast) {
         toast("Connection check complete", {
           description: `Connected to ${[heliusConnected && 'Helius', jupiterConnected && 'Jupiter'].filter(Boolean).join(', ') || 'No services'}`,
+          // Removed the variant property that was causing the error
         });
       }
     } catch (error) {
@@ -70,7 +71,8 @@ const ConnectedServices: React.FC<ConnectedServicesProps> = ({ servicesStatus: i
       if (showToast) {
         toast("Connection check failed", {
           description: "Unable to verify API connections. Check console for details.",
-          variant: "destructive",
+          // Using the correct property for error toasts with sonner
+          style: { backgroundColor: "hsl(var(--destructive))", color: "white" },
         });
       }
     } finally {
