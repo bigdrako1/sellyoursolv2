@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -150,7 +149,7 @@ const Webhooks: React.FC = () => {
   
   return (
     <div className="min-h-screen flex flex-col bg-trading-dark text-white">
-      <Header walletAddress={walletAddress || ""} />
+      <Header />
       
       <main className="flex-grow container mx-auto px-4 pb-10">
         <div className="py-6">
