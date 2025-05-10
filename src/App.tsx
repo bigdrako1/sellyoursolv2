@@ -1,87 +1,67 @@
-
 import React from "react";
-import { Toaster } from "sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { ThemeProvider } from "@/hooks/use-theme";
-import { AuthProvider } from "@/contexts/AuthContext";
-import ErrorBoundary from "@/components/ErrorBoundary";
-import Index from "./pages/Index";
-import NotFound from "./pages/NotFound";
-import Portfolio from "./pages/Portfolio";
-import MarketAnalysis from "./pages/MarketAnalysis";
-import Settings from "./pages/Settings";
-import AutoTrading from "./pages/AutoTrading";
-import Auth from "./pages/Auth";
+import {
+  createBrowserRouter,
+  RouterProvider,
+} from "react-router-dom";
+import Index from "@/pages/Index";
+import Settings from "@/pages/Settings";
+import Portfolio from "@/pages/Portfolio";
+import AutoTrading from "@/pages/AutoTrading";
+import MarketAnalysis from "@/pages/MarketAnalysis";
+import Webhooks from "@/pages/Webhooks";
+import Auth from "@/pages/Auth";
+import NotFound from "@/pages/NotFound";
+import Layout from "@/components/Layout";
+import TelegramMonitorPage from "@/pages/TelegramMonitor";
 
-// Create a new QueryClient instance with production-ready settings
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      retry: 2,
-      refetchOnWindowFocus: false,
-      staleTime: 60000, // 1 minute
-      gcTime: 300000, // 5 minutes
-      // Removed useErrorBoundary as it's not supported in this version
-    },
+const router = createBrowserRouter([
+  {
+    path: "/",
+    element: <Layout />,
+    errorElement: <NotFound />,
+    children: [
+      {
+        index: true,
+        element: <Index />,
+      },
+      {
+        path: "settings",
+        element: <Settings />,
+      },
+      {
+        path: "portfolio",
+        element: <Portfolio />,
+      },
+      {
+        path: "auto-trading",
+        element: <AutoTrading />,
+      },
+      {
+        path: "market-analysis",
+        element: <MarketAnalysis />,
+      },
+      {
+        path: "webhooks",
+        element: <Webhooks />,
+      },
+      {
+        path: "telegram-monitor",
+        element: <TelegramMonitorPage />,
+      }
+    ],
   },
-});
+  {
+    path: "/auth",
+    element: <Auth />,
+  },
+]);
 
-// Protected route wrapper component based on wallet authentication
-const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  // Check if user is authenticated using our localStorage-based auth system
-  const isAuthenticated = localStorage.getItem('user') !== null;
-  
-  if (!isAuthenticated) {
-    // Redirect to auth page if not authenticated
-    return <Navigate to="/auth" replace />;
-  }
-  
-  return <>{children}</>;
-};
-
-const App: React.FC = () => (
-  <React.StrictMode>
-    <ErrorBoundary>
-      <QueryClientProvider client={queryClient}>
-        <ThemeProvider>
-          <BrowserRouter>
-            <TooltipProvider>
-              <AuthProvider>
-                <Toaster position="top-right" richColors />
-                <Routes>
-                  <Route path="/" element={<Index />} />
-                  <Route path="/market-analysis" element={
-                    <ProtectedRoute>
-                      <MarketAnalysis />
-                    </ProtectedRoute>
-                  } />
-                  <Route path="/auto-trading" element={
-                    <ProtectedRoute>
-                      <AutoTrading />
-                    </ProtectedRoute>
-                  } />
-                  <Route path="/portfolio" element={
-                    <ProtectedRoute>
-                      <Portfolio />
-                    </ProtectedRoute>
-                  } />
-                  <Route path="/settings" element={
-                    <ProtectedRoute>
-                      <Settings />
-                    </ProtectedRoute>
-                  } />
-                  <Route path="/auth" element={<Auth />} />
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </AuthProvider>
-            </TooltipProvider>
-          </BrowserRouter>
-        </ThemeProvider>
-      </QueryClientProvider>
-    </ErrorBoundary>
-  </React.StrictMode>
-);
+function App() {
+  return (
+    <React.StrictMode>
+      <RouterProvider router={router} />
+    </React.StrictMode>
+  );
+}
 
 export default App;

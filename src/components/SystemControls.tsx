@@ -1,7 +1,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Settings, Zap, Bot, BarChart2, Activity, AlertTriangle } from "lucide-react";
+import { Settings, Zap, Bot, BarChart2, Activity, AlertTriangle, Telegram } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useSettingsStore } from "@/store/settingsStore";
 
@@ -19,7 +19,7 @@ const SystemControls = ({
   
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center flex-wrap gap-3">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="bg-trading-darkAccent">
             <TabsTrigger value="dashboard" className="gap-1">
@@ -38,6 +38,17 @@ const SystemControls = ({
         </Tabs>
         
         <div className="flex items-center gap-2">
+          <Link to="/telegram-monitor">
+            <Button
+              variant="outline"
+              className="gap-1 bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 border-blue-500/30"
+              size="sm"
+            >
+              <Telegram size={14} />
+              <span className="hidden md:inline">Telegram Monitor</span>
+            </Button>
+          </Link>
+          
           <Button 
             onClick={toggleSystemActive}
             variant="outline"

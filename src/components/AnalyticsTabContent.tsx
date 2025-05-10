@@ -3,8 +3,10 @@ import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import TradingAnalyticsDashboard from "@/components/TradingAnalyticsDashboard";
+import RevenueTracker from "@/components/RevenueTracker";
+import ScheduleAnalytics from "@/components/ScheduleAnalytics";
 import { Badge } from "@/components/ui/badge";
-import { BarChart3, LineChart, PieChart, TrendingUp, Wallet, CalendarCheck } from "lucide-react";
+import { BarChart3, LineChart, Wallet, CalendarCheck } from "lucide-react";
 import { useSettingsStore } from "@/store/settingsStore";
 
 const AnalyticsTabContent = () => {
@@ -66,9 +68,6 @@ const AnalyticsTabContent = () => {
               <TabsTrigger value="trades" className="gap-1">
                 <LineChart size={14} /> Trades
               </TabsTrigger>
-              <TabsTrigger value="performance" className="gap-1">
-                <TrendingUp size={14} /> Performance
-              </TabsTrigger>
               <TabsTrigger value="revenue" className="gap-1">
                 <Wallet size={14} /> Revenue
               </TabsTrigger>
@@ -86,38 +85,18 @@ const AnalyticsTabContent = () => {
               <TradingAnalyticsDashboard timeRange={timeRange} />
             </TabsContent>
             
-            <TabsContent value="performance">
-              <p className="text-muted-foreground mb-4">
-                Analyze your portfolio performance and strategy effectiveness.
-              </p>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="h-64 flex flex-col items-center justify-center border border-dashed rounded-md p-4">
-                  <PieChart size={48} className="text-purple-500 mb-2 opacity-50" />
-                  <span className="text-muted-foreground text-center">Strategy performance breakdowns</span>
-                </div>
-                <div className="h-64 flex flex-col items-center justify-center border border-dashed rounded-md p-4">
-                  <BarChart3 size={48} className="text-purple-500 mb-2 opacity-50" />
-                  <span className="text-muted-foreground text-center">Token type performance comparison</span>
-                </div>
-              </div>
-            </TabsContent>
-            
             <TabsContent value="revenue">
               <p className="text-muted-foreground mb-4">
                 Track your earnings and investment returns over time.
               </p>
-              <div className="h-64 flex items-center justify-center border border-dashed rounded-md">
-                <span className="text-muted-foreground">Revenue tracking features coming soon</span>
-              </div>
+              <RevenueTracker timeRange={timeRange} />
             </TabsContent>
             
             <TabsContent value="schedule">
               <p className="text-muted-foreground mb-4">
                 View your trading activity by time and day for pattern analysis.
               </p>
-              <div className="h-64 flex items-center justify-center border border-dashed rounded-md">
-                <span className="text-muted-foreground">Trading schedule analytics coming soon</span>
-              </div>
+              <ScheduleAnalytics timeRange={timeRange} />
             </TabsContent>
           </Tabs>
         </CardContent>

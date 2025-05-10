@@ -23,12 +23,16 @@ interface SystemSettings {
   // Wallet tracking settings
   autoTrackProfitableWallets: boolean;
   walletTrackingThreshold: number;
+  
+  // Currency settings
+  currency: "USD" | "EUR" | "GBP" | "JPY" | "KES";
 }
 
 interface UIState {
   activeSettingsTab: string;
   activeSystemControlTab: string;
   timeRange: "24h" | "7d" | "30d" | "all";
+  currencySymbol: string;
 }
 
 interface SettingsState {
@@ -55,6 +59,7 @@ interface SettingsState {
   setSmartMoneyWeight: (value: number) => void;
   setAutoTrackProfitableWallets: (isEnabled: boolean) => void;
   setWalletTrackingThreshold: (value: number) => void;
+  setCurrency: (currency: SystemSettings['currency']) => void;
   
   // Actions - UI state
   setActiveSettingsTab: (tab: string) => void;
@@ -86,12 +91,25 @@ const defaultSystemSettings: SystemSettings = {
   smartMoneyWeight: 30,
   autoTrackProfitableWallets: false,
   walletTrackingThreshold: 100,
+  currency: "USD",
+};
+
+const getCurrencySymbol = (currency: SystemSettings['currency']): string => {
+  const symbols: Record<SystemSettings['currency'], string> = {
+    USD: '$',
+    EUR: '€',
+    GBP: '£',
+    JPY: '¥',
+    KES: 'KSh'
+  };
+  return symbols[currency] || '$';
 };
 
 const defaultUIState: UIState = {
   activeSettingsTab: "general",
   activeSystemControlTab: "dashboard",
   timeRange: "7d",
+  currencySymbol: getCurrencySymbol(defaultSystemSettings.currency),
 };
 
 /**
@@ -168,6 +186,11 @@ export const useSettingsStore = create<SettingsState>()(
       
       setWalletTrackingThreshold: (value) => set((state) => ({
         systemSettings: { ...state.systemSettings, walletTrackingThreshold: value }
+      })),
+      
+      setCurrency: (currency) => set((state) => ({
+        systemSettings: { ...state.systemSettings, currency },
+        uiState: { ...state.uiState, currencySymbol: getCurrencySymbol(currency) }
       })),
       
       // Actions - UI state
