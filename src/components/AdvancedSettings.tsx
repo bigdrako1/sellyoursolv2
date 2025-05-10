@@ -26,8 +26,8 @@ const AdvancedSettings = () => {
   const [isImporting, setIsImporting] = useState(false);
   
   const handleResetAllSettings = () => {
+    // Fixed: Changed the toast structure to match sonner's API
     toast({
-      title: "Settings reset confirmation",
       description: "This action will reset all settings to default values. Are you sure?",
       action: {
         label: "Reset All",

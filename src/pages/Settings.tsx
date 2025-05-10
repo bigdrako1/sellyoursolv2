@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button"; // Added missing Button import
 import ApiKeyDescription from "@/components/ApiKeyDescription";
 import SystemControls from "@/components/SystemControls";
 import ApiUsageMonitor from "@/components/ApiUsageMonitor";
