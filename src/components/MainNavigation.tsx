@@ -25,19 +25,16 @@ export const MobileNavigation = () => {
   
   return (
     <div className="flex flex-col space-y-1">
-      {navItems.map((item) => {
-        // Use the icons as defined in navItems without modification
-        return (
-          <NavItem 
-            key={item.path}
-            to={item.path}
-            icon={item.icon}
-            label={item.label}
-            isActive={currentPath === item.path}
-            size="small"
-          />
-        );
-      })}
+      {navItems.map((item) => (
+        <NavItem 
+          key={item.path}
+          to={item.path}
+          icon={item.icon}
+          label={item.label}
+          isActive={currentPath === item.path}
+          size="small"
+        />
+      ))}
     </div>
   );
 };

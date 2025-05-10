@@ -92,20 +92,16 @@ export const MobileNavigation = () => {
   
   return (
     <div className="flex flex-col space-y-1">
-      {navItems.map((item) => {
-        // For mobile navigation, we'll just use the existing icon
-        // instead of trying to clone it with a new size
-        return (
-          <NavItem 
-            key={item.path}
-            to={item.path}
-            icon={item.icon}
-            label={item.label}
-            isActive={currentPath === item.path}
-            size="small"
-          />
-        );
-      })}
+      {navItems.map((item) => (
+        <NavItem 
+          key={item.path}
+          to={item.path}
+          icon={item.icon}
+          label={item.label}
+          isActive={currentPath === item.path}
+          size="small"
+        />
+      ))}
     </div>
   );
 };
