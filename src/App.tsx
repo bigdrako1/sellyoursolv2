@@ -1,3 +1,4 @@
+
 import React from "react";
 import {
   createBrowserRouter,
@@ -13,6 +14,7 @@ import Auth from "@/pages/Auth";
 import NotFound from "@/pages/NotFound";
 import Layout from "@/components/Layout";
 import TelegramMonitorPage from "@/pages/TelegramMonitor";
+import { Toaster } from "sonner";
 
 const router = createBrowserRouter([
   {
@@ -60,6 +62,7 @@ function App() {
   return (
     <React.StrictMode>
       <RouterProvider router={router} />
+      <Toaster richColors position="top-right" />
     </React.StrictMode>
   );
 }
