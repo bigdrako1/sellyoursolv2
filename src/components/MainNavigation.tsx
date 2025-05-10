@@ -26,16 +26,12 @@ export const MobileNavigation = () => {
   return (
     <div className="flex flex-col space-y-1">
       {navItems.map((item) => {
-        // For mobile, we need to create new icons with smaller size
-        const mobileIcon = React.isValidElement(item.icon) 
-          ? React.cloneElement(item.icon as React.ReactElement, { size: 16 })
-          : item.icon;
-          
+        // Use the icons as defined in navItems without modification
         return (
           <NavItem 
             key={item.path}
             to={item.path}
-            icon={mobileIcon}
+            icon={item.icon}
             label={item.label}
             isActive={currentPath === item.path}
             size="small"
