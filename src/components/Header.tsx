@@ -5,7 +5,7 @@ import CurrencySelector from "@/components/CurrencySelector";
 import { useState } from "react";
 import { Menu, X } from "lucide-react";
 import LivePriceTracker from "@/components/LivePriceTracker";
-import MainNavigation, { MobileNavigation } from "@/components/MainNavigation";
+import AppNavigation, { MobileNavigation } from "@/components/AppNavigation";
 
 const Header = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -17,7 +17,7 @@ const Header = () => {
           {/* Logo and navigation */}
           <div className="flex items-center space-x-4">
             <Link to="/" className="text-xl font-bold text-trading-highlight">SellYourSOL V2</Link>
-            <MainNavigation />
+            <AppNavigation />
           </div>
           
           {/* Right side controls */}

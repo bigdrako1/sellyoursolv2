@@ -2,9 +2,7 @@
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import WalletBalances from "@/components/WalletBalances";
-import TrackingWallets from "@/components/TrackingWallets";
 import { Wallet } from "lucide-react";
-import WalletAddressInput from "@/components/WalletAddressInput";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 

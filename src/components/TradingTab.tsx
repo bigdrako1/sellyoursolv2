@@ -9,6 +9,8 @@ import LivePriceTracker from '@/components/LivePriceTracker';
 import { testHeliusConnection } from '@/services/tokenDataService';
 import { useToast } from '@/hooks/use-toast';
 import { toast } from 'sonner';
+
+// Import all tab contents
 import TokenTabContent from '@/components/trading/TokenTabContent';
 import DetectorTabContent from '@/components/trading/DetectorTabContent';
 import SmartMoneyTabContent from '@/components/trading/SmartMoneyTabContent';
@@ -22,8 +24,30 @@ import WebhooksTabContent from '@/components/trading/WebhooksTabContent';
 import StrategyTabContent from '@/components/trading/StrategyTabContent';
 import AlertsTabContent from '@/components/trading/AlertsTabContent';
 
+// Define tab types for better type safety
+type TradingTabType = 
+  | 'monitor' | 'detector' | 'smartmoney' | 'telegram' | 'analytics' 
+  | 'sentiment' | 'quality' | 'runners' | 'watchlist' | 'webhooks' 
+  | 'strategy' | 'alerts';
+
+// Map of tab types to tab content components for lazy loading
+const tabComponents: Record<TradingTabType, React.ComponentType> = {
+  'monitor': TokenTabContent,
+  'detector': DetectorTabContent,
+  'smartmoney': SmartMoneyTabContent,
+  'telegram': TelegramTabContent,
+  'analytics': AnalyticsTabContent,
+  'sentiment': SentimentTabContent,
+  'quality': QualityTabContent,
+  'runners': RunnersTabContent,
+  'watchlist': WatchlistTabContent,
+  'webhooks': WebhooksTabContent,
+  'strategy': StrategyTabContent,
+  'alerts': AlertsTabContent
+};
+
 const TradingTab = () => {
-  const [activeTab, setActiveTab] = useState('monitor');
+  const [activeTab, setActiveTab] = useState<TradingTabType>('monitor');
   const [showMonitoring, setShowMonitoring] = useState(true);
   const [apiKeyConfigured, setApiKeyConfigured] = useState(false);
   const [isCheckingConnection, setIsCheckingConnection] = useState(true);
@@ -36,7 +60,6 @@ const TradingTab = () => {
       try {
         const storedApiKey = localStorage.getItem('helius_api_key');
         
-        // If user has a custom key, check it
         if (storedApiKey) {
           const isConnected = await testHeliusConnection();
           setApiKeyConfigured(isConnected);
@@ -46,11 +69,9 @@ const TradingTab = () => {
               description: "There was a problem connecting to the Helius API. Using default API key.",
               variant: "destructive",
             });
-            // Fall back to default key
             localStorage.removeItem('helius_api_key');
           }
         } else {
-          // Try with the default key
           const isConnected = await testHeliusConnection();
           setApiKeyConfigured(isConnected);
           
@@ -83,6 +104,12 @@ const TradingTab = () => {
         ? "Token monitoring has been paused. You won't receive new alerts." 
         : "Token monitoring has been resumed. You'll now receive alerts for new tokens."
     });
+  };
+  
+  // Render the active tab content
+  const renderTabContent = () => {
+    const TabComponent = tabComponents[activeTab];
+    return <TabComponent />;
   };
   
   return (
@@ -137,7 +164,7 @@ const TradingTab = () => {
           </div>
         </Card>
       ) : (
-        <Tabs defaultValue="monitor" value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+        <Tabs defaultValue="monitor" value={activeTab} onValueChange={(value) => setActiveTab(value as TradingTabType)} className="space-y-4">
           <TabsList className="bg-black/20 border-white/10 border overflow-x-auto flex-wrap">
             <TabsTrigger value="monitor">Token Monitor</TabsTrigger>
             <TabsTrigger value="detector">Token Detector</TabsTrigger>
@@ -153,52 +180,8 @@ const TradingTab = () => {
             <TabsTrigger value="alerts">Alerts</TabsTrigger>
           </TabsList>
           
-          <TabsContent value="monitor">
-            {activeTab === 'monitor' && <TokenTabContent />}
-          </TabsContent>
-          
-          <TabsContent value="detector">
-            {activeTab === 'detector' && <DetectorTabContent />}
-          </TabsContent>
-          
-          <TabsContent value="smartmoney">
-            {activeTab === 'smartmoney' && <SmartMoneyTabContent />}
-          </TabsContent>
-          
-          <TabsContent value="telegram">
-            {activeTab === 'telegram' && <TelegramTabContent />}
-          </TabsContent>
-          
-          <TabsContent value="analytics">
-            {activeTab === 'analytics' && <AnalyticsTabContent />}
-          </TabsContent>
-          
-          <TabsContent value="sentiment">
-            {activeTab === 'sentiment' && <SentimentTabContent />}
-          </TabsContent>
-          
-          <TabsContent value="quality">
-            {activeTab === 'quality' && <QualityTabContent />}
-          </TabsContent>
-          
-          <TabsContent value="runners">
-            {activeTab === 'runners' && <RunnersTabContent />}
-          </TabsContent>
-          
-          <TabsContent value="watchlist">
-            {activeTab === 'watchlist' && <WatchlistTabContent />}
-          </TabsContent>
-          
-          <TabsContent value="webhooks">
-            {activeTab === 'webhooks' && <WebhooksTabContent />}
-          </TabsContent>
-          
-          <TabsContent value="strategy">
-            {activeTab === 'strategy' && <StrategyTabContent />}
-          </TabsContent>
-          
-          <TabsContent value="alerts">
-            {activeTab === 'alerts' && <AlertsTabContent />}
+          <TabsContent value={activeTab}>
+            {renderTabContent()}
           </TabsContent>
         </Tabs>
       )}
