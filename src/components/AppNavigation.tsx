@@ -40,23 +40,30 @@ interface NavItemProps {
   size?: "default" | "small";
 }
 
-export const NavItem = ({ to, icon, label, isActive, size = "default" }: NavItemProps) => (
-  <Link 
-    to={to} 
-    className={cn(
-      "flex items-center gap-2 px-3 py-2 rounded-md transition-colors",
-      isActive 
-        ? "bg-trading-highlight/20 text-white" 
-        : "hover:bg-trading-darkAccent",
-      size === "small" && "text-sm"
-    )}
-  >
-    {React.cloneElement(icon as React.ReactElement, { 
-      size: size === "small" ? 16 : 18 
-    })}
-    <span>{label}</span>
-  </Link>
-);
+export const NavItem = ({ to, icon, label, isActive, size = "default" }: NavItemProps) => {
+  // Clone the icon with appropriate size
+  const iconElement = React.isValidElement(icon) 
+    ? React.cloneElement(icon as React.ReactElement, { 
+        size: size === "small" ? 16 : 18 
+      }) 
+    : null;
+
+  return (
+    <Link 
+      to={to} 
+      className={cn(
+        "flex items-center gap-2 px-3 py-2 rounded-md transition-colors",
+        isActive 
+          ? "bg-trading-highlight/20 text-white" 
+          : "hover:bg-trading-darkAccent",
+        size === "small" && "text-sm"
+      )}
+    >
+      {iconElement}
+      <span>{label}</span>
+    </Link>
+  );
+};
 
 export const useNavigation = () => {
   const location = useLocation();
