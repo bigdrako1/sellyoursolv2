@@ -1,128 +1,174 @@
 
-import React, { useState } from 'react';
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardContent,
-  CardFooter,
-  CardDescription,
-} from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { testHeliusConnection } from '@/utils/apiUtils';
-import { testApiConnectivity } from '@/services/apiService';
-import { useToast } from '@/hooks/use-toast';
-import { Badge } from '@/components/ui/badge';
-import { RefreshCw, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
-import { HELIUS_RPC_URL, HELIUS_API_BASE, JUPITER_API_BASE } from '@/utils/apiUtils';
+import React, { useState, useEffect, useRef } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { AlertTriangle, XCircle, Terminal, Trash2 } from 'lucide-react';
 
-// Component to test API connectivity and show results
-const DebugPanel = () => {
-  const [isChecking, setIsChecking] = useState(false);
-  const [results, setResults] = useState<Record<string, boolean>>({});
-  const { toast } = useToast();
-  
-  // Test connection to all APIs
-  const testConnections = async () => {
-    setIsChecking(true);
-    const testResults: Record<string, boolean> = {};
+interface LogEntry {
+  timestamp: Date;
+  message: string;
+  type: 'error' | 'warn' | 'info' | 'log';
+  details?: any;
+}
+
+interface DebugPanelProps {
+  maxLogs?: number;
+}
+
+const DebugPanel: React.FC<DebugPanelProps> = ({ maxLogs = 100 }) => {
+  const [logs, setLogs] = useState<LogEntry[]>([]);
+  const [hasErrors, setHasErrors] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+  const logEndRef = useRef<HTMLDivElement>(null);
+
+  // Override console methods to capture logs
+  useEffect(() => {
+    const originalConsole = {
+      log: console.log,
+      error: console.error,
+      warn: console.warn,
+      info: console.info
+    };
+
+    // Function to add log entry
+    const addLogEntry = (message: string, type: LogEntry['type'], details?: any) => {
+      setLogs(prevLogs => {
+        const newLogs = [
+          ...prevLogs, 
+          { timestamp: new Date(), message, type, details }
+        ].slice(-maxLogs);
+        return newLogs;
+      });
+      
+      if (type === 'error') {
+        setHasErrors(true);
+      }
+    };
+
+    // Override console methods
+    console.log = function(...args) {
+      originalConsole.log(...args);
+      addLogEntry(args.map(arg => typeof arg === 'object' ? JSON.stringify(arg) : String(arg)).join(' '), 'log');
+    };
     
-    try {
-      // Test Helius connection using our utils
-      testResults.heliusConnection = await testHeliusConnection();
-      
-      // Test direct API endpoints
-      testResults.heliusApi = await testApiConnectivity(HELIUS_API_BASE);
-      testResults.heliusRpc = await testApiConnectivity(HELIUS_RPC_URL);
-      testResults.jupiterApi = await testApiConnectivity(JUPITER_API_BASE);
-      
-      setResults(testResults);
-      
-      // Count successes
-      const successCount = Object.values(testResults).filter(Boolean).length;
-      const totalTests = Object.values(testResults).length;
-      
-      toast({
-        title: `API Connectivity Results: ${successCount}/${totalTests} passed`,
-        description: `${successCount} out of ${totalTests} API endpoints are reachable.`,
-        variant: successCount === totalTests ? "default" : "destructive",
-      });
-    } catch (error) {
-      console.error('Error testing connections:', error);
-      toast({
-        title: 'Connection Test Error',
-        description: 'An error occurred while testing API connections.',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsChecking(false);
+    console.error = function(...args) {
+      originalConsole.error(...args);
+      addLogEntry(args.map(arg => typeof arg === 'object' ? JSON.stringify(arg) : String(arg)).join(' '), 'error', args[0]);
+    };
+    
+    console.warn = function(...args) {
+      originalConsole.warn(...args);
+      addLogEntry(args.map(arg => typeof arg === 'object' ? JSON.stringify(arg) : String(arg)).join(' '), 'warn');
+    };
+    
+    console.info = function(...args) {
+      originalConsole.info(...args);
+      addLogEntry(args.map(arg => typeof arg === 'object' ? JSON.stringify(arg) : String(arg)).join(' '), 'info');
+    };
+
+    // Restore original console on cleanup
+    return () => {
+      console.log = originalConsole.log;
+      console.error = originalConsole.error;
+      console.warn = originalConsole.warn;
+      console.info = originalConsole.info;
+    };
+  }, [maxLogs]);
+
+  // Scroll to bottom when logs change
+  useEffect(() => {
+    if (logEndRef.current) {
+      logEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [logs]);
+
+  const clearLogs = () => {
+    setLogs([]);
+    setHasErrors(false);
+  };
+
+  // Determine badge variant - use standard variants only
+  const getBadgeVariant = (): "default" | "destructive" | "outline" | "secondary" => {
+    if (hasErrors) return "destructive";
+    if (logs.length > 0) return "default";
+    return "outline";
+  };
+
+  // Format the log message
+  const formatLogMessage = (log: LogEntry) => {
+    const time = log.timestamp.toLocaleTimeString();
+    return `[${time}] ${log.message}`;
+  };
+
+  // Get log entry class based on type
+  const getLogClass = (type: LogEntry['type']) => {
+    switch (type) {
+      case 'error': return 'text-red-500';
+      case 'warn': return 'text-yellow-500';
+      case 'info': return 'text-blue-500';
+      default: return 'text-gray-300';
     }
   };
-  
-  const getStatusIcon = (status: boolean | undefined) => {
-    if (status === undefined) return <AlertCircle className="h-4 w-4 text-gray-400" />;
-    return status ? 
-      <CheckCircle className="h-4 w-4 text-green-500" /> : 
-      <XCircle className="h-4 w-4 text-red-500" />;
-  };
-  
+
   return (
-    <Card>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-lg">API Connection Tests</CardTitle>
-        <CardDescription>
-          Test connectivity to essential API services
-        </CardDescription>
+    <Card className={`card-with-border ${hasErrors ? 'border-red-500/30' : ''}`}>
+      <CardHeader className="py-3">
+        <CardTitle className="flex items-center justify-between cursor-pointer" onClick={() => setExpanded(!expanded)}>
+          <div className="flex items-center gap-2">
+            <Terminal className="h-4 w-4" />
+            <span>Debug Console</span>
+            {logs.length > 0 && (
+              <Badge variant={getBadgeVariant()}>
+                {logs.length} {hasErrors && <AlertTriangle className="h-3 w-3 ml-1" />}
+              </Badge>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            {logs.length > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 w-6 p-0"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  clearLogs();
+                }}
+                title="Clear logs"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
+            )}
+            <span className="text-xs">{expanded ? '▼' : '▶'}</span>
+          </div>
+        </CardTitle>
       </CardHeader>
-      <CardContent className="pb-2">
-        {Object.keys(results).length > 0 && (
-          <div className="space-y-2">
-            {Object.entries(results).map(([name, status]) => (
-              <div key={name} className="flex items-center justify-between py-1">
-                <div className="flex items-center">
-                  {getStatusIcon(status)}
-                  <span className="ml-2 capitalize">
-                    {name.replace(/([A-Z])/g, ' $1').trim()}
-                  </span>
-                </div>
-                <Badge variant={status ? "success" : "destructive"}>
-                  {status ? 'Connected' : 'Failed'}
-                </Badge>
-              </div>
-            ))}
-          </div>
-        )}
-        
-        {Object.keys(results).length === 0 && !isChecking && (
-          <div className="py-4 text-center text-gray-500">
-            <AlertCircle className="h-8 w-8 mx-auto mb-2 text-gray-400" />
-            <p>No tests run yet. Click the button below to test connections.</p>
-          </div>
-        )}
-        
-        {isChecking && (
-          <div className="py-4 text-center">
-            <RefreshCw className="h-8 w-8 mx-auto mb-2 animate-spin text-blue-500" />
-            <p>Testing API connections...</p>
-          </div>
-        )}
-      </CardContent>
-      <CardFooter>
-        <Button 
-          className="w-full" 
-          onClick={testConnections} 
-          disabled={isChecking}
-        >
-          {isChecking ? (
-            <>
-              <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-              Testing...
-            </>
+      {expanded && (
+        <CardContent className="p-0">
+          {logs.length === 0 ? (
+            <div className="p-4 text-sm text-gray-500 text-center">No logs to display</div>
           ) : (
-            <>Test API Connections</>
+            <div className="h-[300px] overflow-y-auto bg-trading-darkerAccent p-3 rounded-b-md">
+              {logs.map((log, index) => (
+                <div
+                  key={index}
+                  className={`text-xs py-1 font-mono ${getLogClass(log.type)} break-all`}
+                >
+                  {formatLogMessage(log)}
+                  {log.type === 'error' && log.details && (
+                    <div className="pl-6 mt-1 text-xs text-red-400">
+                      {typeof log.details === 'object' && log.details.stack ? log.details.stack.split('\n').map((line: string, i: number) => (
+                        <div key={i} className="text-red-400/70">{line}</div>
+                      )) : null}
+                    </div>
+                  )}
+                </div>
+              ))}
+              <div ref={logEndRef} />
+            </div>
           )}
-        </Button>
-      </CardFooter>
+        </CardContent>
+      )}
     </Card>
   );
 };
