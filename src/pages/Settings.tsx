@@ -18,13 +18,13 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useCurrencyStore } from "@/store/currencyStore";
-import { 
-  Bell, 
-  Volume2, 
-  Shield, 
-  Monitor, 
-  Laptop, 
-  AlertCircle, 
+import {
+  Bell,
+  Volume2,
+  Shield,
+  Monitor,
+  Laptop,
+  AlertCircle,
   Undo2,
   Save,
   UserRound,
@@ -35,119 +35,107 @@ import {
 } from "lucide-react";
 import { getConnectedWallet, connectWallet, disconnectWallet } from "@/utils/walletUtils";
 import { useAuth } from "@/contexts/AuthContext";
-import { getUserSettings, updateUserSettings } from "@/services/settingsService";
-import { UserSettings } from "@/types/database.types";
+import { useSettingsStore } from "@/store/settingsStore";
+import { PageSpinner } from "@/components/ui/spinner";
 
 const Settings = () => {
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
-  const [systemActive, setSystemActive] = useState(true);
-  const [systemLatency, setSystemLatency] = useState(25);
   const [connecting, setConnecting] = useState(false);
   const [disconnecting, setDisconnecting] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  
-  // Settings state
-  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
-  const [soundEnabled, setSoundEnabled] = useState(true);
-  const [autoTradeEnabled, setAutoTradeEnabled] = useState(false);
-  const [darkMode, setDarkMode] = useState(true);
-  const [riskLevel, setRiskLevel] = useState([50]);
-  const [apiKey, setApiKey] = useState("");
-  const [heliusApiKey, setHeliusApiKey] = useState("a18d2c93-d9fa-4db2-8419-707a4f1782f7");
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
   const [tfaCode, setTfaCode] = useState("");
   const [tfaVerifying, setTfaVerifying] = useState(false);
-  
+
   const { toast } = useToast();
   const { currency, setCurrency } = useCurrencyStore();
   const { user, isAuthenticated } = useAuth();
-  
-  // Load settings from Supabase
-  useEffect(() => {
-    const loadSettings = async () => {
-      if (user) {
-        setIsLoading(true);
-        try {
-          const settings = await getUserSettings(user.id);
-          if (settings) {
-            setNotificationsEnabled(settings.notifications_enabled);
-            setSoundEnabled(settings.sound_enabled);
-            setAutoTradeEnabled(settings.auto_trade_enabled);
-            setDarkMode(settings.dark_mode);
-            setRiskLevel([settings.risk_level]);
-            setCurrency(settings.currency);
-            setSystemActive(settings.system_active);
-            setSystemLatency(settings.system_latency);
-            setApiKey(settings.api_key || "");
-            setHeliusApiKey(settings.helius_api_key || "a18d2c93-d9fa-4db2-8419-707a4f1782f7");
-          }
-        } catch (error) {
-          console.error("Error loading settings:", error);
-          toast({
-            title: "Failed to load settings",
-            description: "Your settings could not be loaded. Using defaults.",
-            variant: "destructive",
-          });
-        } finally {
-          setIsLoading(false);
-        }
-      }
-    };
 
-    loadSettings();
-    
+  // Use settings store instead of local state
+  const {
+    darkMode,
+    notificationsEnabled,
+    soundEnabled,
+    autoTradeEnabled,
+    riskLevel: riskLevelValue,
+    apiKey,
+    heliusApiKey,
+    systemActive,
+    systemLatency,
+    isLoading,
+    error,
+    toggleDarkMode,
+    toggleNotifications,
+    toggleSound,
+    toggleAutoTrade,
+    setRiskLevel,
+    setCurrency: setStoreCurrency,
+    setApiKey,
+    setHeliusApiKey,
+    setSystemStatus,
+    loadSettings,
+    saveSettings,
+    resetSettings
+  } = useSettingsStore();
+
+  // Convert single riskLevel value to array for Slider component
+  const riskLevel = [riskLevelValue];
+
+  // Load settings from store
+  useEffect(() => {
+    if (user) {
+      // Load settings from API
+      loadSettings(user.id);
+    }
+
     // Check for connected wallet on mount
     const savedWallet = getConnectedWallet();
     if (savedWallet) {
       setWalletAddress(savedWallet);
     }
-  }, [user, setCurrency, toast]);
-  
+  }, [user, loadSettings]);
+
+  // Sync currency between stores
+  useEffect(() => {
+    // Update currency store when settings store changes
+    setCurrency(useSettingsStore.getState().currency);
+
+    // Subscribe to currency store changes
+    const unsubscribe = useCurrencyStore.subscribe(
+      (state) => {
+        // Update settings store when currency store changes
+        if (state.currency !== useSettingsStore.getState().currency) {
+          setStoreCurrency(state.currency);
+        }
+      }
+    );
+
+    return () => unsubscribe();
+  }, [setCurrency, setStoreCurrency]);
+
+  // Handle saving settings
   const handleSaveSettings = async () => {
     if (!user) return;
-    
-    setIsSaving(true);
-    try {
-      const updatedSettings = {
-        notifications_enabled: notificationsEnabled,
-        sound_enabled: soundEnabled,
-        auto_trade_enabled: autoTradeEnabled,
-        dark_mode: darkMode,
-        risk_level: riskLevel[0],
-        currency,
-        system_active: systemActive,
-        system_latency: systemLatency,
-        api_key: apiKey,
-        helius_api_key: heliusApiKey
-      };
-      
-      await updateUserSettings(updatedSettings, user.id);
-      
+
+    // Save settings to API
+    await saveSettings(user.id);
+
+    // Show success toast if no error
+    if (!error) {
       toast({
         title: "Settings saved",
         description: "Your preferences have been updated successfully.",
       });
-    } catch (error) {
-      console.error("Error saving settings:", error);
-      toast({
-        title: "Failed to save settings",
-        description: "Your settings could not be saved. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSaving(false);
     }
   };
-  
+
+  // Handle resetting settings
   const handleResetSettings = () => {
-    setNotificationsEnabled(true);
-    setSoundEnabled(true);
-    setAutoTradeEnabled(false);
-    setDarkMode(true);
-    setRiskLevel([50]);
+    // Reset settings to defaults
+    resetSettings();
+
+    // Also update currency store
     setCurrency("USD");
-    
+
     toast({
       title: "Settings reset",
       description: "All settings have been restored to defaults.",
@@ -187,7 +175,7 @@ const Settings = () => {
       });
     } catch (error) {
       toast({
-        title: "Disconnection Failed", 
+        title: "Disconnection Failed",
         description: "Failed to disconnect wallet. Please try again.",
         variant: "destructive",
       });
@@ -231,30 +219,36 @@ const Settings = () => {
       setTfaCode("");
     }, 1000);
   };
-  
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex flex-col bg-trading-dark text-white">
         <Header walletAddress={walletAddress || ""} />
         <main className="flex-grow container mx-auto px-4 pb-10 flex justify-center items-center">
-          <div className="flex flex-col items-center">
-            <Loader2 className="w-8 h-8 animate-spin text-trading-highlight" />
-            <p className="mt-4 text-gray-400">Loading settings...</p>
-          </div>
+          <PageSpinner />
         </main>
-        <Footer systemActive={systemActive} systemLatency={systemLatency} />
+        <Footer systemActive={systemActive} systemLatency={systemLatency || 0} />
       </div>
     );
   }
-  
+
+  // Show error if there is one
+  if (error) {
+    toast({
+      title: "Error",
+      description: error,
+      variant: "destructive",
+    });
+  }
+
   return (
     <div className="min-h-screen flex flex-col bg-trading-dark text-white">
       <Header walletAddress={walletAddress || ""} />
-      
+
       <main className="flex-grow container mx-auto px-4 pb-10">
         <div className="py-6">
           <h1 className="text-3xl font-bold mb-6">Settings</h1>
-          
+
           <Tabs defaultValue="preferences" className="w-full">
             <TabsList className="bg-trading-darkAccent mb-6">
               <TabsTrigger value="preferences" className="data-[state=active]:bg-trading-highlight/20">
@@ -270,7 +264,7 @@ const Settings = () => {
                 Security
               </TabsTrigger>
             </TabsList>
-            
+
             <TabsContent value="preferences">
               <div className="grid gap-6 md:grid-cols-2">
                 <Card className="bg-trading-darkAccent border-trading-highlight/20">
@@ -286,24 +280,24 @@ const Settings = () => {
                   <CardContent className="space-y-4">
                     <div className="flex items-center justify-between">
                       <Label htmlFor="notifications">Enable notifications</Label>
-                      <Switch 
-                        id="notifications" 
-                        checked={notificationsEnabled} 
-                        onCheckedChange={setNotificationsEnabled}
+                      <Switch
+                        id="notifications"
+                        checked={notificationsEnabled}
+                        onCheckedChange={toggleNotifications}
                       />
                     </div>
-                    
+
                     <div className="flex items-center justify-between">
                       <Label htmlFor="sound">Sound alerts</Label>
-                      <Switch 
-                        id="sound" 
-                        checked={soundEnabled} 
-                        onCheckedChange={setSoundEnabled}
+                      <Switch
+                        id="sound"
+                        checked={soundEnabled}
+                        onCheckedChange={toggleSound}
                       />
                     </div>
                   </CardContent>
                 </Card>
-                
+
                 <Card className="bg-trading-darkAccent border-trading-highlight/20">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
@@ -317,10 +311,10 @@ const Settings = () => {
                   <CardContent className="space-y-4">
                     <div className="flex items-center justify-between">
                       <Label htmlFor="dark-mode">Dark mode</Label>
-                      <Switch 
-                        id="dark-mode" 
-                        checked={darkMode} 
-                        onCheckedChange={setDarkMode}
+                      <Switch
+                        id="dark-mode"
+                        checked={darkMode}
+                        onCheckedChange={toggleDarkMode}
                       />
                     </div>
 
@@ -341,7 +335,7 @@ const Settings = () => {
                     </div>
                   </CardContent>
                 </Card>
-                
+
                 <Card className="bg-trading-darkAccent border-trading-highlight/20">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
@@ -355,24 +349,24 @@ const Settings = () => {
                   <CardContent className="space-y-6">
                     <div className="flex items-center justify-between">
                       <Label htmlFor="auto-trade">Auto-trading</Label>
-                      <Switch 
-                        id="auto-trade" 
-                        checked={autoTradeEnabled} 
-                        onCheckedChange={setAutoTradeEnabled}
+                      <Switch
+                        id="auto-trade"
+                        checked={autoTradeEnabled}
+                        onCheckedChange={toggleAutoTrade}
                       />
                     </div>
-                    
+
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
                         <Label htmlFor="risk-level">Risk level</Label>
                         <span className="text-sm">{riskLevel}%</span>
                       </div>
-                      <Slider 
-                        id="risk-level" 
-                        value={riskLevel} 
+                      <Slider
+                        id="risk-level"
+                        value={riskLevel}
                         onValueChange={setRiskLevel}
                         disabled={!autoTradeEnabled}
-                        className="[&>.SliderTrack]:bg-trading-highlight/20 [&>.SliderRange]:bg-trading-highlight" 
+                        className="[&>.SliderTrack]:bg-trading-highlight/20 [&>.SliderRange]:bg-trading-highlight"
                       />
                       <div className="flex justify-between text-xs text-gray-400">
                         <span>Conservative</span>
@@ -381,7 +375,7 @@ const Settings = () => {
                     </div>
                   </CardContent>
                 </Card>
-                
+
                 <Card className="bg-trading-darkAccent border-trading-highlight/20">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
@@ -395,23 +389,23 @@ const Settings = () => {
                   <CardContent className="space-y-4">
                     <div className="flex items-center justify-between">
                       <Label htmlFor="system-active">System active</Label>
-                      <Switch 
-                        id="system-active" 
-                        checked={systemActive} 
-                        onCheckedChange={setSystemActive}
+                      <Switch
+                        id="system-active"
+                        checked={systemActive}
+                        onCheckedChange={(active) => setSystemStatus(active, systemLatency)}
                       />
                     </div>
-                    
+
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
                         <Label htmlFor="latency">Target latency (ms)</Label>
                         <span className="text-sm">{systemLatency} ms</span>
                       </div>
-                      <Input 
-                        id="latency" 
-                        type="number" 
-                        value={systemLatency}
-                        onChange={(e) => setSystemLatency(Number(e.target.value))}
+                      <Input
+                        id="latency"
+                        type="number"
+                        value={systemLatency || 0}
+                        onChange={(e) => setSystemStatus(systemActive, Number(e.target.value))}
                         className="bg-trading-dark border-trading-highlight/30"
                         min={10}
                         max={500}
@@ -421,7 +415,7 @@ const Settings = () => {
                 </Card>
               </div>
             </TabsContent>
-            
+
             <TabsContent value="account">
               <Card className="bg-trading-darkAccent border-trading-highlight/20">
                 <CardHeader>
@@ -436,34 +430,34 @@ const Settings = () => {
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="username">Username</Label>
-                    <Input 
-                      id="username" 
+                    <Input
+                      id="username"
                       value="Trader42"
                       className="bg-trading-dark border-trading-highlight/30"
                     />
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="email">Email</Label>
-                    <Input 
-                      id="email" 
+                    <Input
+                      id="email"
                       value="trader@example.com"
                       className="bg-trading-dark border-trading-highlight/30"
                     />
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="walletAddress">Wallet address</Label>
                     <div className="flex gap-2">
-                      <Input 
-                        id="walletAddress" 
+                      <Input
+                        id="walletAddress"
                         value={walletAddress || ""}
                         readOnly
                         className="bg-trading-dark border-trading-highlight/30"
                       />
                       {walletAddress ? (
-                        <Button 
-                          variant="outline" 
+                        <Button
+                          variant="outline"
                           className="shrink-0 border-trading-danger/30 text-trading-danger hover:bg-trading-danger/10"
                           onClick={handleDisconnectWallet}
                           disabled={disconnecting}
@@ -471,8 +465,8 @@ const Settings = () => {
                           {disconnecting ? "Disconnecting..." : "Disconnect"}
                         </Button>
                       ) : (
-                        <Button 
-                          variant="outline" 
+                        <Button
+                          variant="outline"
                           className="shrink-0 bg-trading-highlight text-white hover:bg-trading-highlight/80"
                           onClick={handleConnectWallet}
                           disabled={connecting}
@@ -486,7 +480,7 @@ const Settings = () => {
                 </CardContent>
               </Card>
             </TabsContent>
-            
+
             <TabsContent value="api">
               <Card className="bg-trading-darkAccent border-trading-highlight/20">
                 <CardHeader>
@@ -501,19 +495,19 @@ const Settings = () => {
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="heliusApiKey">Helius API Key</Label>
-                    <Input 
-                      id="heliusApiKey" 
+                    <Input
+                      id="heliusApiKey"
                       value={heliusApiKey}
                       onChange={(e) => setHeliusApiKey(e.target.value)}
                       className="bg-trading-dark border-trading-highlight/30"
                     />
                     <p className="text-xs text-gray-400">Used for Solana blockchain interactions and on-chain data</p>
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="apiKey">Personal API Key</Label>
-                    <Input 
-                      id="apiKey" 
+                    <Input
+                      id="apiKey"
                       value={apiKey}
                       onChange={(e) => setApiKey(e.target.value)}
                       placeholder="Generate your personal API key"
@@ -521,7 +515,7 @@ const Settings = () => {
                     />
                     <p className="text-xs text-gray-400">Used for authenticating with your account when using external integrations</p>
                     <div className="flex justify-end mt-2">
-                      <Button 
+                      <Button
                         onClick={() => {
                           setApiKey(`syl_${Math.random().toString(36).substring(2, 15)}`);
                           toast({
@@ -536,7 +530,7 @@ const Settings = () => {
                       </Button>
                     </div>
                   </div>
-                  
+
                   <div className="space-y-2 pt-2">
                     <Label>Connected services</Label>
                     <div className="flex flex-wrap gap-2 mt-2">
@@ -557,7 +551,7 @@ const Settings = () => {
                 </CardContent>
               </Card>
             </TabsContent>
-            
+
             <TabsContent value="security">
               <Card className="bg-trading-darkAccent border-trading-highlight/20">
                 <CardHeader>
@@ -583,7 +577,7 @@ const Settings = () => {
                       {twoFactorEnabled ? "Disable 2FA" : "Enable 2FA"}
                     </Button>
                   </div>
-                  
+
                   {twoFactorEnabled && (
                     <div className="mt-4 p-4 bg-black/30 rounded-lg border border-trading-highlight/20">
                       <div className="text-center mb-4">
@@ -592,8 +586,8 @@ const Settings = () => {
                           <div className="w-32 h-32 bg-black relative overflow-hidden">
                             <div className="absolute inset-0 grid grid-cols-5 grid-rows-5">
                               {Array.from({ length: 25 }).map((_, i) => (
-                                <div 
-                                  key={i} 
+                                <div
+                                  key={i}
                                   className={`${Math.random() > 0.5 ? 'bg-white' : 'bg-black'}`}
                                 />
                               ))}
@@ -602,7 +596,7 @@ const Settings = () => {
                         </div>
                         <p className="text-sm text-gray-300">Scan this QR code with your authenticator app</p>
                       </div>
-                      
+
                       <div className="space-y-2">
                         <Label htmlFor="tfa-code">Enter verification code</Label>
                         <div className="flex gap-2">
@@ -625,31 +619,31 @@ const Settings = () => {
                       </div>
                     </div>
                   )}
-                  
+
                   <Separator className="bg-trading-highlight/20 my-4" />
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="current-password">Current password</Label>
-                    <Input 
-                      id="current-password" 
+                    <Input
+                      id="current-password"
                       type="password"
                       className="bg-trading-dark border-trading-highlight/30"
                     />
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="new-password">New password</Label>
-                    <Input 
-                      id="new-password" 
+                    <Input
+                      id="new-password"
                       type="password"
                       className="bg-trading-dark border-trading-highlight/30"
                     />
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="confirm-password">Confirm new password</Label>
-                    <Input 
-                      id="confirm-password" 
+                    <Input
+                      id="confirm-password"
                       type="password"
                       className="bg-trading-dark border-trading-highlight/30"
                     />
@@ -663,23 +657,23 @@ const Settings = () => {
               </Card>
             </TabsContent>
           </Tabs>
-          
+
           <div className="flex justify-end gap-4 mt-6">
-            <Button 
-              variant="outline" 
-              className="border-trading-highlight/30 hover:bg-trading-highlight/10" 
+            <Button
+              variant="outline"
+              className="border-trading-highlight/30 hover:bg-trading-highlight/10"
               onClick={handleResetSettings}
-              disabled={isSaving}
+              disabled={isLoading}
             >
               <Undo2 className="w-4 h-4 mr-2" /> Reset to defaults
             </Button>
-            
-            <Button 
+
+            <Button
               onClick={handleSaveSettings}
               className="bg-trading-highlight hover:bg-trading-highlight/80"
-              disabled={isSaving}
+              disabled={isLoading}
             >
-              {isSaving ? (
+              {isLoading ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Saving...
                 </>
@@ -692,7 +686,7 @@ const Settings = () => {
           </div>
         </div>
       </main>
-      
+
       <Footer systemActive={systemActive} systemLatency={systemLatency} />
     </div>
   );

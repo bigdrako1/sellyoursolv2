@@ -64,3 +64,37 @@ export interface WalletActivity {
   activityType: 'buy' | 'sell' | 'transfer';
   transactionHash: string;
 }
+
+/**
+ * Scale out event interface
+ */
+export interface ScaleOutEvent {
+  time: string;
+  price: number;
+  amount: number;
+  tokens: number;
+  reason: string;
+  percentOfPosition: number;
+}
+
+/**
+ * Trading position interface
+ */
+export interface TradingPosition {
+  contractAddress: string;
+  tokenName: string;
+  tokenSymbol: string;
+  entryPrice: number;
+  entryTime: string;
+  initialInvestment: number;
+  currentAmount: number;
+  currentPrice: number;
+  lastUpdateTime: string;
+  securedInitial: boolean;
+  scaleOutHistory: ScaleOutEvent[];
+  source: string;
+  status: 'active' | 'closed' | 'failed';
+  pnl: number;
+  roi: number;
+  notes: string;
+}

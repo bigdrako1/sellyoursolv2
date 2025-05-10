@@ -7,126 +7,90 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowUpRight, Bell, BellOff, Loader2, TrendingUp, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { playSound } from "@/utils/soundUtils";
-import { getRecentTokenActivity, getTrendingTokens, getPumpFunTokens, tokenInfoToToken } from "@/services/tokenDataService";
 import type { Token } from "@/types/token.types";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTokenStore } from "@/store/tokenStore";
 
 const TokenAlertMonitor: React.FC = () => {
-  const [tokens, setTokens] = useState<Token[]>([]);
-  const [trendingTokens, setTrendingTokens] = useState<Token[]>([]);
-  const [pumpFunTokens, setPumpFunTokens] = useState<Token[]>([]);
   const [alertsEnabled, setAlertsEnabled] = useState(true);
-  const [loading, setLoading] = useState(false);
-  const [trendingLoading, setTrendingLoading] = useState(false);
-  const [pumpFunLoading, setPumpFunLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("alerts");
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [prevTokenAddress, setPrevTokenAddress] = useState<string | null>(null);
   const { toast } = useToast();
   const { isAuthenticated } = useAuth();
 
-  useEffect(() => {
-    const fetchTokens = async () => {
-      if (!alertsEnabled) return;
-      
-      setLoading(true);
-      setErrorMessage(null);
-      try {
-        // Fetch real token data using our service
-        const tokenActivity = await getRecentTokenActivity();
-        
-        if (tokenActivity && Array.isArray(tokenActivity) && tokenActivity.length > 0) {
-          // Process token data
-          const tokenData: Token[] = tokenActivity.map(token => tokenInfoToToken(token));
-          
-          setTokens(tokenData);
-          
-          // Play sound notification for new tokens
-          if (tokenData.length > 0 && tokens.length > 0) {
-            if (tokenData[0].address !== tokens[0].address) {
-              playSound('alert');
-            }
-          }
-        } else {
-          // No tokens found or API error
-          console.log("No token data returned from API");
-          setErrorMessage("No token data found. Check API configuration.");
-        }
-      } catch (error) {
-        console.error("Error fetching token alerts:", error);
-        setErrorMessage(`Error fetching token data: ${error instanceof Error ? error.message : 'Unknown error'}`);
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    fetchTokens();
-    
-    // Set up polling for new tokens
-    const intervalId = setInterval(fetchTokens, 60000);
-    return () => clearInterval(intervalId);
-  }, [alertsEnabled, tokens]);
+  // Use token store instead of local state
+  const {
+    tokens,
+    trendingTokens,
+    pumpFunTokens,
+    isLoading: loading,
+    isTrendingLoading: trendingLoading,
+    isPumpFunLoading: pumpFunLoading,
+    error,
+    fetchTokens,
+    fetchTrendingTokens,
+    fetchPumpFunTokens
+  } = useTokenStore();
 
-  // Fetch trending tokens from multiple DEXes
+  // Fetch tokens when component mounts or alertsEnabled changes
   useEffect(() => {
-    const fetchTrendingTokens = async () => {
-      setTrendingLoading(true);
-      try {
-        const trending = await getTrendingTokens();
-        console.log("Fetched trending tokens:", trending);
-        
-        if (trending && Array.isArray(trending)) {
-          // Convert TokenInfo to Token
-          const trendingTokenData = trending.map(token => tokenInfoToToken(token));
-          setTrendingTokens(trendingTokenData);
-        }
-      } catch (error) {
-        console.error("Error fetching trending tokens:", error);
-      } finally {
-        setTrendingLoading(false);
+    if (!alertsEnabled) return;
+
+    // Initial fetch
+    fetchTokens();
+
+    // Set up polling for new tokens
+    const intervalId = setInterval(() => {
+      if (alertsEnabled) {
+        fetchTokens();
       }
-    };
-    
+    }, 60000);
+
+    return () => clearInterval(intervalId);
+  }, [alertsEnabled, fetchTokens]);
+
+  // Play sound when new tokens arrive
+  useEffect(() => {
+    if (tokens.length > 0) {
+      const currentTokenAddress = tokens[0].address;
+
+      // If we have a previous token address and it's different from the current one
+      if (prevTokenAddress && prevTokenAddress !== currentTokenAddress) {
+        playSound('alert');
+      }
+
+      // Update previous token address
+      setPrevTokenAddress(currentTokenAddress);
+    }
+  }, [tokens, prevTokenAddress]);
+
+  // Fetch trending tokens when component mounts
+  useEffect(() => {
+    // Initial fetch
     fetchTrendingTokens();
-    
+
     // Refresh trending tokens every 5 minutes
     const intervalId = setInterval(fetchTrendingTokens, 300000);
     return () => clearInterval(intervalId);
-  }, []);
+  }, [fetchTrendingTokens]);
 
-  // Fetch pump.fun tokens specifically
+  // Fetch pump.fun tokens when component mounts
   useEffect(() => {
-    const fetchPumpFunTokens = async () => {
-      setPumpFunLoading(true);
-      try {
-        const pumpTokens = await getPumpFunTokens();
-        console.log("Fetched pump.fun tokens:", pumpTokens);
-        
-        if (pumpTokens && Array.isArray(pumpTokens)) {
-          // Convert TokenInfo to Token
-          const pumpTokenData = pumpTokens.map(token => tokenInfoToToken(token));
-          setPumpFunTokens(pumpTokenData);
-        }
-      } catch (error) {
-        console.error("Error fetching pump.fun tokens:", error);
-      } finally {
-        setPumpFunLoading(false);
-      }
-    };
-    
+    // Initial fetch
     fetchPumpFunTokens();
-    
+
     // Refresh pump.fun tokens every 5 minutes
     const intervalId = setInterval(fetchPumpFunTokens, 300000);
     return () => clearInterval(intervalId);
-  }, []);
+  }, [fetchPumpFunTokens]);
 
   const toggleAlerts = () => {
     setAlertsEnabled(!alertsEnabled);
     toast({
       title: alertsEnabled ? "Alerts Disabled" : "Alerts Enabled",
-      description: alertsEnabled 
-        ? "You will no longer receive token alerts" 
+      description: alertsEnabled
+        ? "You will no longer receive token alerts"
         : "You will now receive alerts for new tokens",
       variant: "default",
     });
@@ -141,7 +105,7 @@ const TokenAlertMonitor: React.FC = () => {
   const getTrendingBadge = (score: number | string[] = 1) => {
     // Handle both number and string[] types for trendingScore
     const scoreValue = Array.isArray(score) ? score.length : score;
-    
+
     if (scoreValue >= 3) return <Badge className="bg-purple-500 flex items-center gap-1"><TrendingUp className="h-3 w-3" /> Hot</Badge>;
     if (scoreValue >= 2) return <Badge className="bg-blue-500 flex items-center gap-1"><TrendingUp className="h-3 w-3" /> Trending</Badge>;
     return <Badge className="bg-gray-500 flex items-center gap-1"><TrendingUp className="h-3 w-3" /> Active</Badge>;
@@ -153,15 +117,15 @@ const TokenAlertMonitor: React.FC = () => {
 
   const formatTimeAgo = (date: Date | string | undefined) => {
     if (!date) return "unknown";
-    
+
     try {
       // Convert string dates to Date objects
       const dateObj = typeof date === 'string' ? new Date(date) : date;
-      
+
       if (isNaN(dateObj.getTime())) {
         return "unknown";
       }
-      
+
       const minutes = Math.floor((new Date().getTime() - dateObj.getTime()) / 60000);
       if (minutes < 60) return `${minutes}m ago`;
       return `${Math.floor(minutes / 60)}h ${minutes % 60}m ago`;
@@ -170,7 +134,7 @@ const TokenAlertMonitor: React.FC = () => {
       return "unknown";
     }
   };
-  
+
   const handleViewToken = (address: string) => {
     window.open(`https://birdeye.so/token/${address}?chain=solana`, '_blank');
   };
@@ -178,7 +142,7 @@ const TokenAlertMonitor: React.FC = () => {
   const handleSwapToken = (address: string) => {
     window.open(`https://jup.ag/swap/SOL-${address}`, '_blank');
   };
-  
+
   const handlePumpFunView = (address: string) => {
     window.open(`https://pump.fun/token/${address}`, '_blank');
   };
@@ -201,8 +165,8 @@ const TokenAlertMonitor: React.FC = () => {
     <Card className="card-with-border">
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <CardTitle className="text-xl font-bold">Token Alerts</CardTitle>
-        <Button 
-          variant="ghost" 
+        <Button
+          variant="ghost"
           size="icon"
           onClick={toggleAlerts}
           className={alertsEnabled ? "text-green-500" : "text-gray-500"}
@@ -224,21 +188,21 @@ const TokenAlertMonitor: React.FC = () => {
               Pump.fun
             </TabsTrigger>
           </TabsList>
-          
+
           <TabsContent value="alerts">
             {loading ? (
               <div className="flex flex-col items-center justify-center py-8">
                 <Loader2 className="h-8 w-8 text-trading-highlight animate-spin mb-2" />
                 <p className="text-sm text-gray-400">Fetching token alerts...</p>
               </div>
-            ) : errorMessage ? (
+            ) : error ? (
               <div className="flex flex-col items-center justify-center py-8">
                 <AlertCircle className="h-8 w-8 text-red-500 mb-2" />
-                <p className="text-sm text-red-400">{errorMessage}</p>
-                <Button 
-                  variant="outline" 
+                <p className="text-sm text-red-400">{error}</p>
+                <Button
+                  variant="outline"
                   size="sm"
-                  onClick={() => setAlertsEnabled(true)}
+                  onClick={() => fetchTokens()}
                   className="mt-4"
                 >
                   Retry Connection
@@ -299,7 +263,7 @@ const TokenAlertMonitor: React.FC = () => {
               </div>
             )}
           </TabsContent>
-          
+
           <TabsContent value="trending">
             {trendingLoading ? (
               <div className="flex flex-col items-center justify-center py-8">
@@ -321,7 +285,7 @@ const TokenAlertMonitor: React.FC = () => {
                           {getTrendingBadge(token.trendingScore)}
                         </AlertTitle>
                         <AlertDescription className="text-xs mt-1">
-                          Price: ${token.price.toFixed(token.price < 0.01 ? 8 : 4)} 
+                          Price: ${token.price.toFixed(token.price < 0.01 ? 8 : 4)}
                           {token.change24h !== undefined && (
                             <span className={token.change24h >= 0 ? "text-green-400" : "text-red-400"}>
                               {" "}({token.change24h >= 0 ? "+" : ""}{token.change24h.toFixed(2)}%)
@@ -354,7 +318,7 @@ const TokenAlertMonitor: React.FC = () => {
               </div>
             )}
           </TabsContent>
-          
+
           <TabsContent value="pumpfun">
             {pumpFunLoading ? (
               <div className="flex flex-col items-center justify-center py-8">
@@ -376,7 +340,7 @@ const TokenAlertMonitor: React.FC = () => {
                           {getPumpFunBadge()}
                         </AlertTitle>
                         <AlertDescription className="text-xs mt-1">
-                          Price: ${token.price.toFixed(token.price < 0.01 ? 8 : 4)} 
+                          Price: ${token.price.toFixed(token.price < 0.01 ? 8 : 4)}
                           {token.change24h !== undefined && (
                             <span className={token.change24h >= 0 ? "text-green-400" : "text-red-400"}>
                               {" "}({token.change24h >= 0 ? "+" : ""}{token.change24h.toFixed(2)}%)

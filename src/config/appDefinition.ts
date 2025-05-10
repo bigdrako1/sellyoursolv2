@@ -10,15 +10,15 @@ export const APP_CONFIG = {
   shortName: "SYS V2",
   description: "Advanced AI-powered trading platform for the Solana ecosystem",
   version: "2.0.0",
-  
+
   // Theme configuration
   theme: {
-    primaryColor: "trading-highlight", // Maps to tailwind config  
+    primaryColor: "trading-highlight", // Maps to tailwind config
     secondaryColor: "trading-secondary",
     accentColor: "trading-primary",
     darkMode: true,
   },
-  
+
   // Feature flags
   features: {
     autoTrading: true,
@@ -28,7 +28,7 @@ export const APP_CONFIG = {
     apiConfiguration: true,
     multiWallet: true,
   },
-  
+
   // API Configuration
   api: {
     provider: "Helius",
@@ -37,7 +37,7 @@ export const APP_CONFIG = {
       baseUrl: "https://api.helius.xyz/v1",
       rpcUrl: "https://mainnet.helius-rpc.com",
       wsUrl: "wss://mainnet.helius-rpc.com",
-      apiKey: "a18d2c93-d9fa-4db2-8419-707a4f1782f7",
+      apiKey: import.meta.env.VITE_HELIUS_API_KEY || "a18d2c93-d9fa-4db2-8419-707a4f1782f7",
       environment: "production",
     },
     // Development endpoints
@@ -47,15 +47,15 @@ export const APP_CONFIG = {
       wsUrl: "wss://devnet.helius-rpc.com",
       secureRpcUrl: "https://dominga-id818f-fast-devnet.helius-rpc.com",
       stakedRpcUrl: "https://staked.helius-rpc.com",
-      apiKey: "e4a78345-f927-4ed9-b33e-2ca970b1063e",
+      apiKey: import.meta.env.VITE_HELIUS_DEV_API_KEY || "e4a78345-f927-4ed9-b33e-2ca970b1063e",
       environment: "development",
     },
-    // Set this to 'production' to use the production API
-    environment: "production",
-    defaultApiKey: "a18d2c93-d9fa-4db2-8419-707a4f1782f7", // Updated to use production key
+    // Set environment based on env variable or default to production
+    environment: import.meta.env.VITE_APP_ENV === "development" ? "development" : "production",
+    defaultApiKey: import.meta.env.VITE_HELIUS_API_KEY || "a18d2c93-d9fa-4db2-8419-707a4f1782f7",
     personalApiKeyDescription: "Your personal API key is used for authentication with Helius API services and to increase rate limits above the default tier. It ensures your requests are prioritized and allows access to premium features."
   },
-  
+
   // Trading configuration
   trading: {
     defaultRouting: "jupiter",
@@ -77,7 +77,7 @@ export const APP_CONFIG = {
       }
     }
   },
-  
+
   // Jupiter configuration
   jupiter: {
     apiUrl: "https://quote-api.jup.ag/v6",
@@ -85,7 +85,7 @@ export const APP_CONFIG = {
     swapUrl: "https://jup.ag/swap",
     defaultSlippage: 0.5, // 0.5%
   },
-  
+
   // Supported currencies
   currencies: [
     { code: "USD", symbol: "$", name: "US Dollar" },
@@ -94,17 +94,17 @@ export const APP_CONFIG = {
     { code: "JPY", symbol: "¥", name: "Japanese Yen" },
     { code: "KES", symbol: "KSh", name: "Kenya Shilling" }
   ],
-  
+
   // Default currency
   defaultCurrency: "USD",
-  
+
   // Contact information
   contact: {
     support: "support@sellyoursol.ai",
     twitter: "@SellYourSOL_AI",
     telegram: "t.me/SellYourSOL"
   },
-  
+
   // Connected services status tracking
   connectedServices: {
     solanaRpc: {
@@ -148,19 +148,19 @@ export const getVersionInfo = (): string => {
  * Format currency according to locale and currency settings
  */
 export const formatCurrency = (
-  amount: number, 
+  amount: number,
   currencyCode = APP_CONFIG.defaultCurrency
 ): string => {
   const currency = APP_CONFIG.currencies.find(c => c.code === currencyCode);
-  
+
   if (!currency) {
     return `$${amount.toFixed(2)}`;
   }
-  
+
   if (currencyCode === 'JPY') {
     return `${currency.symbol}${Math.round(amount)}`;
   }
-  
+
   return `${currency.symbol}${amount.toLocaleString(undefined, {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
@@ -182,11 +182,11 @@ export const capabilities = {
   supportsChain: (chain: string): boolean => {
     return chain.toLowerCase() === 'solana';
   },
-  
+
   getFeatureStatus: (featureName: keyof typeof APP_CONFIG.features): boolean => {
     return APP_CONFIG.features[featureName];
   },
-  
+
   getSupportedCurrencies: () => {
     return APP_CONFIG.currencies;
   }

@@ -1,53 +1,53 @@
 
-import React, { useState, FormEvent } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
+import { Wallet, Loader2 } from 'lucide-react';
 
 export default function Auth() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [activeTab, setActiveTab] = useState('login');
   const [loading, setLoading] = useState(false);
-  const { signIn, signOut, isAuthenticated } = useAuth();
+  const [walletOptions, setWalletOptions] = useState<{name: string, installed: boolean}[]>([]);
+  const { signIn, isAuthenticated, installedWallets, refreshWalletsStatus, detectingWallets } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  const handleAuth = async (e: FormEvent) => {
-    e.preventDefault();
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/');
+    }
+  }, [isAuthenticated, navigate]);
+
+  // Detect available wallets
+  useEffect(() => {
+    refreshWalletsStatus();
+  }, [refreshWalletsStatus]);
+
+  // Update wallet options when installedWallets changes
+  useEffect(() => {
+    setWalletOptions(installedWallets.map(wallet => ({
+      name: wallet.name,
+      installed: wallet.installed
+    })));
+  }, [installedWallets]);
+
+  const handleConnectWallet = async (walletName: string) => {
     setLoading(true);
 
     try {
-      // Handle login
-      if (activeTab === 'login') {
-        // Use signIn without parameters or with walletName parameter if needed
-        await signIn();
-        toast({
-          title: "Login successful",
-          description: "Welcome back!",
-        });
-        navigate('/');
-      } 
-      // Handle registration
-      else {
-        if (!email || !password) {
-          throw new Error('Please provide both email and password');
-        }
-        
-        // Since there's no signUp in the context, simulate registration
-        toast({
-          title: "Registration successful",
-          description: "Account created successfully!",
-        });
-        setActiveTab('login');
-      }
+      // Connect and authenticate in one step
+      await signIn(walletName);
+      toast({
+        title: "Wallet Connected",
+        description: "Successfully connected and authenticated with wallet",
+      });
+      navigate('/');
     } catch (error) {
       toast({
-        title: activeTab === 'login' ? "Login failed" : "Registration failed",
+        title: "Connection Failed",
         description: error instanceof Error ? error.message : "An unknown error occurred",
         variant: "destructive",
       });
@@ -61,84 +61,50 @@ export default function Auth() {
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl text-center">
-            {activeTab === 'login' ? 'Login' : 'Create Account'}
+            Connect Your Wallet
           </CardTitle>
           <CardDescription className="text-center">
-            {activeTab === 'login'
-              ? 'Enter your email and password to login'
-              : 'Enter your email and password to create an account'}
+            Connect your Solana wallet to access the platform
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4">
-          <Tabs defaultValue="login" value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="login">Login</TabsTrigger>
-              <TabsTrigger value="register">Register</TabsTrigger>
-            </TabsList>
-            <TabsContent value="login">
-              <form onSubmit={handleAuth} className="grid gap-4">
-                <div className="space-y-2">
-                  <Input
-                    type="email"
-                    placeholder="Email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Input
-                    type="password"
-                    placeholder="Password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                  />
-                </div>
-                <Button type="submit" disabled={loading}>
-                  {loading ? 'Logging in...' : 'Login'}
+          {detectingWallets ? (
+            <div className="flex flex-col items-center justify-center p-6">
+              <Loader2 className="h-8 w-8 animate-spin mb-4 text-trading-highlight" />
+              <p className="text-sm text-gray-400">Detecting available wallets...</p>
+            </div>
+          ) : walletOptions.length > 0 ? (
+            <div className="grid gap-3">
+              {walletOptions.map((wallet) => (
+                <Button
+                  key={wallet.name}
+                  variant="outline"
+                  className="flex items-center justify-center gap-2 h-12 trading-button"
+                  onClick={() => handleConnectWallet(wallet.name)}
+                  disabled={loading}
+                >
+                  <Wallet className="h-5 w-5" />
+                  {loading ? 'Connecting...' : `Connect with ${wallet.name}`}
                 </Button>
-              </form>
-            </TabsContent>
-            <TabsContent value="register">
-              <form onSubmit={handleAuth} className="grid gap-4">
-                <div className="space-y-2">
-                  <Input
-                    type="email"
-                    placeholder="Email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Input
-                    type="password"
-                    placeholder="Password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                  />
-                </div>
-                <Button type="submit" disabled={loading}>
-                  {loading ? 'Creating account...' : 'Create Account'}
-                </Button>
-              </form>
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-        <CardFooter className="text-center">
-          {activeTab === 'login' ? (
-            <>
-              <Link to="/reset-password" className="text-sm text-gray-500 hover:underline">
-                Forgot password?
-              </Link>
-            </>
+              ))}
+            </div>
           ) : (
-            <p className="text-sm text-gray-500">
-              Already have an account?{' '}
-              <button type="button" className="text-blue-500 hover:underline" onClick={() => setActiveTab('login')}>
-                Login
-              </button>
-            </p>
+            <div className="text-center p-6 border border-dashed border-gray-700 rounded-lg">
+              <Wallet className="h-8 w-8 mx-auto mb-2 text-gray-500" />
+              <h3 className="font-medium mb-1">No Wallets Found</h3>
+              <p className="text-sm text-gray-400 mb-4">
+                Please install a Solana wallet extension to continue
+              </p>
+              <Button
+                variant="outline"
+                className="text-sm"
+                onClick={() => window.open('https://solana.com/ecosystem/wallets', '_blank')}
+              >
+                Get a Wallet
+              </Button>
+            </div>
           )}
-        </CardFooter>
+        </CardContent>
       </Card>
     </div>
   );

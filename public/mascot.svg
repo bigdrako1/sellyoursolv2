@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="400" height="400" viewBox="0 0 400 400" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Solana-inspired mascot -->
+  <g transform="translate(50, 50) scale(0.75)">
+    <!-- Body -->
+    <path d="M200 350C276.65 350 339 287.65 339 211C339 134.35 276.65 72 200 72C123.35 72 61 134.35 61 211C61 287.65 123.35 350 200 350Z" fill="url(#paint0_linear)" />
+    
+    <!-- Eyes -->
+    <circle cx="150" cy="180" r="20" fill="white" />
+    <circle cx="250" cy="180" r="20" fill="white" />
+    <circle cx="150" cy="180" r="10" fill="#111111" />
+    <circle cx="250" cy="180" r="10" fill="#111111" />
+    
+    <!-- Mouth -->
+    <path d="M160 240C160 240 180 260 200 260C220 260 240 240 240 240" stroke="white" stroke-width="8" stroke-linecap="round" />
+    
+    <!-- Rocket -->
+    <g transform="translate(300, 100) rotate(45)">
+      <path d="M0 0L30 60L60 0L30 -60L0 0Z" fill="#FF9900" />
+      <path d="M0 0L30 60L60 0L30 -10L0 0Z" fill="#FF5500" />
+      <path d="M20 -20L30 -60L40 -20L30 -10L20 -20Z" fill="#FF0000" />
+      <path d="M30 60L20 80L40 80L30 60Z" fill="#FF5500" />
+    </g>
+    
+    <!-- Dollar signs -->
+    <g transform="translate(100, 100) rotate(-15)">
+      <path d="M20 0C20 -5.523 15.523 -10 10 -10C4.477 -10 0 -5.523 0 0C0 5.523 4.477 10 10 10V30C4.477 30 0 34.477 0 40C0 45.523 4.477 50 10 50C15.523 50 20 45.523 20 40" stroke="#00FF99" stroke-width="6" stroke-linecap="round" />
+      <line x1="10" y1="-15" x2="10" y2="55" stroke="#00FF99" stroke-width="6" stroke-linecap="round" />
+    </g>
+    
+    <!-- Chart line -->
+    <polyline points="50,300 100,280 150,290 200,250 250,200 300,150 350,100" stroke="#00AAFF" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+  </g>
+  
+  <!-- Gradients -->
+  <defs>
+    <linearGradient id="paint0_linear" x1="61" y1="72" x2="339" y2="350" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#9945FF" />
+      <stop offset="1" stop-color="#14F195" />
+    </linearGradient>
+  </defs>
+</svg>

@@ -10,11 +10,9 @@ import TradingStrategy from "@/components/TradingStrategy";
 import TokenMonitor from "@/components/TokenMonitor";
 import WalletMonitor from "@/components/WalletMonitor";
 import TradeAlerts from "@/components/TradeAlerts";
-import HeliusSetup from "@/components/HeliusSetup";
 import AutoTradeSimple from "@/components/AutoTradeSimple";
 import StrategyManager from "@/components/StrategyManager";
 import SmartMoneyAlerts from "@/components/SmartMoneyAlerts";
-import TelegramChannelMonitor from "@/components/TelegramChannelMonitor";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Shield, TrendingUp, Bell, Wallet, MessageSquare } from "lucide-react";
@@ -49,7 +47,7 @@ const AutoTrading = () => {
       setApiKeyConfigured(false);
     }
   };
-  
+
   // Check API connection on mount and periodically
   useEffect(() => {
     const checkApiConnection = async () => {
@@ -57,7 +55,7 @@ const AutoTrading = () => {
         const startTime = Date.now();
         const connected = await testHeliusConnection();
         const latency = Date.now() - startTime;
-        
+
         if (apiConnectionChecked && connected !== apiConnected) {
           // Only show toast when status changes after initial check
           if (connected) {
@@ -81,13 +79,13 @@ const AutoTrading = () => {
             variant: "destructive",
           });
         }
-        
+
         setApiConnected(connected);
         setApiConnectionChecked(true);
         setSystemLatency(latency);
       } catch (error) {
         console.error("API connection test failed:", error);
-        
+
         if (apiConnected) {
           // Only show toast when going from connected to disconnected
           toast({
@@ -96,49 +94,58 @@ const AutoTrading = () => {
             variant: "destructive",
           });
         }
-        
+
         setApiConnected(false);
         setApiConnectionChecked(true);
       }
     };
-    
+
     checkApiConnection();
-    
+
     // Set up periodic connection checks
     const intervalId = setInterval(checkApiConnection, 60000); // Check every minute
-    
+
     return () => clearInterval(intervalId);
   }, [toast, apiConnected, apiConnectionChecked, environment]);
 
   return (
     <div className="flex flex-col min-h-screen">
       <Header />
-      
+
       <main className="flex-grow container mx-auto px-4 py-8">
         <h1 className="text-2xl font-bold mb-6">Automated Trading</h1>
-        
+
         {!apiKeyConfigured && (
           <div className="mb-6">
-            <HeliusSetup onApiKeySet={handleApiKeySet} />
+            <Card className="p-6">
+              <CardHeader>
+                <CardTitle>API Configuration Required</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="mb-4">To use automated trading features, you need to configure your API access.</p>
+                <Button onClick={() => setApiKeyConfigured(true)}>
+                  Continue Anyway
+                </Button>
+              </CardContent>
+            </Card>
           </div>
         )}
-        
+
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="bg-black/20 border-white/10 border">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="configuration">Configuration</TabsTrigger>
             <TabsTrigger value="strategies">Strategies</TabsTrigger>
             <TabsTrigger value="smart-money">Smart Money</TabsTrigger>
-            <TabsTrigger value="telegram">Telegram</TabsTrigger>
           </TabsList>
-          
+
           <TabsContent value="overview" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="lg:col-span-2 space-y-6">
                 <TradingStrategy />
                 <TokenMonitor />
               </div>
-              
+
               <div className="space-y-6">
                 <Card className="card-with-border">
                   <CardHeader>
@@ -153,30 +160,30 @@ const AutoTrading = () => {
                           {apiConnected ? 'Connected' : 'Disconnected'}
                         </span>
                       </div>
-                      
+
                       <div className="flex justify-between">
                         <span className="text-sm text-muted-foreground">Latency</span>
                         <span className="font-medium">{systemLatency ? `${systemLatency}ms` : 'Measuring...'}</span>
                       </div>
-                      
+
                       <div className="flex justify-between">
                         <span className="text-sm text-muted-foreground">Active Positions</span>
                         <span className="font-medium">0</span>
                       </div>
-                      
+
                       <div className="flex justify-between">
                         <span className="text-sm text-muted-foreground">Today's Trades</span>
                         <span className="font-medium">0</span>
                       </div>
-                      
+
                       <div className="flex justify-between">
                         <span className="text-sm text-muted-foreground">Profit/Loss</span>
                         <span className="text-gray-400 font-medium">-</span>
                       </div>
-                      
+
                       <div className="pt-4">
-                        <Button 
-                          className="w-full" 
+                        <Button
+                          className="w-full"
                           variant="outline"
                           onClick={() => setActiveTab("configuration")}
                         >
@@ -187,19 +194,19 @@ const AutoTrading = () => {
                     </div>
                   </CardContent>
                 </Card>
-                
+
                 <WalletMonitor />
                 <TradeAlerts />
               </div>
             </div>
           </TabsContent>
-          
+
           <TabsContent value="configuration">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="lg:col-span-2">
                 <AutoTradeSimple />
               </div>
-              
+
               <div className="space-y-6">
                 <Card className="card-with-border">
                   <CardHeader>
@@ -214,7 +221,7 @@ const AutoTrading = () => {
                         Our automated trading system employs sophisticated risk management strategies to protect your capital
                         while maximizing potential returns.
                       </p>
-                      
+
                       <div className="space-y-2">
                         <h4 className="text-sm font-medium">Key Risk Features:</h4>
                         <ul className="text-xs space-y-1">
@@ -236,10 +243,10 @@ const AutoTrading = () => {
                           </li>
                         </ul>
                       </div>
-                      
+
                       <div className="pt-4">
-                        <Button 
-                          className="w-full" 
+                        <Button
+                          className="w-full"
                           variant="outline"
                           onClick={() => setActiveTab("strategies")}
                         >
@@ -250,22 +257,22 @@ const AutoTrading = () => {
                     </div>
                   </CardContent>
                 </Card>
-                
+
                 <TradeAlerts />
               </div>
             </div>
           </TabsContent>
-          
+
           <TabsContent value="strategies">
             <StrategyManager />
           </TabsContent>
-          
+
           <TabsContent value="smart-money" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="lg:col-span-2">
                 <SmartMoneyAlerts />
               </div>
-              
+
               <div className="space-y-6">
                 <Card className="card-with-border">
                   <CardHeader>
@@ -279,7 +286,7 @@ const AutoTrading = () => {
                       Smart Money wallets are addresses of known profitable traders on Solana.
                       The system tracks their activities to provide early signals.
                     </p>
-                    
+
                     <div className="space-y-3">
                       <div className="bg-black/20 p-3 rounded-lg border border-white/5">
                         <div className="text-xs text-gray-400 mb-1">Wallet Address</div>
@@ -289,7 +296,7 @@ const AutoTrading = () => {
                           <span>ROI: +324%</span>
                         </div>
                       </div>
-                      
+
                       <div className="bg-black/20 p-3 rounded-lg border border-white/5">
                         <div className="text-xs text-gray-400 mb-1">Wallet Address</div>
                         <div className="font-mono text-sm">6Dkr4HJLo9XavxrJpsMcky2rKzKJP3wgpuP9mJbYekbV</div>
@@ -298,7 +305,7 @@ const AutoTrading = () => {
                           <span>ROI: +215%</span>
                         </div>
                       </div>
-                      
+
                       <div className="bg-black/20 p-3 rounded-lg border border-white/5">
                         <div className="text-xs text-gray-400 mb-1">Wallet Address</div>
                         <div className="font-mono text-sm">9AYmFnSdDDYEa5EaZJU8yCQmxpGwhEbgKU7SdeQDiEsZ</div>
@@ -308,7 +315,7 @@ const AutoTrading = () => {
                         </div>
                       </div>
                     </div>
-                    
+
                     <div className="pt-2">
                       <Button variant="outline" className="w-full bg-black/20 border-white/10">
                         <Bell className="h-4 w-4 mr-2" />
@@ -317,72 +324,16 @@ const AutoTrading = () => {
                     </div>
                   </CardContent>
                 </Card>
-                
+
                 <TradeAlerts />
               </div>
             </div>
           </TabsContent>
-          
-          <TabsContent value="telegram" className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <div className="lg:col-span-2">
-                <TelegramChannelMonitor />
-              </div>
-              
-              <div className="space-y-6">
-                <Card className="card-with-border">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <MessageSquare className="h-5 w-5 text-blue-400" />
-                      Channel Instructions
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <p className="text-sm text-gray-400">
-                      The system monitors specified Telegram channels for messages containing Solana token contract addresses,
-                      extracts these addresses, and fetches token data from various APIs.
-                    </p>
-                    
-                    <div className="bg-black/20 p-3 rounded-lg border border-white/5">
-                      <h4 className="text-sm font-medium mb-1">Telegram Authentication</h4>
-                      <p className="text-xs text-gray-400">
-                        Uses Telethon's TelegramClient with user session authentication
-                        to access channel data without requiring bot privileges.
-                      </p>
-                    </div>
-                    
-                    <div className="bg-black/20 p-3 rounded-lg border border-white/5">
-                      <h4 className="text-sm font-medium mb-1">Token Detection</h4>
-                      <p className="text-xs text-gray-400">
-                        Automatically extracts Solana contract addresses using regex pattern matching
-                        from messages in monitored channels.
-                      </p>
-                    </div>
-                    
-                    <div className="bg-black/20 p-3 rounded-lg border border-white/5">
-                      <h4 className="text-sm font-medium mb-1">Smart Detection</h4>
-                      <p className="text-xs text-gray-400">
-                        Special handling for "Smart Money Buying" alerts to prevent duplicate
-                        processing of the same token from multiple alerts.
-                      </p>
-                    </div>
-                    
-                    <div className="pt-2">
-                      <Button variant="outline" className="w-full bg-black/20 border-white/10">
-                        <Bell className="h-4 w-4 mr-2" />
-                        Setup Telegram Authentication
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-                
-                <TradeAlerts />
-              </div>
-            </div>
-          </TabsContent>
+
+
         </Tabs>
       </main>
-      
+
       <Footer systemActive={apiConnected} systemLatency={systemLatency} />
     </div>
   );

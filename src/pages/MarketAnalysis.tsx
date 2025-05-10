@@ -8,7 +8,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { BarChart, Activity, Wallet, Search } from "lucide-react";
-import ApiUsageMonitor from "@/components/ApiUsageMonitor";
 import LivePriceTracker from "@/components/LivePriceTracker";
 import { getTrendingTokens } from "@/utils/marketUtils";
 
@@ -36,7 +35,7 @@ const MarketAnalysis = () => {
         const startTime = Date.now();
         const connected = await testHeliusConnection();
         const latency = Date.now() - startTime;
-        
+
         if (apiConnectionChecked && connected !== apiConnected) {
           // Only show toast when status changes after initial check
           if (connected) {
@@ -60,13 +59,13 @@ const MarketAnalysis = () => {
             variant: "destructive",
           });
         }
-        
+
         setApiConnected(connected);
         setApiConnectionChecked(true);
         setSystemLatency(latency);
       } catch (error) {
         console.error("API connection test failed:", error);
-        
+
         if (apiConnected) {
           // Only show toast when going from connected to disconnected
           toast({
@@ -75,17 +74,17 @@ const MarketAnalysis = () => {
             variant: "destructive",
           });
         }
-        
+
         setApiConnected(false);
         setApiConnectionChecked(true);
       }
     };
-    
+
     checkApiConnection();
-    
+
     // Set up periodic connection checks with a longer interval to prevent excessive API calls
     const intervalId = setInterval(checkApiConnection, 120000); // Check every 2 minutes
-    
+
     return () => clearInterval(intervalId);
   }, [toast, apiConnected, apiConnectionChecked]);
 
@@ -110,14 +109,14 @@ const MarketAnalysis = () => {
         setIsLoading(false);
       }
     };
-    
+
     fetchTrendingTokens();
-    
+
     // Set up refresh interval - less frequent to avoid rate limit issues
     const intervalId = setInterval(() => {
       fetchTrendingTokens();
     }, 300000); // Refresh every 5 minutes
-    
+
     return () => clearInterval(intervalId);
   }, [toast]);
 
@@ -129,17 +128,17 @@ const MarketAnalysis = () => {
   return (
     <div className="flex flex-col min-h-screen">
       <Header />
-      
+
       <main className="flex-grow container mx-auto px-4 py-8">
         <h1 className="text-2xl font-bold mb-6">Market Analysis</h1>
-        
+
         <div className="flex justify-end mb-6">
           <div className="flex items-center">
             <span className={`inline-flex h-2 w-2 rounded-full mr-2 ${apiConnected ? 'bg-green-500' : 'bg-red-500'}`}></span>
             <span className="text-sm">{apiConnected ? 'API Connected' : 'API Disconnected'}</span>
           </div>
         </div>
-        
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">
             <Tabs defaultValue="overview">
@@ -157,7 +156,7 @@ const MarketAnalysis = () => {
                   Token Explorer
                 </TabsTrigger>
               </TabsList>
-              
+
               <TabsContent value="overview">
                 <Card>
                   <CardHeader>
@@ -204,7 +203,7 @@ const MarketAnalysis = () => {
                                 </div>
                               </div>
                               <div className="text-right">
-                                <div>${token.price.toLocaleString(undefined, { 
+                                <div>${token.price.toLocaleString(undefined, {
                                   minimumFractionDigits: token.price < 0.01 ? 8 : 2,
                                   maximumFractionDigits: token.price < 0.01 ? 8 : 2
                                 })}</div>
@@ -224,7 +223,7 @@ const MarketAnalysis = () => {
                   </CardContent>
                 </Card>
               </TabsContent>
-              
+
               <TabsContent value="activity">
                 <Card>
                   <CardHeader>
@@ -239,7 +238,7 @@ const MarketAnalysis = () => {
                   </CardContent>
                 </Card>
               </TabsContent>
-              
+
               <TabsContent value="tokens">
                 <Card>
                   <CardHeader>
@@ -264,10 +263,8 @@ const MarketAnalysis = () => {
               </TabsContent>
             </Tabs>
           </div>
-          
+
           <div className="space-y-6">
-            <ApiUsageMonitor />
-            
             <Card>
               <CardHeader>
                 <CardTitle>API Information</CardTitle>
@@ -293,7 +290,7 @@ const MarketAnalysis = () => {
                 </div>
               </CardContent>
             </Card>
-            
+
             <Card>
               <CardHeader>
                 <CardTitle>Connected Services</CardTitle>
@@ -320,7 +317,7 @@ const MarketAnalysis = () => {
           </div>
         </div>
       </main>
-      
+
       <Footer systemActive={apiConnected} systemLatency={systemLatency} />
     </div>
   );
