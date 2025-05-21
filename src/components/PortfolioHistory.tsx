@@ -7,6 +7,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2 } from "lucide-react";
 import { useCurrencyStore } from "@/store/currencyStore";
 import { heliusRpcCall } from "@/utils/apiUtils";
+import { convertUsdToCurrency, formatCurrency } from "@/utils/currencyUtils";
 
 interface PortfolioHistoryProps {
   walletAddress: string | null;
@@ -39,7 +40,7 @@ const PortfolioHistory: React.FC<PortfolioHistoryProps> = ({ walletAddress }) =>
   const [isLoading, setIsLoading] = useState(true);
   const [filter, setFilter] = useState("all");
   const { currency, currencySymbol } = useCurrencyStore();
-  
+
   // Initialize with transactions on mount
   useEffect(() => {
     const fetchTransactions = async () => {
@@ -49,38 +50,38 @@ const PortfolioHistory: React.FC<PortfolioHistoryProps> = ({ walletAddress }) =>
           // In a production app, we would fetch real transactions from Helius API
           // For now, we're just showing an empty state
           setTransactions([]);
-          
+
           // Example code to fetch real transactions when API is available:
           /*
           const response = await heliusRpcCall("getSignaturesForAddress", [walletAddress, { limit: 20 }]);
-          
+
           if (response && Array.isArray(response)) {
             // Process the transaction data
             const processedTxs = await Promise.all(response.map(async (tx: any, index: number) => {
               // Get transaction details
               const txDetails = await heliusRpcCall("getTransaction", [tx.signature]);
-              
+
               // Determine if this was a token transfer, swap, etc.
               // This is simplified - in reality would need more sophisticated parsing
               const isTokenTransaction = txDetails.meta?.preTokenBalances && txDetails.meta?.postTokenBalances;
               const tokenInfoPromises = [];
-              
+
               let tokenSymbol = "SOL";
               let amount = 0;
               let value = 0;
               let type = "Transfer";
-              
+
               if (isTokenTransaction) {
                 // Get token info
                 const tokenInfo = await heliusRpcCall("getTokenAccountsByOwner", [
                   walletAddress,
                   { programId: "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA" }
                 ]);
-                
+
                 // Parse token transfers - simplified
                 tokenSymbol = "Unknown Token";
                 amount = txDetails.meta.postTokenBalances[0]?.uiTokenAmount.uiAmount || 0;
-                
+
                 // Determine if swap
                 if (txDetails.meta.preTokenBalances.length > 1 && txDetails.meta.postTokenBalances.length > 1) {
                   type = "Swap";
@@ -90,14 +91,14 @@ const PortfolioHistory: React.FC<PortfolioHistoryProps> = ({ walletAddress }) =>
                 const preBalance = txDetails.meta?.preBalances[0] || 0;
                 const postBalance = txDetails.meta?.postBalances[0] || 0;
                 amount = Math.abs(postBalance - preBalance) / 1e9; // lamports to SOL
-                
+
                 // Get SOL price for value calculation
                 const solPriceResponse = await fetch("https://price.jup.ag/v4/price?ids=SOL");
                 const solPriceData = await solPriceResponse.json();
                 const solPrice = solPriceData?.data?.SOL?.price || 0;
                 value = amount * solPrice;
               }
-              
+
               return {
                 id: index,
                 type,
@@ -109,7 +110,7 @@ const PortfolioHistory: React.FC<PortfolioHistoryProps> = ({ walletAddress }) =>
                 txHash: tx.signature
               };
             }));
-            
+
             setTransactions(processedTxs);
           }
           */
@@ -120,30 +121,28 @@ const PortfolioHistory: React.FC<PortfolioHistoryProps> = ({ walletAddress }) =>
         setIsLoading(false);
       }
     };
-    
+
     fetchTransactions();
   }, [walletAddress]);
 
-  // Convert USD values to the selected currency
+  // Use the utility function for currency conversion
   const convertToCurrency = (value: number): number => {
-    const rates = {
-      USD: 1,
-      EUR: 0.92,
-      GBP: 0.79,
-      JPY: 150.56
-    };
-    
-    return value * (rates[currency as keyof typeof rates] || 1);
+    return convertUsdToCurrency(value, currency);
   };
-  
-  const filteredTransactions = filter === "all" 
-    ? transactions 
-    : transactions.filter(tx => 
-        filter === "deposits" ? tx.type === "Deposit" : 
-        filter === "withdrawals" ? tx.type === "Withdrawal" : 
+
+  // Format currency with symbol and proper formatting
+  const formatCurrencyValue = (value: number, options = {}): string => {
+    return formatCurrency(value, currency, currencySymbol, options);
+  };
+
+  const filteredTransactions = filter === "all"
+    ? transactions
+    : transactions.filter(tx =>
+        filter === "deposits" ? tx.type === "Deposit" :
+        filter === "withdrawals" ? tx.type === "Withdrawal" :
         filter === "swaps" ? tx.type === "Swap" : true
       );
-  
+
   if (!walletAddress) {
     return (
       <Card className="trading-card">
@@ -153,7 +152,7 @@ const PortfolioHistory: React.FC<PortfolioHistoryProps> = ({ walletAddress }) =>
       </Card>
     );
   }
-  
+
   return (
     <Card className="trading-card">
       <div className="p-4">
@@ -168,7 +167,7 @@ const PortfolioHistory: React.FC<PortfolioHistoryProps> = ({ walletAddress }) =>
             </TabsList>
           </Tabs>
         </div>
-        
+
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
@@ -201,30 +200,30 @@ const PortfolioHistory: React.FC<PortfolioHistoryProps> = ({ walletAddress }) =>
                     </TableCell>
                     <TableCell>
                       <Badge variant="outline" className={`
-                        ${tx.type === "Deposit" ? 'bg-green-500/20 text-green-400' : 
-                          tx.type === "Withdrawal" ? 'bg-red-500/20 text-red-400' : 
+                        ${tx.type === "Deposit" ? 'bg-green-500/20 text-green-400' :
+                          tx.type === "Withdrawal" ? 'bg-red-500/20 text-red-400' :
                           'bg-blue-500/20 text-blue-400'}
                       `}>
                         {tx.type}
                       </Badge>
                     </TableCell>
                     <TableCell>{tx.token}</TableCell>
-                    <TableCell className="text-right">{tx.amount}</TableCell>
-                    <TableCell className="text-right">{currencySymbol}{convertToCurrency(tx.value).toFixed(2)}</TableCell>
+                    <TableCell className="text-right">{tx.amount.toLocaleString()}</TableCell>
+                    <TableCell className="text-right">{formatCurrencyValue(tx.value)}</TableCell>
                     <TableCell>
                       <Badge className={`
-                        ${tx.status === "completed" ? 'bg-trading-success/20 text-trading-success' : 
-                          tx.status === "pending" ? 'bg-trading-warning/20 text-trading-warning' : 
+                        ${tx.status === "completed" ? 'bg-trading-success/20 text-trading-success' :
+                          tx.status === "pending" ? 'bg-trading-warning/20 text-trading-warning' :
                           'bg-trading-danger/20 text-trading-danger'}
                       `}>
-                        {tx.status === "completed" ? 'Completed' : 
+                        {tx.status === "completed" ? 'Completed' :
                         tx.status === "pending" ? 'Pending' : 'Failed'}
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <a 
-                        href={`https://solscan.io/tx/${tx.txHash}`} 
-                        target="_blank" 
+                      <a
+                        href={`https://solscan.io/tx/${tx.txHash}`}
+                        target="_blank"
                         rel="noopener noreferrer"
                         className="text-trading-highlight hover:underline text-sm"
                       >
@@ -245,7 +244,7 @@ const PortfolioHistory: React.FC<PortfolioHistoryProps> = ({ walletAddress }) =>
             </TableBody>
           </Table>
         </div>
-        
+
         <div className="mt-4 text-sm text-gray-400">
           {isLoading ? 'Loading...' : `Showing ${filteredTransactions.length} of ${transactions.length} transactions`}
         </div>

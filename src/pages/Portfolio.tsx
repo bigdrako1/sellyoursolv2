@@ -44,16 +44,19 @@ const Portfolio: React.FC = () => {
   }, []);
 
   return (
-    <div>
+    <div className="space-y-8">
       <h1 className="text-3xl font-bold mb-6">Portfolio</h1>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         <PortfolioOverview walletData={walletData} />
         <PortfolioPerformance />
       </div>
 
-      <PortfolioAssets />
-      <div className="mt-4">
+      <div className="mb-8">
+        <PortfolioAssets />
+      </div>
+
+      <div className="mb-8">
         <PortfolioHistory walletAddress={walletAddress} />
       </div>
     </div>

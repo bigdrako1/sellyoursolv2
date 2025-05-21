@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import PerformanceMetrics from "@/components/PerformanceMetrics";
@@ -6,6 +5,10 @@ import StrategyConfig from "@/components/StrategyConfig";
 import SystemStatus from "@/components/SystemStatus";
 import MarketChart from "@/components/MarketChart";
 
+/**
+ * DashboardTabContent component displays the main dashboard tab content
+ * with performance metrics, system status, and strategy configuration
+ */
 const DashboardTabContent = () => {
   return (
     <div className="space-y-6">

@@ -1,7 +1,6 @@
 
 import React from 'react';
-import TokenList from '@/components/TokenList';
-import TokenMonitor from '@/components/TokenMonitor';
+import { TokenList, TokenTracker } from '@/components/token';
 import ApiUsageMonitor from '@/components/ApiUsageMonitor';
 
 const TokenTabContent = () => {
@@ -10,7 +9,7 @@ const TokenTabContent = () => {
       <div className="lg:col-span-2">
         <TokenList />
       </div>
-      <TokenMonitor />
+      <TokenTracker />
       <ApiUsageMonitor />
     </div>
   );

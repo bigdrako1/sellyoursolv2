@@ -18,7 +18,6 @@ import {
   AlertTriangle,
   LogOut
 } from "lucide-react";
-import LivePriceTracker from "@/components/LivePriceTracker";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -57,11 +56,11 @@ const NavItem = ({ to, icon, label, isActive, size = "default", onClick }: NavIt
     <Link
       to={to}
       className={cn(
-        "flex items-center gap-1.5 px-2 py-1.5 rounded-md transition-colors whitespace-nowrap",
+        "flex items-center gap-1.5 px-3 py-2 rounded-md transition-colors whitespace-nowrap font-medium",
         isActiveOrSubPath
           ? "bg-trading-highlight/20 text-white"
-          : "hover:bg-trading-darkAccent",
-        size === "small" && "text-sm"
+          : "text-gray-300 hover:bg-trading-highlight/10 hover:text-white",
+        size === "small" && "text-sm py-1.5"
       )}
       onClick={onClick}
     >
@@ -71,27 +70,24 @@ const NavItem = ({ to, icon, label, isActive, size = "default", onClick }: NavIt
   );
 };
 
-interface HeaderProps {
-  systemActive?: boolean;
-  toggleSystemActive?: () => void;
-}
+interface HeaderProps {}
 
-const Header = ({ systemActive = false, toggleSystemActive }: HeaderProps) => {
+const Header = ({}: HeaderProps) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
   const currentPath = location.pathname;
   const { isAuthenticated, walletAddress, signOut } = useAuth();
 
   return (
-    <header className="bg-trading-darkAccent border-b border-white/5">
+    <header className="bg-trading-darkAccent border-b border-white/5 sticky top-0 z-50">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo and navigation */}
-          <div className="flex items-center space-x-4">
-            <Link to="/" className="text-xl font-bold text-trading-highlight">SellYourSOL V2</Link>
+          <div className="flex items-center space-x-6">
+            <Link to="/" className="text-xl font-bold text-trading-highlight whitespace-nowrap">SellYourSOL V2</Link>
 
             {/* Main Navigation */}
-            <nav className="hidden md:flex items-center gap-1 max-w-[calc(100vw-300px)] overflow-x-auto">
+            <nav className="hidden md:flex items-center gap-2 overflow-visible">
               {navItems.map((item) => (
                 <NavItem
                   key={item.path}
@@ -106,34 +102,6 @@ const Header = ({ systemActive = false, toggleSystemActive }: HeaderProps) => {
 
           {/* Right side controls */}
           <div className="flex items-center space-x-4">
-            <div className="hidden sm:block">
-              <LivePriceTracker />
-            </div>
-
-            {toggleSystemActive && (
-              <Button
-                onClick={toggleSystemActive}
-                variant="outline"
-                className={`gap-1 transition-all duration-300 hidden sm:flex ${
-                  systemActive
-                    ? "bg-trading-success/20 text-trading-success hover:bg-trading-success/30 border-trading-success/30"
-                    : "bg-trading-danger/20 text-trading-danger hover:bg-trading-danger/30 border-trading-danger/30"
-                }`}
-              >
-                {systemActive ? (
-                  <>
-                    <div className="w-2 h-2 rounded-full bg-trading-success animate-pulse"></div>
-                    System Active
-                  </>
-                ) : (
-                  <>
-                    <AlertTriangle size={14} />
-                    System Paused
-                  </>
-                )}
-              </Button>
-            )}
-
             <CurrencySelector />
 
             {isAuthenticated && (
@@ -171,9 +139,9 @@ const Header = ({ systemActive = false, toggleSystemActive }: HeaderProps) => {
 
       {/* Mobile menu */}
       {mobileMenuOpen && (
-        <div className="md:hidden bg-trading-darkAccent border-t border-white/5 fixed top-16 left-0 right-0 z-50 max-h-[calc(100vh-4rem)] overflow-y-auto">
-          <div className="container mx-auto px-4 py-2">
-            <div className="flex flex-col space-y-1">
+        <div className="md:hidden bg-trading-darkAccent border-t border-white/5 fixed top-16 left-0 right-0 z-50 max-h-[calc(100vh-4rem)] overflow-y-auto shadow-lg">
+          <div className="container mx-auto px-4 py-3">
+            <div className="flex flex-col space-y-2">
               {navItems.map((item) => (
                 <NavItem
                   key={item.path}
@@ -187,31 +155,6 @@ const Header = ({ systemActive = false, toggleSystemActive }: HeaderProps) => {
               ))}
             </div>
             <div className="mt-3 pt-2 border-t border-white/10">
-              <LivePriceTracker />
-
-              {toggleSystemActive && (
-                <Button
-                  onClick={toggleSystemActive}
-                  variant="outline"
-                  className={`gap-1 transition-all duration-300 mt-3 w-full ${
-                    systemActive
-                      ? "bg-trading-success/20 text-trading-success hover:bg-trading-success/30 border-trading-success/30"
-                      : "bg-trading-danger/20 text-trading-danger hover:bg-trading-danger/30 border-trading-danger/30"
-                  }`}
-                >
-                  {systemActive ? (
-                    <>
-                      <div className="w-2 h-2 rounded-full bg-trading-success animate-pulse"></div>
-                      System Active
-                    </>
-                  ) : (
-                    <>
-                      <AlertTriangle size={14} />
-                      System Paused
-                    </>
-                  )}
-                </Button>
-              )}
 
               {isAuthenticated && (
                 <Button

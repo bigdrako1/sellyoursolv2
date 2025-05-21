@@ -3,14 +3,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "@/services/toastService";
 import { testHeliusConnection } from "@/utils/apiUtils";
 import { getActiveApiConfig } from "@/config/appDefinition";
-import TradingStrategy from "@/components/TradingStrategy";
-import TokenMonitor from "@/components/TokenMonitor";
-import WalletMonitor from "@/components/WalletMonitor";
-import TradeAlerts from "@/components/TradeAlerts";
-import HeliusSetup from "@/components/HeliusSetup";
+import { TokenTracker } from "@/components/token";
+import { WalletTracker } from "@/components/wallet";
+import { TradeAlerts } from "@/components/alerts";
+import { HeliusApiConfig } from "@/components/api";
 import AutoTradeSimple from "@/components/AutoTradeSimple";
-import StrategyManager from "@/components/StrategyManager";
-import SmartMoneyAlerts from "@/components/SmartMoneyAlerts";
+import { StrategyManager } from "@/components/trading";
+import SmartMoneyAlerts from "@/components/smart-money/SmartMoneyAlerts";
 import TelegramChannelMonitor from "@/components/TelegramChannelMonitor";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -103,7 +102,10 @@ const AutoTrading = () => {
 
       {!apiKeyConfigured && (
         <div className="mb-6">
-          <HeliusSetup onApiKeySet={handleApiKeySet} />
+          <HeliusApiConfig
+            onApiKeySet={handleApiKeySet}
+            showConnectionStatus={true}
+          />
         </div>
       )}
 
@@ -119,8 +121,7 @@ const AutoTrading = () => {
         <TabsContent value="overview" className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 space-y-6">
-              <TradingStrategy />
-              <TokenMonitor />
+              <TokenTracker />
             </div>
 
             <div className="space-y-6">
@@ -172,7 +173,7 @@ const AutoTrading = () => {
                 </CardContent>
               </Card>
 
-              <WalletMonitor />
+              <WalletTracker />
               <TradeAlerts />
             </div>
           </div>

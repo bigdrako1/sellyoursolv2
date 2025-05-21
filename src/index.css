@@ -2,41 +2,41 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
- 
+
 @layer base {
   :root {
     --background: 240 10% 3.9%;
     --foreground: 0 0% 98%;
- 
+
     --card: 240 10% 3.9%;
     --card-foreground: 0 0% 98%;
- 
+
     --popover: 240 10% 3.9%;
     --popover-foreground: 0 0% 98%;
- 
+
     --primary: 0 0% 98%;
     --primary-foreground: 240 5.9% 10%;
- 
+
     --secondary: 240 3.7% 15.9%;
     --secondary-foreground: 0 0% 98%;
- 
+
     --muted: 240 3.7% 15.9%;
     --muted-foreground: 240 5% 64.9%;
- 
+
     --accent: 240 3.7% 15.9%;
     --accent-foreground: 0 0% 98%;
- 
+
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
- 
+
     --border: 240 3.7% 15.9%;
     --input: 240 3.7% 15.9%;
     --ring: 240 4.9% 83.9%;
- 
+
     --radius: 0.5rem;
   }
 }
- 
+
 @layer base {
   * {
     @apply border-border;
@@ -51,19 +51,19 @@
   .ai-trading-card {
     @apply bg-trading-darkAccent border-trading-highlight/20 rounded-md shadow-lg;
   }
-  
+
   .trading-card {
     @apply bg-trading-darkAccent rounded-md shadow-md;
   }
-  
+
   .card-with-border {
     @apply border border-trading-highlight/20;
   }
-  
+
   .trading-button {
     @apply bg-trading-highlight hover:bg-trading-highlight/80 text-white transition-colors;
   }
-  
+
   .trading-gradient-text {
     @apply bg-gradient-to-r from-trading-highlight to-trading-secondary bg-clip-text text-transparent;
   }
@@ -132,4 +132,21 @@ body {
   opacity: 0;
   position: absolute;
   pointer-events: none;
+}
+
+/* Price change animation */
+@keyframes pulse-once {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.animate-pulse-once {
+  animation: pulse-once 1s ease-in-out;
 }

@@ -1,6 +1,6 @@
 
 import React from 'react';
-import StrategyManager from '@/components/StrategyManager';
+import { StrategyManager } from '@/components/trading';
 
 const StrategyTabContent = () => {
   return <StrategyManager />;

@@ -5,10 +5,17 @@ import { toast } from "sonner";
 export interface TelegramUserSession {
   userId?: string;
   phone?: string;
+  username?: string;
   isAuthenticated: boolean;
   sessionKey?: string;
   lastActive?: string;
+  verificationSent?: boolean;
+  verificationComplete?: boolean;
 }
+
+// Telegram bot configuration
+const TELEGRAM_BOT_NAME = "SolanaTraderBot";
+const TELEGRAM_BOT_TOKEN = process.env.REACT_APP_TELEGRAM_BOT_TOKEN || "mock_bot_token";
 
 // Simulated session storage keys
 const TELEGRAM_SESSION_KEY = 'telegram_user_session';
@@ -55,58 +62,115 @@ export const clearTelegramSession = (): void => {
 /**
  * Simulate Telegram user authentication
  */
-export const authenticateTelegramUser = async (phone: string, code?: string): Promise<TelegramUserSession> => {
+export const authenticateTelegramUser = async (phone: string, code?: string, username?: string): Promise<TelegramUserSession> => {
   // In a real implementation, this would connect to the Telegram API
   // using a library like Telethon or GramJS
-  
+
   // For demo purposes, we'll simulate the authentication process
   return new Promise((resolve, reject) => {
     setTimeout(() => {
-      if (!phone) {
-        reject(new Error('Phone number is required'));
+      // Validate input
+      if (!phone && !username) {
+        reject(new Error('Phone number or username is required'));
         return;
       }
-      
-      if (!code && phone) {
-        // First step: Simulate sending code to phone
-        toast.success("Verification code sent", {
-          description: `A code has been sent to ${phone}`
-        });
-        resolve({
-          phone,
-          isAuthenticated: false
-        });
-        return;
-      }
-      
-      if (code) {
-        // Second step: Verify code
-        // In a real implementation, this would validate the code with Telegram
-        if (code.length < 5) {
-          reject(new Error('Invalid verification code'));
-          return;
+
+      // Step 1: Request verification code
+      if (!code && (phone || username)) {
+        try {
+          // First step: Simulate sending code to phone or username
+          const target = username ? `@${username}` : phone;
+
+          // Show loading toast
+          toast.loading("Sending verification code...", {
+            id: "telegram-verification",
+          });
+
+          // Simulate API delay
+          setTimeout(() => {
+            // Update toast to success
+            toast.success("Verification code sent", {
+              id: "telegram-verification",
+              description: `A code has been sent to ${target}. Please check your Telegram messages.`
+            });
+
+            // Create initial session data
+            const initialSession: TelegramUserSession = {
+              phone,
+              username,
+              isAuthenticated: false,
+              verificationSent: true,
+              lastActive: new Date().toISOString()
+            };
+
+            // Store initial session
+            storeTelegramSession(initialSession);
+
+            resolve(initialSession);
+          }, 2000);
+        } catch (error) {
+          toast.error("Failed to send verification code", {
+            id: "telegram-verification",
+            description: error instanceof Error ? error.message : "Unknown error occurred"
+          });
+          reject(error);
         }
-        
-        const sessionData: TelegramUserSession = {
-          userId: `user_${Math.floor(Math.random() * 10000000)}`,
-          phone,
-          isAuthenticated: true,
-          sessionKey: `session_${Date.now()}`,
-          lastActive: new Date().toISOString()
-        };
-        
-        // Store the session
-        storeTelegramSession(sessionData);
-        
-        toast.success("Authentication successful", {
-          description: "Successfully connected to Telegram"
-        });
-        
-        resolve(sessionData);
+        return;
+      }
+
+      // Step 2: Verify code
+      if (code) {
+        try {
+          // In a real implementation, this would validate the code with Telegram
+          if (code.length < 5) {
+            toast.error("Invalid verification code", {
+              description: "Please enter a valid verification code"
+            });
+            reject(new Error('Invalid verification code'));
+            return;
+          }
+
+          // Show loading toast
+          toast.loading("Verifying code...", {
+            id: "telegram-verification",
+          });
+
+          // Simulate API delay
+          setTimeout(() => {
+            // Create session data
+            const sessionData: TelegramUserSession = {
+              userId: `user_${Math.floor(Math.random() * 10000000)}`,
+              phone,
+              username,
+              isAuthenticated: true,
+              sessionKey: `session_${Date.now()}`,
+              lastActive: new Date().toISOString(),
+              verificationSent: true,
+              verificationComplete: true
+            };
+
+            // Store the session
+            storeTelegramSession(sessionData);
+
+            // Update toast to success
+            toast.success("Authentication successful", {
+              id: "telegram-verification",
+              description: "Successfully connected to Telegram"
+            });
+
+            resolve(sessionData);
+          }, 1500);
+        } catch (error) {
+          toast.error("Verification failed", {
+            id: "telegram-verification",
+            description: error instanceof Error ? error.message : "Unknown error occurred"
+          });
+          reject(error);
+        }
       } else {
         reject(new Error('Verification code is required'));
       }
-    }, 1500);
+    }, 500);
   });
 };
 
@@ -126,4 +190,63 @@ export const signOutFromTelegram = (): void => {
 export const isAuthenticatedWithTelegram = (): boolean => {
   const session = getTelegramSession();
   return !!session?.isAuthenticated;
+};
+
+/**
+ * Check if verification has been sent
+ */
+export const isVerificationSent = (): boolean => {
+  const session = getTelegramSession();
+  return !!session?.verificationSent;
+};
+
+/**
+ * Check if verification is complete
+ */
+export const isVerificationComplete = (): boolean => {
+  const session = getTelegramSession();
+  return !!session?.verificationComplete;
+};
+
+/**
+ * Get Telegram username
+ */
+export const getTelegramUsername = (): string | undefined => {
+  const session = getTelegramSession();
+  return session?.username;
+};
+
+/**
+ * Initialize Telegram login widget
+ */
+export const initTelegramLoginWidget = (containerId: string): void => {
+  try {
+    // Check if container exists
+    const container = document.getElementById(containerId);
+    if (!container) {
+      console.error(`Container with ID ${containerId} not found`);
+      return;
+    }
+
+    // Clear container
+    container.innerHTML = '';
+
+    // Create script element
+    const script = document.createElement('script');
+    script.src = 'https://telegram.org/js/telegram-widget.js?22';
+    script.setAttribute('data-telegram-login', TELEGRAM_BOT_NAME);
+    script.setAttribute('data-size', 'large');
+    script.setAttribute('data-radius', '8');
+    script.setAttribute('data-request-access', 'write');
+    script.setAttribute('data-userpic', 'false');
+    script.setAttribute('data-auth-url', `${window.location.origin}/telegram-auth-callback`);
+    script.async = true;
+
+    // Append script to container
+    container.appendChild(script);
+
+    console.log('Telegram login widget initialized');
+  } catch (error) {
+    console.error('Error initializing Telegram login widget:', error);
+  }
 };

@@ -21,6 +21,7 @@ import TokensPage from "@/pages/Tokens";
 // Import pages
 import AutoTrading from "@/pages/AutoTrading";
 import WalletTracking from "@/pages/WalletTracking";
+import WalletTrackingAnalytics from "@/pages/WalletTrackingAnalytics";
 import ConsolidatedDashboard from "@/pages/ConsolidatedDashboard";
 
 // Create Query Client
@@ -70,6 +71,10 @@ const router = createBrowserRouter([
       {
         path: "wallet-tracking",
         element: <WalletTracking />,
+      },
+      {
+        path: "wallet-tracking/analytics",
+        element: <WalletTrackingAnalytics />,
       }
     ],
   },

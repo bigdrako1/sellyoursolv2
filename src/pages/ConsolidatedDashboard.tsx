@@ -46,12 +46,11 @@ import { useCurrencyStore } from "@/store/currencyStore";
 import { Link } from "react-router-dom";
 import APP_CONFIG from "@/config/appDefinition";
 import SystemControls from "@/components/SystemControls";
-import TradeAlerts from "@/components/TradeAlerts";
+import { TradeAlerts } from "@/components/alerts";
 import ConnectedServices from "@/components/ConnectedServices";
 import TradingTabContent from "@/components/TradingTabContent";
-import TradingStrategy from "@/components/TradingStrategy";
 import WalletsTabContent from "@/components/WalletsTabContent";
-import WalletMonitor from "@/components/WalletMonitor";
+import { WalletTracker } from "@/components/wallet";
 import SmartMoneyDetection from "@/components/SmartMoneyDetection";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -548,14 +547,7 @@ const ConsolidatedDashboard: React.FC = () => {
             </div>
           </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Trading Strategies</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <TradingStrategy />
-            </CardContent>
-          </Card>
+
         </TabsContent>
 
         {/* Wallets Tab */}
@@ -584,7 +576,7 @@ const ConsolidatedDashboard: React.FC = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <WalletMonitor />
+                  <WalletTracker />
                 </CardContent>
               </Card>
 
@@ -593,21 +585,6 @@ const ConsolidatedDashboard: React.FC = () => {
           </div>
         </TabsContent>
       </Tabs>
-
-      {/* System Status Footer */}
-      <div className="flex justify-between items-center text-sm text-gray-400 bg-black/20 p-3 rounded-lg">
-        <div className="flex items-center space-x-4">
-          <div className="flex items-center">
-            <span>System:</span>
-            <Badge variant="outline" className={`ml-2 ${systemActive ? 'bg-green-900/20 text-green-400' : 'bg-red-900/20 text-red-400'}`}>
-              {systemActive ? 'Online' : 'Offline'}
-            </Badge>
-          </div>
-        </div>
-        <div>
-          <span>© 2023 {APP_CONFIG.name}, v2. All rights reserved.</span>
-        </div>
-      </div>
     </div>
   );
 };

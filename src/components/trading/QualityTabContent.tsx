@@ -1,6 +1,6 @@
 
 import React from 'react';
-import TokenQualityFilter from '@/components/TokenQualityFilter';
+import { TokenQualityFilter } from '@/components/token';
 
 const QualityTabContent = () => {
   return <TokenQualityFilter />;

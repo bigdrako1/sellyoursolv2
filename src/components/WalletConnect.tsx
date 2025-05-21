@@ -1,3 +1,4 @@
+import { WalletConnect as NewWalletConnect } from "@/components/wallet";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -44,7 +45,15 @@ interface WalletConnectProps {
   onDisconnect?: () => void;
 }
 
-const WalletConnect = ({ onConnect, onDisconnect }: WalletConnectProps) => {
+// Use the new component if no props are provided
+const WalletConnect = (props: WalletConnectProps) => {
+  // If no props are provided, use the new component
+  if (!props.onConnect && !props.onDisconnect) {
+    return <NewWalletConnect />;
+  }
+
+  // Otherwise, use the original component with the provided props
+  const { onConnect, onDisconnect } = props;
   const [connecting, setConnecting] = useState(false);
   const [disconnecting, setDisconnecting] = useState(false);
   const [showBalances, setShowBalances] = useState(false);

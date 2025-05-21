@@ -4,14 +4,14 @@ import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { 
-  Brain, 
-  Cpu, 
-  Upload, 
-  Activity, 
-  AlertCircle, 
+import {
+  Brain,
+  Cpu,
+  Upload,
+  Activity,
+  AlertCircle,
   Zap,
   Bot,
   ArrowUpRight,
@@ -76,7 +76,7 @@ const AutoTradeConfig = () => {
     const updatedChains = currentChains.includes(chain)
       ? currentChains.filter(c => c !== chain)
       : [...currentChains, chain];
-    
+
     setSettings({
       ...settings,
       [feature]: {
@@ -89,7 +89,7 @@ const AutoTradeConfig = () => {
   const handleSaveAndApply = () => {
     // Save settings to localStorage for persistence
     localStorage.setItem('trading_settings', JSON.stringify(settings));
-    
+
     toast({
       title: "Settings Applied",
       description: "Your trading configuration has been saved and applied.",
@@ -102,17 +102,17 @@ const AutoTradeConfig = () => {
       const input = document.createElement('input');
       input.type = 'file';
       input.accept = '.json';
-      
+
       input.onchange = (e: any) => {
         const file = e.target.files[0];
         if (!file) return;
-        
+
         const reader = new FileReader();
         reader.onload = (event: any) => {
           try {
             const importedSettings = JSON.parse(event.target.result);
             setSettings(importedSettings);
-            
+
             toast({
               title: "Settings Imported",
               description: "Trading configuration has been imported successfully.",
@@ -127,7 +127,7 @@ const AutoTradeConfig = () => {
         };
         reader.readAsText(file);
       };
-      
+
       input.click();
     } catch (error) {
       toast({
@@ -142,99 +142,60 @@ const AutoTradeConfig = () => {
     switch (activeTab) {
       case "frontrun":
         return (
-          <div className="mt-4 space-y-4">
+          <div className="space-y-3">
             <div className="flex justify-between items-center">
               <div className="flex items-center gap-2">
-                <Zap size={16} className="text-trading-highlight" />
-                <span className="font-medium">Front-Running Bot</span>
+                <Zap size={14} className="text-trading-highlight" />
+                <span className="text-sm font-medium">Front-Running Bot</span>
+                {getStatusBadge(settings.frontRunning.enabled)}
               </div>
-              <Switch 
+              <Switch
                 checked={settings.frontRunning.enabled}
                 onCheckedChange={() => toggleSetting('frontRunning', 'enabled')}
               />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-4">
-                <div>
-                  <div className="flex justify-between mb-1">
-                    <span className="text-sm">Detection Sensitivity</span>
-                    <span className="text-sm font-medium">{settings.frontRunning.sensitivity}%</span>
-                  </div>
-                  <Slider 
-                    value={[settings.frontRunning.sensitivity]}
-                    min={40}
-                    max={100}
-                    step={1}
-                    onValueChange={(value) => updateSliderValue('frontRunning', 'sensitivity', value)}
-                  />
+            <div className="space-y-3">
+              <div>
+                <div className="flex justify-between mb-1">
+                  <span className="text-xs">Detection Sensitivity</span>
+                  <span className="text-xs font-medium">{settings.frontRunning.sensitivity}%</span>
                 </div>
-
-                <div>
-                  <div className="flex justify-between mb-1">
-                    <span className="text-sm">Max Gas Price (Gwei)</span>
-                    <span className="text-sm font-medium">{settings.frontRunning.maxGasPrice}</span>
-                  </div>
-                  <Slider 
-                    value={[settings.frontRunning.maxGasPrice]}
-                    min={10}
-                    max={200}
-                    step={5}
-                    onValueChange={(value) => updateSliderValue('frontRunning', 'maxGasPrice', value)}
-                  />
-                </div>
-
-                <div>
-                  <div className="flex justify-between mb-1">
-                    <span className="text-sm">Slippage Tolerance (%)</span>
-                    <span className="text-sm font-medium">{settings.frontRunning.slippageTolerance}%</span>
-                  </div>
-                  <Slider 
-                    value={[settings.frontRunning.slippageTolerance]}
-                    min={0.5}
-                    max={10}
-                    step={0.5}
-                    onValueChange={(value) => updateSliderValue('frontRunning', 'slippageTolerance', value)}
-                  />
-                </div>
+                <Slider
+                  value={[settings.frontRunning.sensitivity]}
+                  min={40}
+                  max={100}
+                  step={1}
+                  onValueChange={(value) => updateSliderValue('frontRunning', 'sensitivity', value)}
+                />
               </div>
 
-              <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm">Auto-adjust Gas Price</span>
-                  <Switch 
-                    checked={settings.frontRunning.autoAdjustGas}
-                    onCheckedChange={() => toggleSetting('frontRunning', 'autoAdjustGas')}
-                  />
+              <div>
+                <div className="flex justify-between mb-1">
+                  <span className="text-xs">Max Gas Price</span>
+                  <span className="text-xs font-medium">{settings.frontRunning.maxGasPrice}</span>
                 </div>
+                <Slider
+                  value={[settings.frontRunning.maxGasPrice]}
+                  min={10}
+                  max={200}
+                  step={5}
+                  onValueChange={(value) => updateSliderValue('frontRunning', 'maxGasPrice', value)}
+                />
+              </div>
 
-                <div>
-                  <p className="text-sm mb-2">Target Chains</p>
-                  <div className="flex gap-2">
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      className={cn(
-                        "flex items-center gap-1",
-                        settings.frontRunning.targetChains.includes("solana") 
-                          ? "bg-solana/20 border-solana/50 text-white" 
-                          : "bg-transparent"
-                      )}
-                      onClick={() => toggleChain('frontRunning', 'solana')}
-                    >
-                      <div className="w-2 h-2 rounded-full bg-solana"></div>
-                      Solana
-                    </Button>
-                  </div>
-                </div>
+              <div className="flex justify-between items-center">
+                <span className="text-xs">Auto-adjust Gas</span>
+                <Switch
+                  checked={settings.frontRunning.autoAdjustGas}
+                  onCheckedChange={() => toggleSetting('frontRunning', 'autoAdjustGas')}
+                />
+              </div>
 
-                <div className="bg-trading-highlight/10 p-3 rounded-md border border-trading-highlight/20">
-                  <div className="flex items-start gap-2">
-                    <AlertCircle size={16} className="text-trading-highlight mt-0.5" />
-                    <p className="text-xs text-gray-400">
-                      Front-running identifies pending transactions in the mempool and executes trades before they're processed, capturing value from predictable price movements.
-                    </p>
-                  </div>
+              <div>
+                <div className="flex items-center gap-1">
+                  <div className="w-2 h-2 rounded-full bg-solana"></div>
+                  <span className="text-xs">Solana Chain</span>
                 </div>
               </div>
             </div>
@@ -242,110 +203,66 @@ const AutoTradeConfig = () => {
         );
       case "market":
         return (
-          <div className="mt-4 space-y-4">
+          <div className="space-y-3">
             <div className="flex justify-between items-center">
               <div className="flex items-center gap-2">
-                <ArrowUpRight size={16} className="text-trading-highlight" />
-                <span className="font-medium">Market Runner Detector</span>
+                <ArrowUpRight size={14} className="text-trading-highlight" />
+                <span className="text-sm font-medium">Market Detector</span>
+                {getStatusBadge(settings.marketRunner.enabled)}
               </div>
-              <Switch 
+              <Switch
                 checked={settings.marketRunner.enabled}
                 onCheckedChange={() => toggleSetting('marketRunner', 'enabled')}
               />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-4">
-                <div>
-                  <div className="flex justify-between mb-1">
-                    <span className="text-sm">Detection Threshold</span>
-                    <span className="text-sm font-medium">{settings.marketRunner.detectionThreshold}%</span>
-                  </div>
-                  <Slider 
-                    value={[settings.marketRunner.detectionThreshold]}
-                    min={30}
-                    max={95}
-                    step={5}
-                    onValueChange={(value) => updateSliderValue('marketRunner', 'detectionThreshold', value)}
-                  />
+            <div className="space-y-3">
+              <div>
+                <div className="flex justify-between mb-1">
+                  <span className="text-xs">Detection Threshold</span>
+                  <span className="text-xs font-medium">{settings.marketRunner.detectionThreshold}%</span>
                 </div>
-
-                <div>
-                  <div className="flex justify-between mb-1">
-                    <span className="text-sm">Reaction Speed</span>
-                    <span className="text-sm font-medium">{settings.marketRunner.reactionSpeed}%</span>
-                  </div>
-                  <Slider 
-                    value={[settings.marketRunner.reactionSpeed]}
-                    min={50}
-                    max={99}
-                    step={1}
-                    onValueChange={(value) => updateSliderValue('marketRunner', 'reactionSpeed', value)}
-                  />
-                </div>
-
-                <div>
-                  <div className="flex justify-between mb-1">
-                    <span className="text-sm">Max Exposure (%)</span>
-                    <span className="text-sm font-medium">{settings.marketRunner.maxExposure}%</span>
-                  </div>
-                  <Slider 
-                    value={[settings.marketRunner.maxExposure]}
-                    min={5}
-                    max={50}
-                    step={5}
-                    onValueChange={(value) => updateSliderValue('marketRunner', 'maxExposure', value)}
-                  />
-                </div>
+                <Slider
+                  value={[settings.marketRunner.detectionThreshold]}
+                  min={30}
+                  max={95}
+                  step={5}
+                  onValueChange={(value) => updateSliderValue('marketRunner', 'detectionThreshold', value)}
+                />
               </div>
 
-              <div className="space-y-4">
-                <div>
-                  <div className="flex justify-between mb-1">
-                    <span className="text-sm">Time-to-Live (minutes)</span>
-                    <span className="text-sm font-medium">{settings.marketRunner.timeToLive}</span>
-                  </div>
-                  <Slider 
-                    value={[settings.marketRunner.timeToLive]}
-                    min={5}
-                    max={120}
-                    step={5}
-                    onValueChange={(value) => updateSliderValue('marketRunner', 'timeToLive', value)}
-                  />
+              <div>
+                <div className="flex justify-between mb-1">
+                  <span className="text-xs">Reaction Speed</span>
+                  <span className="text-xs font-medium">{settings.marketRunner.reactionSpeed}%</span>
                 </div>
+                <Slider
+                  value={[settings.marketRunner.reactionSpeed]}
+                  min={50}
+                  max={99}
+                  step={1}
+                  onValueChange={(value) => updateSliderValue('marketRunner', 'reactionSpeed', value)}
+                />
+              </div>
 
-                <div>
-                  <div className="flex justify-between mb-1">
-                    <span className="text-sm">Stop-Loss (%)</span>
-                    <span className="text-sm font-medium">{settings.marketRunner.stopLoss}%</span>
-                  </div>
-                  <Slider 
-                    value={[settings.marketRunner.stopLoss]}
-                    min={5}
-                    max={50}
-                    step={5}
-                    onValueChange={(value) => updateSliderValue('marketRunner', 'stopLoss', value)}
-                  />
+              <div>
+                <div className="flex justify-between mb-1">
+                  <span className="text-xs">Stop-Loss</span>
+                  <span className="text-xs font-medium">{settings.marketRunner.stopLoss}%</span>
                 </div>
+                <Slider
+                  value={[settings.marketRunner.stopLoss]}
+                  min={5}
+                  max={50}
+                  step={5}
+                  onValueChange={(value) => updateSliderValue('marketRunner', 'stopLoss', value)}
+                />
+              </div>
 
-                <div>
-                  <p className="text-sm mb-2">Target Chains</p>
-                  <div className="flex gap-2">
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      className={cn(
-                        "flex items-center gap-1",
-                        settings.marketRunner.targetChains.includes("solana") 
-                          ? "bg-solana/20 border-solana/50 text-white" 
-                          : "bg-transparent"
-                      )}
-                      onClick={() => toggleChain('marketRunner', 'solana')}
-                    >
-                      <div className="w-2 h-2 rounded-full bg-solana"></div>
-                      Solana
-                    </Button>
-                  </div>
+              <div>
+                <div className="flex items-center gap-1">
+                  <div className="w-2 h-2 rounded-full bg-solana"></div>
+                  <span className="text-xs">Solana Chain</span>
                 </div>
               </div>
             </div>
@@ -353,110 +270,66 @@ const AutoTradeConfig = () => {
         );
       case "wallet":
         return (
-          <div className="mt-4 space-y-4">
+          <div className="space-y-3">
             <div className="flex justify-between items-center">
               <div className="flex items-center gap-2">
-                <Bot size={16} className="text-trading-highlight" />
-                <span className="font-medium">Wallet Activity Tracker</span>
+                <Bot size={14} className="text-trading-highlight" />
+                <span className="text-sm font-medium">Wallet Tracker</span>
+                {getStatusBadge(settings.walletTracker.enabled)}
               </div>
-              <Switch 
+              <Switch
                 checked={settings.walletTracker.enabled}
                 onCheckedChange={() => toggleSetting('walletTracker', 'enabled')}
               />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-4">
-                <div>
-                  <div className="flex justify-between mb-1">
-                    <span className="text-sm">Minimum Wallet Balance ($)</span>
-                    <span className="text-sm font-medium">${settings.walletTracker.minimumBalance.toLocaleString()}</span>
-                  </div>
-                  <Slider 
-                    value={[settings.walletTracker.minimumBalance]}
-                    min={10000}
-                    max={1000000}
-                    step={10000}
-                    onValueChange={(value) => updateSliderValue('walletTracker', 'minimumBalance', value)}
-                  />
+            <div className="space-y-3">
+              <div>
+                <div className="flex justify-between mb-1">
+                  <span className="text-xs">Min Balance</span>
+                  <span className="text-xs font-medium">${(settings.walletTracker.minimumBalance/1000).toFixed(0)}K</span>
                 </div>
-
-                <div>
-                  <div className="flex justify-between mb-1">
-                    <span className="text-sm">Copy Confidence Threshold</span>
-                    <span className="text-sm font-medium">{settings.walletTracker.copyThreshold}%</span>
-                  </div>
-                  <Slider 
-                    value={[settings.walletTracker.copyThreshold]}
-                    min={30}
-                    max={90}
-                    step={5}
-                    onValueChange={(value) => updateSliderValue('walletTracker', 'copyThreshold', value)}
-                  />
-                </div>
-
-                <div>
-                  <div className="flex justify-between mb-1">
-                    <span className="text-sm">Execution Delay (seconds)</span>
-                    <span className="text-sm font-medium">{settings.walletTracker.delaySeconds}s</span>
-                  </div>
-                  <Slider 
-                    value={[settings.walletTracker.delaySeconds]}
-                    min={1}
-                    max={30}
-                    step={1}
-                    onValueChange={(value) => updateSliderValue('walletTracker', 'delaySeconds', value)}
-                  />
-                </div>
+                <Slider
+                  value={[settings.walletTracker.minimumBalance]}
+                  min={10000}
+                  max={1000000}
+                  step={10000}
+                  onValueChange={(value) => updateSliderValue('walletTracker', 'minimumBalance', value)}
+                />
               </div>
 
-              <div className="space-y-4">
-                <div>
-                  <div className="flex justify-between mb-1">
-                    <span className="text-sm">Max Tracked Wallets</span>
-                    <span className="text-sm font-medium">{settings.walletTracker.maxWallets}</span>
-                  </div>
-                  <Slider 
-                    value={[settings.walletTracker.maxWallets]}
-                    min={1}
-                    max={50}
-                    step={1}
-                    onValueChange={(value) => updateSliderValue('walletTracker', 'maxWallets', value)}
-                  />
+              <div>
+                <div className="flex justify-between mb-1">
+                  <span className="text-xs">Copy Threshold</span>
+                  <span className="text-xs font-medium">{settings.walletTracker.copyThreshold}%</span>
                 </div>
+                <Slider
+                  value={[settings.walletTracker.copyThreshold]}
+                  min={30}
+                  max={90}
+                  step={5}
+                  onValueChange={(value) => updateSliderValue('walletTracker', 'copyThreshold', value)}
+                />
+              </div>
 
-                <div>
-                  <div className="flex justify-between mb-1">
-                    <span className="text-sm">Max Copy Amount (%)</span>
-                    <span className="text-sm font-medium">{settings.walletTracker.maxCopyAmount}%</span>
-                  </div>
-                  <Slider 
-                    value={[settings.walletTracker.maxCopyAmount]}
-                    min={5}
-                    max={100}
-                    step={5}
-                    onValueChange={(value) => updateSliderValue('walletTracker', 'maxCopyAmount', value)}
-                  />
+              <div>
+                <div className="flex justify-between mb-1">
+                  <span className="text-xs">Max Copy Amount</span>
+                  <span className="text-xs font-medium">{settings.walletTracker.maxCopyAmount}%</span>
                 </div>
+                <Slider
+                  value={[settings.walletTracker.maxCopyAmount]}
+                  min={5}
+                  max={100}
+                  step={5}
+                  onValueChange={(value) => updateSliderValue('walletTracker', 'maxCopyAmount', value)}
+                />
+              </div>
 
-                <div>
-                  <p className="text-sm mb-2">Target Chains</p>
-                  <div className="flex gap-2">
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      className={cn(
-                        "flex items-center gap-1",
-                        settings.walletTracker.targetChains.includes("solana") 
-                          ? "bg-solana/20 border-solana/50 text-white" 
-                          : "bg-transparent"
-                      )}
-                      onClick={() => toggleChain('walletTracker', 'solana')}
-                    >
-                      <div className="w-2 h-2 rounded-full bg-solana"></div>
-                      Solana
-                    </Button>
-                  </div>
+              <div>
+                <div className="flex items-center gap-1">
+                  <div className="w-2 h-2 rounded-full bg-solana"></div>
+                  <span className="text-xs">Solana Chain</span>
                 </div>
               </div>
             </div>
@@ -469,12 +342,12 @@ const AutoTradeConfig = () => {
 
   const getStatusBadge = (enabled: boolean) => {
     return (
-      <Badge 
-        variant="outline" 
+      <Badge
+        variant="outline"
         className={cn(
-          "ml-2",
-          enabled 
-            ? "bg-trading-success/20 text-trading-success border-trading-success/30" 
+          "text-xs px-1.5 py-0 h-5 flex-shrink-0",
+          enabled
+            ? "bg-trading-success/20 text-trading-success border-trading-success/30"
             : "bg-gray-800 text-gray-400 border-gray-700"
         )}
       >
@@ -484,77 +357,70 @@ const AutoTradeConfig = () => {
   };
 
   return (
-    <Card className="trading-card">
-      <div className="p-6">
-        <div className="flex justify-between items-center mb-6">
-          <div>
-            <div className="flex items-center">
-              <h3 className="text-lg font-bold">AI Trading Configuration</h3>
-              <Badge className="ml-2 bg-blue-purple-gradient text-white border-none">
-                AFK Mode
-              </Badge>
-            </div>
-            <p className="text-sm text-gray-400 mt-1">Configure your automated trading strategies</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="gap-2 bg-black/30"
-              onClick={handleImport}
-            >
-              <Upload size={14} />
-              <span>Import</span>
-            </Button>
-            <Button 
-              variant="default" 
-              size="sm" 
-              className="gap-2 trading-button"
-              onClick={handleSaveAndApply}
-            >
-              <Save size={14} />
-              <span>Save & Apply</span>
-            </Button>
-          </div>
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <h3 className="text-sm font-bold">AI Trading</h3>
+          <Badge className="bg-blue-purple-gradient text-white border-none text-xs px-1.5 py-0">
+            AFK
+          </Badge>
         </div>
-
-        <Tabs defaultValue="frontrun" onValueChange={setActiveTab} value={activeTab}>
-          <TabsList className="grid w-full grid-cols-3 bg-trading-darkAccent">
-            <TabsTrigger value="frontrun">
-              <div className="flex items-center gap-1">
-                <Cpu size={14} />
-                <span>Front Runner</span>
-                {getStatusBadge(settings.frontRunning.enabled)}
-              </div>
-            </TabsTrigger>
-            <TabsTrigger value="market">
-              <div className="flex items-center gap-1">
-                <Brain size={14} />
-                <span>Market Detector</span>
-                {getStatusBadge(settings.marketRunner.enabled)}
-              </div>
-            </TabsTrigger>
-            <TabsTrigger value="wallet">
-              <div className="flex items-center gap-1">
-                <Bot size={14} />
-                <span>Wallet Tracker</span>
-                {getStatusBadge(settings.walletTracker.enabled)}
-              </div>
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="frontrun">
-            {renderContent()}
-          </TabsContent>
-          <TabsContent value="market">
-            {renderContent()}
-          </TabsContent>
-          <TabsContent value="wallet">
-            {renderContent()}
-          </TabsContent>
-        </Tabs>
+        <Button
+          variant="default"
+          size="sm"
+          className="h-7 px-2 text-xs trading-button"
+          onClick={handleSaveAndApply}
+        >
+          <Save size={12} className="mr-1" />
+          Save
+        </Button>
       </div>
-    </Card>
+
+      <Select value={activeTab} onValueChange={setActiveTab}>
+        <SelectTrigger className="w-full bg-trading-darkAccent border-none">
+          <SelectValue placeholder="Select strategy" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="frontrun">
+            <div className="flex items-center gap-2">
+              <Cpu size={14} />
+              <span>Front Runner</span>
+              {settings.frontRunning.enabled && (
+                <Badge variant="outline" className="ml-2 bg-green-500/20 text-green-400 text-xs border-green-500/30">
+                  Active
+                </Badge>
+              )}
+            </div>
+          </SelectItem>
+          <SelectItem value="market">
+            <div className="flex items-center gap-2">
+              <Brain size={14} />
+              <span>Market Detector</span>
+              {settings.marketRunner.enabled && (
+                <Badge variant="outline" className="ml-2 bg-green-500/20 text-green-400 text-xs border-green-500/30">
+                  Active
+                </Badge>
+              )}
+            </div>
+          </SelectItem>
+          <SelectItem value="wallet">
+            <div className="flex items-center gap-2">
+              <Bot size={14} />
+              <span>Wallet Tracker</span>
+              {settings.walletTracker.enabled && (
+                <Badge variant="outline" className="ml-2 bg-green-500/20 text-green-400 text-xs border-green-500/30">
+                  Active
+                </Badge>
+              )}
+            </div>
+          </SelectItem>
+        </SelectContent>
+      </Select>
+
+      <div className="pt-2">
+        {renderContent()}
+      </div>
+    </div>
   );
 };
 

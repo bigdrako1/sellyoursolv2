@@ -1,6 +1,6 @@
 
 import React from 'react';
-import TradeAlerts from '@/components/TradeAlerts';
+import { TradeAlerts } from '@/components/alerts';
 
 const AlertsTabContent = () => {
   return <TradeAlerts />;

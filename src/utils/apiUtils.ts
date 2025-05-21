@@ -59,11 +59,11 @@ export const testHeliusConnection = async (): Promise<boolean> => {
       }),
       timeout: 10000 // 10 second timeout
     });
-    
+
     if (!response.ok) {
       return false;
     }
-    
+
     const data = await response.json();
     return data.result === "ok" || data.result === 1;
   } catch (error) {
@@ -77,10 +77,10 @@ export const testHeliusConnection = async (): Promise<boolean> => {
  */
 async function fetchWithTimeout(url: string, options: any = {}) {
   const { timeout = 8000, ...fetchOptions } = options;
-  
+
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeout);
-  
+
   try {
     const response = await fetch(url, {
       ...fetchOptions,
@@ -98,16 +98,16 @@ async function fetchWithTimeout(url: string, options: any = {}) {
  * Get cached data or fetch it
  */
 const getCachedOrFetch = async (
-  cacheKey: string, 
+  cacheKey: string,
   fetchFunction: () => Promise<any>
 ): Promise<any> => {
   const cachedData = apiCache.get(cacheKey);
   const now = Date.now();
-  
+
   if (cachedData && now - cachedData.timestamp < CACHE_TTL) {
     return cachedData.data;
   }
-  
+
   try {
     const data = await fetchFunction();
     apiCache.set(cacheKey, { data, timestamp: now });
@@ -130,9 +130,9 @@ export const heliusRpcCall = async (method: string, params: any[] = []): Promise
     // Track API usage
     apiUsageStats.dailyRequests++;
     apiUsageStats.apiCalls[method] = (apiUsageStats.apiCalls[method] || 0) + 1;
-    
+
     const cacheKey = `helius_rpc_${method}_${JSON.stringify(params)}`;
-    
+
     return await getCachedOrFetch(cacheKey, async () => {
       const response = await fetchWithTimeout(HELIUS_RPC_URL, {
         method: 'POST',
@@ -145,17 +145,17 @@ export const heliusRpcCall = async (method: string, params: any[] = []): Promise
         }),
         timeout: 10000
       });
-      
+
       if (!response.ok) {
         throw new Error(`Helius API error: ${response.statusText}`);
       }
-      
+
       const data = await response.json();
-      
+
       if (data.error) {
         throw new Error(`Helius API error: ${data.error.message}`);
       }
-      
+
       return data.result;
     });
   } catch (error) {
@@ -172,9 +172,9 @@ export const heliusApiCall = async (endpoint: string, data: any = {}): Promise<a
     // Track API usage
     apiUsageStats.dailyRequests++;
     apiUsageStats.requestsPerEndpoint[endpoint] = (apiUsageStats.requestsPerEndpoint[endpoint] || 0) + 1;
-    
+
     const cacheKey = `helius_api_${endpoint}_${JSON.stringify(data)}`;
-    
+
     return await getCachedOrFetch(cacheKey, async () => {
       const url = `${HELIUS_API_BASE}/${endpoint}?api-key=${HELIUS_API_KEY}`;
       const response = await fetchWithTimeout(url, {
@@ -183,11 +183,11 @@ export const heliusApiCall = async (endpoint: string, data: any = {}): Promise<a
         body: JSON.stringify(data),
         timeout: 10000
       });
-      
+
       if (!response.ok) {
         throw new Error(`Helius API error: ${response.statusText}`);
       }
-      
+
       return await response.json();
     });
   } catch (error) {
@@ -220,26 +220,46 @@ export const getApiUsageStats = async (): Promise<ApiUsageStats> => {
 /**
  * Get SOL price
  */
+// Store the last successfully fetched SOL price
+let lastKnownSolPrice: number | null = null;
+
 export const getSolPrice = async (): Promise<number> => {
   try {
     // Track API usage
     apiUsageStats.dailyRequests++;
     apiUsageStats.apiCalls['getSolPrice'] = (apiUsageStats.apiCalls['getSolPrice'] || 0) + 1;
-    
-    return await getCachedOrFetch('sol_price', async () => {
+
+    const price = await getCachedOrFetch('sol_price', async () => {
       const response = await fetchWithTimeout(`${JUPITER_API_BASE}/price?ids=SOL`, {
         timeout: 5000
       });
-      
+
       if (!response.ok) {
         throw new Error(`Jupiter API error: ${response.statusText}`);
       }
-      
+
       const data = await response.json();
-      return data?.data?.SOL?.price || 0;
+      const solPrice = data?.data?.SOL?.price || 0;
+
+      // Store the successfully fetched price for future fallbacks
+      if (solPrice > 0) {
+        lastKnownSolPrice = solPrice;
+      }
+
+      return solPrice;
     });
+
+    return price;
   } catch (error) {
     handleApiError(error, 'getting SOL price');
+
+    // Use last known price if available, otherwise use a reasonable estimate
+    if (lastKnownSolPrice !== null && lastKnownSolPrice > 0) {
+      console.log('Using last known SOL price:', lastKnownSolPrice);
+      return lastKnownSolPrice;
+    }
+
+    // If we've never successfully fetched a price, use a reasonable estimate
     return 100; // Fallback to estimated price to prevent UI issues
   }
 };
@@ -247,27 +267,44 @@ export const getSolPrice = async (): Promise<number> => {
 /**
  * Get token 24h price change
  */
+// Store the last successfully fetched 24h changes
+const lastKnown24hChanges: Record<string, number> = {};
+
 export const getToken24hChange = async (tokenSymbol: string): Promise<number> => {
   try {
     // Track API usage
     apiUsageStats.dailyRequests++;
     apiUsageStats.apiCalls['getToken24hChange'] = (apiUsageStats.apiCalls['getToken24hChange'] || 0) + 1;
-    
-    return await getCachedOrFetch(`${tokenSymbol}_24h_change`, async () => {
+
+    const change = await getCachedOrFetch(`${tokenSymbol}_24h_change`, async () => {
       const response = await fetchWithTimeout(`${JUPITER_API_BASE}/price?ids=${tokenSymbol}`, {
         timeout: 5000
       });
-      
+
       if (!response.ok) {
         throw new Error(`Jupiter API error: ${response.statusText}`);
       }
-      
+
       const data = await response.json();
-      return data?.data?.[tokenSymbol]?.priceChange24h || 0;
+      const priceChange = data?.data?.[tokenSymbol]?.priceChange24h || 0;
+
+      // Store the successfully fetched change for future fallbacks
+      lastKnown24hChanges[tokenSymbol] = priceChange;
+
+      return priceChange;
     });
+
+    return change;
   } catch (error) {
     handleApiError(error, `getting ${tokenSymbol} 24h change`);
-    return 0;
+
+    // Use last known change if available
+    if (lastKnown24hChanges[tokenSymbol] !== undefined) {
+      console.log(`Using last known ${tokenSymbol} 24h change:`, lastKnown24hChanges[tokenSymbol]);
+      return lastKnown24hChanges[tokenSymbol];
+    }
+
+    return 0; // Default to 0% change if no data is available
   }
 };
 
@@ -279,43 +316,43 @@ export const getTokenPrices = async (tokenAddresses: string[]): Promise<Record<s
     // Track API usage
     apiUsageStats.dailyRequests++;
     apiUsageStats.apiCalls['getTokenPrices'] = (apiUsageStats.apiCalls['getTokenPrices'] || 0) + 1;
-    
+
     if (!tokenAddresses || tokenAddresses.length === 0) {
       return {};
     }
-    
+
     const cacheKey = `token_prices_${tokenAddresses.join('_')}`;
-    
+
     return await getCachedOrFetch(cacheKey, async () => {
       const addresses = tokenAddresses.join(',');
       const response = await fetchWithTimeout(`${JUPITER_API_BASE}/price?ids=${addresses}`, {
         timeout: 8000
       });
-      
+
       if (!response.ok) {
         throw new Error(`Jupiter API error: ${response.statusText}`);
       }
-      
+
       const data = await response.json();
-      
+
       const prices: Record<string, number> = {};
       if (data?.data) {
         for (const address of tokenAddresses) {
           prices[address] = data.data[address]?.price || 0;
         }
       }
-      
+
       return prices;
     });
   } catch (error) {
     handleApiError(error, 'getting token prices');
-    
+
     // Return empty object with 0 prices for all requested tokens
     const fallbackPrices: Record<string, number> = {};
     tokenAddresses.forEach(address => {
       fallbackPrices[address] = 0;
     });
-    
+
     return fallbackPrices;
   }
 };
@@ -325,23 +362,23 @@ export const getTokenPrices = async (tokenAddresses: string[]): Promise<Record<s
  */
 export const handleApiError = (error: any, context: string): void => {
   console.error(`API Error (${context}):`, error);
-  
+
   // Determine if it's a rate limit error
-  const isRateLimit = error?.response?.status === 429 || 
+  const isRateLimit = error?.response?.status === 429 ||
                       error?.message?.includes('rate limit') ||
                       error?.message?.includes('too many requests');
-  
+
   // Determine if it's a timeout
-  const isTimeout = error?.name === 'AbortError' || 
+  const isTimeout = error?.name === 'AbortError' ||
                     error?.message?.includes('timeout') ||
                     error?.message?.includes('aborted');
-  
+
   // Only show toast for rate limit errors or timeouts (not connection failures)
   if (isRateLimit || isTimeout) {
-    const toastMessage = isRateLimit 
+    const toastMessage = isRateLimit
       ? `Rate limit reached for ${context}. Please try again later.`
       : `Request timeout for ${context}. Network may be slow.`;
-      
+
     toast({
       title: isRateLimit ? "API Rate Limit Exceeded" : "API Request Timeout",
       description: toastMessage,

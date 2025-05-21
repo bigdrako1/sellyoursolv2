@@ -4,30 +4,39 @@ import { Card } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { ChevronUp, TrendingUp, ArrowRight, Loader2 } from "lucide-react";
+import { useCurrencyStore } from "@/store/currencyStore";
+import { convertUsdToCurrency, formatCurrency } from "@/utils/currencyUtils";
 
 const CustomTooltip = ({ active, payload, label }: any) => {
+  const { currency, currencySymbol } = useCurrencyStore();
+
   if (active && payload && payload.length) {
     return (
       <div className="bg-trading-darkAccent p-3 border border-white/10 rounded shadow-lg">
         <p className="text-sm font-medium mb-1">{label}</p>
         <p className="text-sm text-trading-highlight">
-          <span className="font-bold">${payload[0].value.toFixed(2)}</span>
+          <span className="font-bold">
+            {formatCurrency(payload[0].value, currency, currencySymbol, { maximumFractionDigits: 2 })}
+          </span>
           <span className="text-xs ml-1">Portfolio Value</span>
         </p>
         {payload[1] && (
           <p className="text-sm text-gray-400">
-            <span className="font-medium">${payload[1].value.toFixed(2)}</span>
+            <span className="font-medium">
+              {formatCurrency(payload[1].value, currency, currencySymbol, { maximumFractionDigits: 2 })}
+            </span>
             <span className="text-xs ml-1">Market Benchmark</span>
           </p>
         )}
       </div>
     );
   }
-  
+
   return null;
 };
 
 const PerformanceMetrics = () => {
+  const { currency, currencySymbol } = useCurrencyStore();
   const [timeframe, setTimeframe] = useState("1m");
   const [loading, setLoading] = useState(false);
   const [performanceData, setPerformanceData] = useState<any[]>([]);
@@ -37,12 +46,17 @@ const PerformanceMetrics = () => {
     winRate: 0,
     sharpeRatio: 0
   });
-  
+
+  // Format currency with symbol and proper formatting
+  const formatCurrencyValue = (value: number, options = {}): string => {
+    return formatCurrency(value, currency, currencySymbol, options);
+  };
+
   // Handle timeframe change
   const fetchPerformanceData = (newTimeframe: string) => {
     setTimeframe(newTimeframe);
     setLoading(true);
-    
+
     // In a real app, this would fetch data from an API
     // For now, just show empty state after loading
     setTimeout(() => {
@@ -56,7 +70,7 @@ const PerformanceMetrics = () => {
       setLoading(false);
     }, 500);
   };
-  
+
   return (
     <Card className="trading-card">
       <div className="p-4">
@@ -71,7 +85,7 @@ const PerformanceMetrics = () => {
             </TabsList>
           </Tabs>
         </div>
-        
+
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
           <div className="bg-black/20 p-3 rounded-lg">
             <div className="text-sm text-gray-400">Total Growth</div>
@@ -82,17 +96,17 @@ const PerformanceMetrics = () => {
               )}
             </div>
           </div>
-          
+
           <div className="bg-black/20 p-3 rounded-lg">
             <div className="text-sm text-gray-400">Daily Return</div>
             <div className="text-xl font-bold">{performanceStats.averageDailyReturn.toFixed(2)}%</div>
           </div>
-          
+
           <div className="bg-black/20 p-3 rounded-lg">
             <div className="text-sm text-gray-400">Win Rate</div>
             <div className="text-xl font-bold">{performanceStats.winRate.toFixed(1)}%</div>
           </div>
-          
+
           <div className="bg-black/20 p-3 rounded-lg">
             <div className="text-sm text-gray-400">Sharpe Ratio</div>
             <div className="flex items-center">
@@ -103,7 +117,7 @@ const PerformanceMetrics = () => {
             </div>
           </div>
         </div>
-        
+
         <div className="h-60 w-full">
           {loading ? (
             <div className="flex flex-col items-center justify-center h-full">
@@ -117,41 +131,44 @@ const PerformanceMetrics = () => {
                 margin={{ top: 5, right: 5, left: 5, bottom: 5 }}
               >
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.1)" />
-                <XAxis 
-                  dataKey="date" 
+                <XAxis
+                  dataKey="date"
                   tick={{ fontSize: 10, fill: '#9ca3af' }}
                   axisLine={{ stroke: 'rgba(255,255,255,0.1)' }}
                   tickLine={false}
                   minTickGap={30}
                 />
-                <YAxis 
+                <YAxis
                   domain={['auto', 'auto']}
                   tick={{ fontSize: 10, fill: '#9ca3af' }}
                   axisLine={false}
                   tickLine={false}
-                  width={40}
-                  tickFormatter={(value) => `$${value.toFixed(0)}`}
+                  width={50}
+                  tickFormatter={(value) => {
+                    const convertedValue = convertUsdToCurrency(value, currency);
+                    return `${currencySymbol}${convertedValue.toFixed(0)}`;
+                  }}
                 />
                 <Tooltip content={<CustomTooltip />} />
-                <Legend 
-                  iconType="circle" 
+                <Legend
+                  iconType="circle"
                   iconSize={8}
                   wrapperStyle={{ fontSize: '12px', bottom: 0 }}
                 />
-                <Line 
-                  type="monotone" 
-                  dataKey="value" 
-                  name="Portfolio Performance" 
-                  stroke="#6366f1" 
+                <Line
+                  type="monotone"
+                  dataKey="value"
+                  name="Portfolio Performance"
+                  stroke="#6366f1"
                   strokeWidth={2}
                   dot={false}
                   activeDot={{ r: 4, fill: '#6366f1', stroke: 'white', strokeWidth: 1 }}
                 />
-                <Line 
-                  type="monotone" 
-                  dataKey="comparative" 
-                  name="Market Benchmark" 
-                  stroke="#9ca3af" 
+                <Line
+                  type="monotone"
+                  dataKey="comparative"
+                  name="Market Benchmark"
+                  stroke="#9ca3af"
                   strokeWidth={1.5}
                   dot={false}
                   strokeDasharray="4 4"
@@ -168,7 +185,7 @@ const PerformanceMetrics = () => {
             </div>
           )}
         </div>
-        
+
         <div className="flex justify-end mt-3">
           <div className="flex items-center text-trading-highlight text-sm cursor-pointer">
             View Detailed Analytics <ArrowRight size={14} className="ml-1" />

@@ -6,6 +6,7 @@ import { useCurrencyStore } from "@/store/currencyStore";
 import { useEffect, useState } from "react";
 import { getConnectedWallet } from "@/utils/walletUtils";
 import { heliusApiCall } from "@/utils/apiUtils";
+import { convertUsdToCurrency, formatCurrency } from "@/utils/currencyUtils";
 
 interface PortfolioOverviewProps {
   walletData: any;
@@ -19,25 +20,25 @@ const PortfolioOverview = ({ walletData }: PortfolioOverviewProps) => {
     changePercentage: 0,
     allocation: [] as any[]
   });
-  
+
   useEffect(() => {
     const fetchPortfolioData = async () => {
       const walletAddress = getConnectedWallet();
-      
+
       if (walletAddress) {
         try {
           // Fetch wallet token balances from Helius
           const balanceResponse = await heliusApiCall("getTokenBalances", [walletAddress]);
-          
+
           if (balanceResponse) {
             // Calculate total value from token balances
             let totalValue = 0;
             let solanaValue = 0;
-            
+
             // Calculate native SOL value
             if (balanceResponse.nativeBalance) {
               const solBalance = balanceResponse.nativeBalance / 1e9; // lamports to SOL
-              
+
               try {
                 // Get SOL price
                 const solPriceResponse = await fetch("https://price.jup.ag/v4/price?ids=SOL");
@@ -45,7 +46,7 @@ const PortfolioOverview = ({ walletData }: PortfolioOverviewProps) => {
                   const solPriceData = await solPriceResponse.json();
                   const solPrice = solPriceData?.data?.SOL?.price || 0;
                   const solValue = solBalance * solPrice;
-                  
+
                   totalValue += solValue;
                   solanaValue += solValue;
                 }
@@ -53,7 +54,7 @@ const PortfolioOverview = ({ walletData }: PortfolioOverviewProps) => {
                 console.error("Failed to fetch SOL price:", error);
               }
             }
-            
+
             // Calculate token values
             if (balanceResponse.tokens && Array.isArray(balanceResponse.tokens)) {
               for (const token of balanceResponse.tokens) {
@@ -62,10 +63,10 @@ const PortfolioOverview = ({ walletData }: PortfolioOverviewProps) => {
                   if (priceResponse.ok) {
                     const priceData = await priceResponse.json();
                     const price = priceData?.data?.[token.mint]?.price || 0;
-                    
+
                     const balance = token.amount / Math.pow(10, token.decimals);
                     const value = balance * price;
-                    
+
                     totalValue += value;
                     solanaValue += value;
                   }
@@ -74,7 +75,7 @@ const PortfolioOverview = ({ walletData }: PortfolioOverviewProps) => {
                 }
               }
             }
-            
+
             // Create portfolio data object
             const newPortfolioData = {
               totalValue,
@@ -89,7 +90,7 @@ const PortfolioOverview = ({ walletData }: PortfolioOverviewProps) => {
                 }
               ]
             };
-            
+
             setPortfolioData(newPortfolioData);
           }
         } catch (error) {
@@ -97,20 +98,18 @@ const PortfolioOverview = ({ walletData }: PortfolioOverviewProps) => {
         }
       }
     };
-    
+
     fetchPortfolioData();
   }, []);
 
-  // Convert USD values to the selected currency
+  // Use the utility function for currency conversion
   const convertToCurrency = (value: number): number => {
-    const rates = {
-      USD: 1,
-      EUR: 0.92,
-      GBP: 0.79,
-      JPY: 150.56
-    };
-    
-    return value * (rates[currency as keyof typeof rates] || 1);
+    return convertUsdToCurrency(value, currency);
+  };
+
+  // Format currency with symbol and proper formatting
+  const formatCurrencyValue = (value: number, options = {}): string => {
+    return formatCurrency(value, currency, currencySymbol, options);
   };
 
   const positive = portfolioData.change24h >= 0;
@@ -122,11 +121,11 @@ const PortfolioOverview = ({ walletData }: PortfolioOverviewProps) => {
           <div>
             <h2 className="text-lg text-gray-400 mb-2">Total Portfolio Value</h2>
             <div className="flex items-center gap-3">
-              <span className="text-3xl font-bold">{currencySymbol}{convertToCurrency(portfolioData.totalValue).toLocaleString()}</span>
+              <span className="text-3xl font-bold">{formatCurrencyValue(portfolioData.totalValue)}</span>
               <div className={`flex items-center ${positive ? 'text-trading-success' : 'text-trading-danger'}`}>
                 <span className="text-sm flex items-center">
                   {positive ? <ArrowUpRight size={16} /> : <ArrowDownRight size={16} />}
-                  {currencySymbol}{Math.abs(convertToCurrency(portfolioData.change24h)).toLocaleString()}
+                  {formatCurrencyValue(Math.abs(portfolioData.change24h))}
                 </span>
                 <span className="text-sm ml-1">
                   ({positive ? '+' : '-'}{Math.abs(portfolioData.changePercentage).toFixed(1)}%)
@@ -135,7 +134,7 @@ const PortfolioOverview = ({ walletData }: PortfolioOverviewProps) => {
             </div>
             <p className="text-sm text-gray-400 mt-2">24h Change</p>
           </div>
-          
+
           <div className="grid grid-cols-1 gap-4">
             {portfolioData.allocation && portfolioData.allocation.map((item: any, index: number) => (
               <Card key={index} className="p-4 bg-black/20 border-white/5">
@@ -143,7 +142,7 @@ const PortfolioOverview = ({ walletData }: PortfolioOverviewProps) => {
                   <div className="w-3 h-3 rounded-full bg-solana"></div>
                   <h3 className="font-medium capitalize">Solana</h3>
                 </div>
-                <div className="text-xl font-bold mb-1">{currencySymbol}{convertToCurrency(item.value).toLocaleString()}</div>
+                <div className="text-xl font-bold mb-1">{formatCurrencyValue(item.value)}</div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-gray-400">{item.percentage}%</span>
                   <span className={`text-sm flex items-center ${item.change24h >= 0 ? 'text-trading-success' : 'text-trading-danger'}`}>
