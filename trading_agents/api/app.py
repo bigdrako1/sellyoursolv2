@@ -10,6 +10,7 @@ import asyncio
 
 from api.routes import agent_routes, agent_types_routes
 from core.agent_registry import AgentRegistry
+from core.cache_manager import CacheManager, CacheLevel, InvalidationStrategy
 from database import initialize_database, close_database
 
 # Set up logging
@@ -66,7 +67,45 @@ async def startup_event():
         # Configure resource pool
         resource_pool = execution_engine.resource_pool
         resource_pool.http_pool_size = 30
-        resource_pool.cache_ttl = 120
+        resource_pool.cache_ttl = 300  # 5 minutes default
+
+        # Configure advanced cache
+        cache_config = {
+            "memory_max_size": 10000,
+            "disk_max_size": 100 * 1024 * 1024,  # 100 MB
+            "disk_cache_enabled": True,
+            "disk_cache_dir": "cache",
+            "invalidation_strategy": "lru"
+        }
+        resource_pool.cache_manager = CacheManager(cache_config)
+
+        # Start cache preloader
+        await resource_pool.start_cache_preloader()
+
+        # Register common preload tasks
+        resource_pool.register_preload_task(
+            name="market_data_btc",
+            loader_func=resource_pool.cache_preloader.preload_market_data,
+            interval=60,  # Every minute
+            args=["BTC", "1m", "binance", "https://api.binance.com/api/v3/klines"],
+            kwargs={"params": {"symbol": "BTCUSDT", "interval": "1m", "limit": 100}},
+            cache_key="market_data:BTC:1m",
+            cache_ttl=120,  # 2 minutes
+            tags=["market_data", "BTC"],
+            enabled=True
+        )
+
+        resource_pool.register_preload_task(
+            name="market_data_eth",
+            loader_func=resource_pool.cache_preloader.preload_market_data,
+            interval=60,  # Every minute
+            args=["ETH", "1m", "binance", "https://api.binance.com/api/v3/klines"],
+            kwargs={"params": {"symbol": "ETHUSDT", "interval": "1m", "limit": 100}},
+            cache_key="market_data:ETH:1m",
+            cache_ttl=120,  # 2 minutes
+            tags=["market_data", "ETH"],
+            enabled=True
+        )
 
         # Configure adaptive scheduler
         scheduler = execution_engine.scheduler
@@ -88,8 +127,19 @@ async def shutdown_event():
     logger.info("Shutting down services...")
 
     try:
-        # Stop agent registry
+        # Get registry and resource pool
         registry = AgentRegistry.get_instance()
+        execution_engine = registry.get_execution_engine()
+        resource_pool = execution_engine.resource_pool
+
+        # Stop cache preloader
+        try:
+            await resource_pool.stop_cache_preloader()
+            logger.info("Cache preloader stopped")
+        except Exception as e:
+            logger.error(f"Error stopping cache preloader: {str(e)}")
+
+        # Stop agent registry
         await registry.stop()
         logger.info("Agent registry stopped")
 
