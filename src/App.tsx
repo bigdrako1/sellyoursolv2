@@ -23,6 +23,7 @@ const AutoTrading = lazy(() => import("@/pages/AutoTrading"));
 const WalletTracking = lazy(() => import("@/pages/WalletTracking"));
 const WalletTrackingAnalytics = lazy(() => import("@/pages/WalletTrackingAnalytics"));
 const ConsolidatedDashboard = lazy(() => import("@/pages/ConsolidatedDashboard"));
+const TradingAgents = lazy(() => import("@/pages/TradingAgents"));
 
 // Create Query Client
 const queryClient = new QueryClient({
@@ -92,6 +93,10 @@ const router = createBrowserRouter([
       {
         path: "wallet-tracking/analytics",
         element: LazyComponent(WalletTrackingAnalytics),
+      },
+      {
+        path: "trading-agents",
+        element: LazyComponent(TradingAgents),
       }
     ],
   },

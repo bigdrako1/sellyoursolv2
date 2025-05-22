@@ -1,4 +1,8 @@
 import express from 'express';
+import http from 'http';
+import { Server } from 'socket.io';
+import { AgentServiceClient } from './clients/agentServiceClient';
+import { config } from './config';
 import cors from 'cors';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
@@ -9,6 +13,7 @@ import heliusRoutes from './routes/heliusRoutes';
 import jupiterRoutes from './routes/jupiterRoutes';
 import birdeyeRoutes from './routes/birdeyeRoutes';
 import authRoutes from './routes/authRoutes';
+import agentRoutes from './routes/agentRoutes';
 
 // Load environment variables
 dotenv.config();
@@ -42,6 +47,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/helius', heliusRoutes);
 app.use('/api/jupiter', jupiterRoutes);
 app.use('/api/birdeye', birdeyeRoutes);
+app.use('/api/agents', agentRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {
@@ -57,8 +63,64 @@ app.use((err: Error, req: express.Request, res: express.Response, next: express.
   });
 });
 
+// Create HTTP server
+const server = http.createServer(app);
+
+// Create Socket.IO server
+const io = new Server(server, {
+  cors: {
+    origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+    methods: ['GET', 'POST']
+  }
+});
+
+// Initialize agent service client for WebSocket connections
+const agentServiceClient = new AgentServiceClient(config.agentServiceUrl);
+
+// Set up Socket.IO connection handler
+io.on('connection', (socket) => {
+  console.log('Client connected:', socket.id);
+
+  // Handle agent subscription
+  socket.on('subscribe:agent', async (agentId) => {
+    console.log(`Client ${socket.id} subscribed to agent ${agentId}`);
+
+    // Create room for this agent
+    socket.join(`agent:${agentId}`);
+
+    try {
+      // Connect to agent WebSocket
+      const ws = agentServiceClient.connectToAgentWebSocket(agentId);
+
+      // Forward messages to Socket.IO clients
+      agentServiceClient.on('ws:message', ({ agentId: id, message }) => {
+        if (id === agentId) {
+          io.to(`agent:${agentId}`).emit('agent:update', message);
+        }
+      });
+    } catch (error) {
+      console.error(`Error connecting to agent ${agentId} WebSocket:`, error);
+      socket.emit('agent:error', {
+        agentId,
+        error: 'Failed to connect to agent WebSocket'
+      });
+    }
+  });
+
+  // Handle agent unsubscription
+  socket.on('unsubscribe:agent', (agentId) => {
+    console.log(`Client ${socket.id} unsubscribed from agent ${agentId}`);
+    socket.leave(`agent:${agentId}`);
+  });
+
+  // Handle disconnection
+  socket.on('disconnect', () => {
+    console.log('Client disconnected:', socket.id);
+  });
+});
+
 // Start server
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
 

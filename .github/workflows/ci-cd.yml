@@ -1,0 +1,128 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      # Backend tests
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: 'backend/package-lock.json'
+      
+      - name: Install backend dependencies
+        run: cd backend && npm ci
+      
+      - name: Run backend tests
+        run: cd backend && npm test
+      
+      # Frontend tests
+      - name: Install frontend dependencies
+        run: cd frontend && npm ci
+      
+      - name: Run frontend tests
+        run: cd frontend && npm test
+      
+      # Trading agents tests
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+          cache-dependency-path: 'trading_agents/requirements.txt'
+      
+      - name: Install trading agents dependencies
+        run: cd trading_agents && pip install -r requirements.txt
+      
+      - name: Run trading agents tests
+        run: cd trading_agents && pytest
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      
+      - name: Login to DockerHub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      
+      # Build and push backend image
+      - name: Build and push backend
+        uses: docker/build-push-action@v4
+        with:
+          context: ./backend
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/sellyoursolv2-backend:latest
+      
+      # Build and push frontend image
+      - name: Build and push frontend
+        uses: docker/build-push-action@v4
+        with:
+          context: ./frontend
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/sellyoursolv2-frontend:latest
+          build-args: |
+            VITE_API_URL=${{ secrets.API_URL }}
+            VITE_WS_URL=${{ secrets.WS_URL }}
+      
+      # Build and push trading agents image
+      - name: Build and push trading agents
+        uses: docker/build-push-action@v4
+        with:
+          context: ./trading_agents
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/sellyoursolv2-trading-agents:latest
+
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: Deploy to production server
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd /opt/sellyoursolv2
+            
+            # Pull latest code
+            git pull
+            
+            # Pull latest Docker images
+            docker-compose pull
+            
+            # Update environment variables
+            echo "${{ secrets.ENV_FILE }}" > .env
+            
+            # Restart services
+            docker-compose up -d
+            
+            # Clean up unused images
+            docker image prune -f

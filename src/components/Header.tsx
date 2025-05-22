@@ -16,7 +16,8 @@ import {
   Zap,
   Activity,
   AlertTriangle,
-  LogOut
+  LogOut,
+  Bot
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
@@ -36,6 +37,7 @@ const navItems: NavItem[] = [
   { path: "/portfolio", label: "Portfolio", icon: <BarChart2 size={18} /> },
   { path: "/tokens", label: "Tokens", icon: <Coins size={18} /> },
   { path: "/wallet-tracking", label: "Wallets", icon: <Wallet size={18} /> },
+  { path: "/trading-agents", label: "Agents", icon: <Bot size={18} /> },
   { path: "/settings", label: "Settings", icon: <Settings size={18} /> }
 ];
 
