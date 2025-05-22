@@ -6,7 +6,7 @@ import { getActiveApiConfig } from "@/config/appDefinition";
 import { TokenTracker } from "@/components/token";
 import { WalletTracker } from "@/components/wallet";
 import { TradeAlerts } from "@/components/alerts";
-import { HeliusApiConfig } from "@/components/api";
+import HeliusSetup from "@/components/HeliusSetup";
 import AutoTradeSimple from "@/components/AutoTradeSimple";
 import { StrategyManager } from "@/components/trading";
 import SmartMoneyAlerts from "@/components/smart-money/SmartMoneyAlerts";
@@ -102,10 +102,7 @@ const AutoTrading = () => {
 
       {!apiKeyConfigured && (
         <div className="mb-6">
-          <HeliusApiConfig
-            onApiKeySet={handleApiKeySet}
-            showConnectionStatus={true}
-          />
+          <HeliusSetup onApiKeySet={handleApiKeySet} />
         </div>
       )}
 

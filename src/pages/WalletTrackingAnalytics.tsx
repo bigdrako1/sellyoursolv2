@@ -2,240 +2,155 @@ import React from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
-import Breadcrumbs from "@/components/Breadcrumbs";
-import {
-  BarChart3,
-  LineChart,
-  PieChart,
-  Calendar,
-  Wallet,
-  ArrowLeft,
-  Download,
-  RefreshCw
-} from "lucide-react";
+import { ArrowLeft, BarChart3, Wallet, Activity, LineChart } from "lucide-react";
 import { Link } from "react-router-dom";
 
-// Mock data for wallet analytics
-const walletData = {
-  address: "3FTHyP7TLcqd6C969eGHQ2QfnpRFmfqbKA2MnzTcf3j9",
-  alias: "Whale Trader 1",
-  stats: {
-    totalTrades: 47,
-    successRate: 88,
-    avgHoldTime: "3.2 days",
-    profitLoss: "+324%",
-    balance: "$1,250,000",
-    tokens: 12
-  },
-  recentActivity: [
-    { date: "2023-11-01", action: "Buy", token: "SOL", amount: 1200, price: "$120.45" },
-    { date: "2023-11-02", action: "Sell", token: "BONK", amount: 15000000, price: "$0.00002" },
-    { date: "2023-11-03", action: "Buy", token: "JUP", amount: 5000, price: "$1.23" },
-    { date: "2023-11-04", action: "Buy", token: "PYTH", amount: 2500, price: "$0.45" },
-    { date: "2023-11-05", action: "Sell", token: "JUP", amount: 5000, price: "$1.56" }
-  ]
-};
-
 const WalletTrackingAnalytics: React.FC = () => {
-  const [activeTab, setActiveTab] = React.useState("overview");
-  const [timeRange, setTimeRange] = React.useState("30d");
-
   return (
-    <div className="space-y-6">
-      <Breadcrumbs items={[
-        { label: "Auto Trading", path: "/auto-trading" },
-        { label: "Wallet Tracking", path: "/wallet-tracking" },
-        { label: "Analytics", path: "/wallet-tracking/analytics" }
-      ]} />
-
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Wallet Analytics</h1>
-          <p className="text-sm text-gray-400 mt-1">
-            Detailed analysis of wallet trading patterns and performance
-          </p>
-        </div>
-
-        <div className="flex gap-2">
+    <div className="container mx-auto py-6">
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-2">
           <Link to="/wallet-tracking">
-            <Button variant="outline" className="bg-trading-darkAccent border-white/10 hover:bg-white/10">
-              <ArrowLeft size={16} className="mr-2" />
-              Back to Wallets
+            <Button variant="outline" size="sm">
+              <ArrowLeft className="h-4 w-4 mr-1" />
+              Back to Wallet Tracking
             </Button>
           </Link>
-
-          <Button>
-            <RefreshCw size={16} className="mr-2" />
-            Refresh Data
-          </Button>
+          <h2 className="text-3xl font-bold">Wallet Analytics</h2>
         </div>
       </div>
-
-      <Card className="card-with-border">
+      
+      <Card className="mb-6">
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Wallet className="h-5 w-5 text-blue-400" />
-              <CardTitle>{walletData.alias}</CardTitle>
-            </div>
-            <Badge variant="outline" className="bg-purple-900/20 text-purple-300 border-purple-500/20">
-              Solana
-            </Badge>
-          </div>
-          <CardDescription className="font-mono">
-            {walletData.address}
+          <CardTitle className="flex items-center gap-2">
+            <BarChart3 className="h-5 w-5 text-blue-500" />
+            Wallet Performance Analytics
+          </CardTitle>
+          <CardDescription>
+            Detailed analytics for tracked wallets and their trading performance
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            <Card className="bg-trading-darkAccent border-white/5">
-              <CardContent className="pt-6">
-                <div className="text-xs text-gray-400">Total Trades</div>
-                <div className="text-2xl font-bold mt-1">{walletData.stats.totalTrades}</div>
-              </CardContent>
-            </Card>
-            <Card className="bg-trading-darkAccent border-white/5">
-              <CardContent className="pt-6">
-                <div className="text-xs text-gray-400">Success Rate</div>
-                <div className="text-2xl font-bold mt-1 text-green-500">{walletData.stats.successRate}%</div>
-              </CardContent>
-            </Card>
-            <Card className="bg-trading-darkAccent border-white/5">
-              <CardContent className="pt-6">
-                <div className="text-xs text-gray-400">Profit/Loss</div>
-                <div className="text-2xl font-bold mt-1 text-green-500">{walletData.stats.profitLoss}</div>
-              </CardContent>
-            </Card>
-          </div>
-
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="bg-black/20 border-white/10 border">
-              <TabsTrigger value="overview" className="gap-1">
-                <BarChart3 size={14} /> Overview
-              </TabsTrigger>
-              <TabsTrigger value="trades" className="gap-1">
-                <LineChart size={14} /> Trades
-              </TabsTrigger>
-              <TabsTrigger value="tokens" className="gap-1">
-                <PieChart size={14} /> Tokens
-              </TabsTrigger>
-              <TabsTrigger value="calendar" className="gap-1">
-                <Calendar size={14} /> Calendar
-              </TabsTrigger>
+          <Tabs defaultValue="overview">
+            <TabsList className="mb-4">
+              <TabsTrigger value="overview">Overview</TabsTrigger>
+              <TabsTrigger value="trades">Trade History</TabsTrigger>
+              <TabsTrigger value="tokens">Token Allocation</TabsTrigger>
             </TabsList>
-
-            <div className="flex justify-end mt-4 mb-2">
-              <div className="flex bg-black/20 rounded-md p-1">
-                <Button 
-                  variant={timeRange === "7d" ? "default" : "ghost"} 
-                  size="sm"
-                  className="text-xs"
-                  onClick={() => setTimeRange("7d")}
-                >
-                  7D
-                </Button>
-                <Button 
-                  variant={timeRange === "30d" ? "default" : "ghost"} 
-                  size="sm"
-                  className="text-xs"
-                  onClick={() => setTimeRange("30d")}
-                >
-                  30D
-                </Button>
-                <Button 
-                  variant={timeRange === "90d" ? "default" : "ghost"} 
-                  size="sm"
-                  className="text-xs"
-                  onClick={() => setTimeRange("90d")}
-                >
-                  90D
-                </Button>
-                <Button 
-                  variant={timeRange === "all" ? "default" : "ghost"} 
-                  size="sm"
-                  className="text-xs"
-                  onClick={() => setTimeRange("all")}
-                >
-                  All
-                </Button>
+            
+            <TabsContent value="overview">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="text-2xl font-bold">$127,492</div>
+                    <p className="text-sm text-muted-foreground">Total Value Tracked</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="text-2xl font-bold text-green-500">+24.8%</div>
+                    <p className="text-sm text-muted-foreground">30-Day Performance</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="text-2xl font-bold">7</div>
+                    <p className="text-sm text-muted-foreground">Active Wallets Tracked</p>
+                  </CardContent>
+                </Card>
               </div>
-            </div>
-
-            <TabsContent value="overview" className="mt-4">
-              <div className="bg-black/20 rounded-lg p-4 h-64 flex items-center justify-center">
-                <div className="text-center">
-                  <BarChart3 size={48} className="mx-auto mb-4 text-gray-500" />
-                  <p className="text-gray-400">Wallet performance chart would appear here</p>
-                  <p className="text-xs text-gray-500 mt-2">
-                    Showing data for the last {timeRange === "7d" ? "7 days" : timeRange === "30d" ? "30 days" : timeRange === "90d" ? "90 days" : "all time"}
-                  </p>
+              
+              <div className="bg-card p-4 rounded-lg border mb-4">
+                <h3 className="text-lg font-medium mb-2">Performance Summary</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Tracked wallets have outperformed the market by 18.3% over the last 30 days.
+                </p>
+                <div className="h-64 bg-muted/20 rounded-md flex items-center justify-center">
+                  <LineChart className="h-8 w-8 text-muted" />
+                  <span className="ml-2 text-muted">Performance chart will appear here</span>
                 </div>
               </div>
             </TabsContent>
-
-            <TabsContent value="trades" className="mt-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Recent Trades</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="bg-black/20 rounded-lg overflow-hidden">
-                    <table className="w-full">
-                      <thead>
-                        <tr className="text-xs text-gray-400 border-b border-white/5">
-                          <th className="px-4 py-2 text-left">Date</th>
-                          <th className="px-4 py-2 text-left">Action</th>
-                          <th className="px-4 py-2 text-left">Token</th>
-                          <th className="px-4 py-2 text-right">Amount</th>
-                          <th className="px-4 py-2 text-right">Price</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {walletData.recentActivity.map((activity, index) => (
-                          <tr key={index} className="border-b border-white/5 hover:bg-white/5">
-                            <td className="px-4 py-3">{activity.date}</td>
-                            <td className="px-4 py-3">
-                              <Badge variant="outline" className={
-                                activity.action === "Buy" 
-                                  ? "bg-green-900/20 text-green-400 border-green-500/20" 
-                                  : "bg-red-900/20 text-red-400 border-red-500/20"
-                              }>
-                                {activity.action}
-                              </Badge>
-                            </td>
-                            <td className="px-4 py-3">{activity.token}</td>
-                            <td className="px-4 py-3 text-right">{activity.amount.toLocaleString()}</td>
-                            <td className="px-4 py-3 text-right">{activity.price}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+            
+            <TabsContent value="trades">
+              <div className="bg-card p-4 rounded-lg border mb-4">
+                <h3 className="text-lg font-medium mb-2">Recent Trades</h3>
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b">
+                        <th className="text-left py-2">Wallet</th>
+                        <th className="text-left py-2">Token</th>
+                        <th className="text-left py-2">Type</th>
+                        <th className="text-right py-2">Amount</th>
+                        <th className="text-right py-2">Value</th>
+                        <th className="text-right py-2">Time</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr className="border-b">
+                        <td className="py-2">B8oM...hXHyQT</td>
+                        <td className="py-2">BONK</td>
+                        <td className="py-2 text-green-500">Buy</td>
+                        <td className="py-2 text-right">2,500,000</td>
+                        <td className="py-2 text-right">$1,250</td>
+                        <td className="py-2 text-right">2h ago</td>
+                      </tr>
+                      <tr className="border-b">
+                        <td className="py-2">HxFL...yfhm</td>
+                        <td className="py-2">JTO</td>
+                        <td className="py-2 text-red-500">Sell</td>
+                        <td className="py-2 text-right">45</td>
+                        <td className="py-2 text-right">$890</td>
+                        <td className="py-2 text-right">5h ago</td>
+                      </tr>
+                      <tr className="border-b">
+                        <td className="py-2">B8oM...hXHyQT</td>
+                        <td className="py-2">WIF</td>
+                        <td className="py-2 text-green-500">Buy</td>
+                        <td className="py-2 text-right">1,200</td>
+                        <td className="py-2 text-right">$3,600</td>
+                        <td className="py-2 text-right">8h ago</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="tokens">
+              <div className="bg-card p-4 rounded-lg border mb-4">
+                <h3 className="text-lg font-medium mb-2">Token Allocation</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="h-64 bg-muted/20 rounded-md flex items-center justify-center">
+                    <Activity className="h-8 w-8 text-muted" />
+                    <span className="ml-2 text-muted">Allocation chart will appear here</span>
                   </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="tokens" className="mt-4">
-              <div className="bg-black/20 rounded-lg p-4 h-64 flex items-center justify-center">
-                <div className="text-center">
-                  <PieChart size={48} className="mx-auto mb-4 text-gray-500" />
-                  <p className="text-gray-400">Token allocation chart would appear here</p>
-                  <p className="text-xs text-gray-500 mt-2">
-                    Showing data for the last {timeRange === "7d" ? "7 days" : timeRange === "30d" ? "30 days" : timeRange === "90d" ? "90 days" : "all time"}
-                  </p>
-                </div>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="calendar" className="mt-4">
-              <div className="bg-black/20 rounded-lg p-4 h-64 flex items-center justify-center">
-                <div className="text-center">
-                  <Calendar size={48} className="mx-auto mb-4 text-gray-500" />
-                  <p className="text-gray-400">Trading activity calendar would appear here</p>
-                  <p className="text-xs text-gray-500 mt-2">
-                    Showing data for the last {timeRange === "7d" ? "7 days" : timeRange === "30d" ? "30 days" : timeRange === "90d" ? "90 days" : "all time"}
-                  </p>
+                  <div>
+                    <h4 className="text-sm font-medium mb-2">Top Holdings</h4>
+                    <ul className="space-y-2">
+                      <li className="flex justify-between">
+                        <span>SOL</span>
+                        <span>42.5%</span>
+                      </li>
+                      <li className="flex justify-between">
+                        <span>JTO</span>
+                        <span>18.3%</span>
+                      </li>
+                      <li className="flex justify-between">
+                        <span>BONK</span>
+                        <span>12.7%</span>
+                      </li>
+                      <li className="flex justify-between">
+                        <span>WIF</span>
+                        <span>8.2%</span>
+                      </li>
+                      <li className="flex justify-between">
+                        <span>Other</span>
+                        <span>18.3%</span>
+                      </li>
+                    </ul>
+                  </div>
                 </div>
               </div>
             </TabsContent>

@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import ApiKeyDescription from "@/components/ApiKeyDescription";
 import ApiUsageMonitor from "@/components/ApiUsageMonitor";
-import { HeliusApiConfig } from "@/components/api";
+import HeliusSetup from "@/components/HeliusSetup";
 import ConnectedServices from "@/components/ConnectedServices";
 import WebhookMonitor from "@/components/WebhookMonitor";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -109,7 +109,7 @@ const Settings = () => {
 
         <TabsContent value="apis" className="space-y-6">
           <ApiKeyDescription />
-          <HeliusApiConfig showConnectionStatus={true} />
+          <HeliusSetup />
           <ApiUsageMonitor />
         </TabsContent>
 
