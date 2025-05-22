@@ -6,8 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { MessageSquare, AlertCircle, LogOut, Phone } from "lucide-react";
 import { toast } from "sonner";
-import { 
-  authenticateTelegramUser, 
+import {
+  authenticateTelegramUser,
   getTelegramSession,
   signOutFromTelegram,
   isAuthenticatedWithTelegram,
@@ -24,7 +24,7 @@ const TelegramAuthentication: React.FC<TelegramAuthenticationProps> = ({ onAuthe
   const [step, setStep] = useState<'phone' | 'code'>('phone');
   const [isLoading, setIsLoading] = useState(false);
   const [session, setSession] = useState<TelegramUserSession | null>(null);
-  
+
   // Check for existing session on component mount
   useEffect(() => {
     const existingSession = getTelegramSession();
@@ -33,21 +33,28 @@ const TelegramAuthentication: React.FC<TelegramAuthenticationProps> = ({ onAuthe
       onAuthenticationChange?.(true);
     }
   }, [onAuthenticationChange]);
-  
+
   const handleSendCode = async () => {
-    if (!phone || phone.length < 10) {
-      toast.error("Invalid phone number", {
-        description: "Please enter a valid phone number"
+    if (!phone) {
+      toast.error("Phone number required", {
+        description: "Please enter your phone number"
       });
       return;
     }
-    
+
+    // Clean up phone number - remove spaces and ensure it has a + prefix
+    const cleanedPhone = phone.replace(/\s+/g, '');
+    const formattedPhone = cleanedPhone.startsWith('+') ? cleanedPhone : `+${cleanedPhone}`;
+    setPhone(formattedPhone);
+
     setIsLoading(true);
-    
+
     try {
-      await authenticateTelegramUser(phone);
+      console.log(`Attempting to send verification code to: ${formattedPhone}`);
+      await authenticateTelegramUser(formattedPhone);
       setStep('code');
     } catch (error) {
+      console.error("Failed to send verification code:", error);
       toast.error("Failed to send code", {
         description: error instanceof Error ? error.message : "Unknown error occurred"
       });
@@ -55,22 +62,28 @@ const TelegramAuthentication: React.FC<TelegramAuthenticationProps> = ({ onAuthe
       setIsLoading(false);
     }
   };
-  
+
   const handleVerifyCode = async () => {
-    if (!code || code.length < 5) {
-      toast.error("Invalid code", {
-        description: "Please enter a valid verification code"
+    if (!code) {
+      toast.error("Verification code required", {
+        description: "Please enter the verification code sent to your phone"
       });
       return;
     }
-    
+
     setIsLoading(true);
-    
+
     try {
+      console.log(`Attempting to verify code: ${code} for phone: ${phone}`);
       const sessionData = await authenticateTelegramUser(phone, code);
       setSession(sessionData);
       onAuthenticationChange?.(true);
+
+      toast.success("Telegram connected successfully", {
+        description: "You can now receive notifications and monitor channels"
+      });
     } catch (error) {
+      console.error("Verification failed:", error);
       toast.error("Authentication failed", {
         description: error instanceof Error ? error.message : "Unknown error occurred"
       });
@@ -78,7 +91,7 @@ const TelegramAuthentication: React.FC<TelegramAuthenticationProps> = ({ onAuthe
       setIsLoading(false);
     }
   };
-  
+
   const handleSignOut = () => {
     signOutFromTelegram();
     setSession(null);
@@ -87,7 +100,7 @@ const TelegramAuthentication: React.FC<TelegramAuthenticationProps> = ({ onAuthe
     setCode("");
     onAuthenticationChange?.(false);
   };
-  
+
   if (session?.isAuthenticated) {
     return (
       <Card className="border border-white/10">
@@ -115,8 +128,8 @@ const TelegramAuthentication: React.FC<TelegramAuthenticationProps> = ({ onAuthe
           </div>
         </CardContent>
         <CardFooter>
-          <Button 
-            variant="destructive" 
+          <Button
+            variant="destructive"
             className="w-full"
             onClick={handleSignOut}
             size="sm"
@@ -128,7 +141,7 @@ const TelegramAuthentication: React.FC<TelegramAuthenticationProps> = ({ onAuthe
       </Card>
     );
   }
-  
+
   return (
     <Card className="border border-white/10">
       <CardHeader>
@@ -150,24 +163,24 @@ const TelegramAuthentication: React.FC<TelegramAuthenticationProps> = ({ onAuthe
             </div>
           </div>
         </div>
-        
+
         {step === 'phone' ? (
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="phone">Phone Number</Label>
-              <Input 
+              <Label htmlFor="phone">Phone Number (with country code)</Label>
+              <Input
                 id="phone"
-                placeholder="Enter your phone number with country code" 
+                placeholder="Enter your phone number with country code"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 className="bg-black/20 border-white/10"
               />
-              <p className="text-xs text-gray-400">
-                Example: +12025550123
+              <p className="text-xs text-gray-400 mt-1">
+                Include your country code (e.g., +1 for US, +44 for UK, +91 for India)
               </p>
             </div>
-            <Button 
-              onClick={handleSendCode} 
+            <Button
+              onClick={handleSendCode}
               className="w-full"
               disabled={isLoading}
             >
@@ -183,25 +196,25 @@ const TelegramAuthentication: React.FC<TelegramAuthenticationProps> = ({ onAuthe
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="code">Verification Code</Label>
-              <Input 
+              <Input
                 id="code"
-                placeholder="Enter verification code" 
+                placeholder="Enter verification code"
                 value={code}
                 onChange={(e) => setCode(e.target.value)}
                 className="bg-black/20 border-white/10"
               />
             </div>
             <div className="flex gap-2">
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 onClick={() => setStep('phone')}
                 className="flex-1"
                 disabled={isLoading}
               >
                 Back
               </Button>
-              <Button 
-                onClick={handleVerifyCode} 
+              <Button
+                onClick={handleVerifyCode}
                 className="flex-1"
                 disabled={isLoading}
               >

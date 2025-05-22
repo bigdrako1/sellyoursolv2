@@ -32,5 +32,17 @@ export default defineConfig(({ mode }) => ({
     commonjsOptions: {
       transformMixedEsModules: true,
     },
+    chunkSizeWarningLimit: 800, // Increase from default 500kb to 800kb
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Split vendor chunks
+          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+          'vendor-ui': ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu', '@radix-ui/react-tabs', '@radix-ui/react-slot'],
+          'vendor-charts': ['recharts', 'chart.js'],
+          'vendor-utils': ['date-fns', 'lucide-react', 'sonner'],
+        },
+      },
+    },
   }
 }));

@@ -6,7 +6,6 @@ import { getActiveApiConfig } from "@/config/appDefinition";
 import { TokenTracker } from "@/components/token";
 import { WalletTracker } from "@/components/wallet";
 import { TradeAlerts } from "@/components/alerts";
-import HeliusSetup from "@/components/HeliusSetup";
 import AutoTradeSimple from "@/components/AutoTradeSimple";
 import { StrategyManager } from "@/components/trading";
 import SmartMoneyAlerts from "@/components/smart-money/SmartMoneyAlerts";
@@ -16,6 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Shield, TrendingUp, Bell, Wallet, MessageSquare, Activity } from "lucide-react";
 import { useAppStore } from "@/store/appStore";
 import { Link } from "react-router-dom";
+import { HeliusApiConfig } from "@/components/api";
 
 const AutoTrading = () => {
   const [activeTab, setActiveTab] = useState("overview");
@@ -102,7 +102,7 @@ const AutoTrading = () => {
 
       {!apiKeyConfigured && (
         <div className="mb-6">
-          <HeliusSetup onApiKeySet={handleApiKeySet} />
+          <HeliusApiConfig onApiKeySet={handleApiKeySet} />
         </div>
       )}
 

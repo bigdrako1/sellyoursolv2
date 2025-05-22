@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useSettingsStore } from "@/store/settingsStore";
+import { useNavigate } from "react-router-dom";
 
 export interface SystemControlsProps {
   systemActive: boolean;
@@ -38,10 +39,15 @@ const SystemControls = ({
   const activeTab = useSettingsStore((state) => state.uiState.activeSystemControlTab);
   const setActiveTab = useSettingsStore((state) => state.setActiveSystemControlTab);
 
+  const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [riskLevel, setRiskLevel] = useState(50);
   const [autoRebalance, setAutoRebalance] = useState(true);
   const [stopLossEnabled, setStopLossEnabled] = useState(true);
+
+  const handleAdvancedSettingsClick = () => {
+    navigate('/settings?tab=advanced');
+  };
 
   // Enhanced toggle system function
   const handleToggleSystem = async () => {
@@ -231,7 +237,7 @@ const SystemControls = ({
           <Button
             variant="outline"
             className="w-full bg-black/20 border-white/10"
-            disabled={!systemActive}
+            onClick={handleAdvancedSettingsClick}
           >
             <Settings className="mr-2 h-4 w-4" />
             Advanced Settings

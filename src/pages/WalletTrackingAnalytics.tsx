@@ -1,11 +1,53 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft, BarChart3, Wallet, Activity, LineChart } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 
 const WalletTrackingAnalytics: React.FC = () => {
+  const [searchParams] = useSearchParams();
+  const walletId = searchParams.get('wallet');
+  const viewMode = searchParams.get('view');
+  const [walletData, setWalletData] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    // Simulate fetching wallet data
+    const fetchWalletData = async () => {
+      setIsLoading(true);
+      try {
+        // In a real app, this would be an API call to get wallet data
+        await new Promise(resolve => setTimeout(resolve, 800));
+
+        if (walletId) {
+          // Mock data for a specific wallet
+          setWalletData({
+            id: walletId,
+            alias: `Wallet ${walletId.substring(0, 4)}`,
+            address: `B8oM${walletId}hXHyQT`,
+            balance: 127492,
+            performance: 24.8,
+            trades: 42
+          });
+        } else {
+          // Mock data for all wallets
+          setWalletData({
+            totalValue: 127492,
+            performance: 24.8,
+            walletCount: 7
+          });
+        }
+      } catch (error) {
+        console.error("Error fetching wallet data:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchWalletData();
+  }, [walletId]);
+
   return (
     <div className="container mx-auto py-6">
       <div className="flex items-center justify-between mb-6">
@@ -16,10 +58,12 @@ const WalletTrackingAnalytics: React.FC = () => {
               Back to Wallet Tracking
             </Button>
           </Link>
-          <h2 className="text-3xl font-bold">Wallet Analytics</h2>
+          <h2 className="text-3xl font-bold">
+            {walletId ? `Wallet Analytics: ${isLoading ? 'Loading...' : walletData?.alias || 'Unknown Wallet'}` : 'All Wallets Analytics'}
+          </h2>
         </div>
       </div>
-      
+
       <Card className="mb-6">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -37,7 +81,7 @@ const WalletTrackingAnalytics: React.FC = () => {
               <TabsTrigger value="trades">Trade History</TabsTrigger>
               <TabsTrigger value="tokens">Token Allocation</TabsTrigger>
             </TabsList>
-            
+
             <TabsContent value="overview">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                 <Card>
@@ -59,7 +103,7 @@ const WalletTrackingAnalytics: React.FC = () => {
                   </CardContent>
                 </Card>
               </div>
-              
+
               <div className="bg-card p-4 rounded-lg border mb-4">
                 <h3 className="text-lg font-medium mb-2">Performance Summary</h3>
                 <p className="text-sm text-muted-foreground mb-4">
@@ -71,7 +115,7 @@ const WalletTrackingAnalytics: React.FC = () => {
                 </div>
               </div>
             </TabsContent>
-            
+
             <TabsContent value="trades">
               <div className="bg-card p-4 rounded-lg border mb-4">
                 <h3 className="text-lg font-medium mb-2">Recent Trades</h3>
@@ -117,7 +161,7 @@ const WalletTrackingAnalytics: React.FC = () => {
                 </div>
               </div>
             </TabsContent>
-            
+
             <TabsContent value="tokens">
               <div className="bg-card p-4 rounded-lg border mb-4">
                 <h3 className="text-lg font-medium mb-2">Token Allocation</h3>

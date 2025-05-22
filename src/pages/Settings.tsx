@@ -4,7 +4,6 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import ApiKeyDescription from "@/components/ApiKeyDescription";
 import ApiUsageMonitor from "@/components/ApiUsageMonitor";
-import HeliusSetup from "@/components/HeliusSetup";
 import ConnectedServices from "@/components/ConnectedServices";
 import WebhookMonitor from "@/components/WebhookMonitor";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -13,9 +12,10 @@ import DebugPanel from "@/components/DebugPanel";
 import NotificationSettings from "@/components/NotificationSettings";
 import AdvancedSettings from "@/components/AdvancedSettings";
 import { useSettingsStore } from "@/store/settingsStore";
-import { useOutletContext } from "react-router-dom";
+import { useOutletContext, useSearchParams } from "react-router-dom";
 import { AlertTriangle } from "lucide-react";
 import SystemControls from "@/components/SystemControls";
+import { HeliusApiConfig } from "@/components/api";
 
 // Define the type for the outlet context
 interface LayoutContext {
@@ -27,6 +27,7 @@ interface LayoutContext {
 const Settings = () => {
   const { user } = useAuth();
   const { systemActive, toggleSystemActive } = useOutletContext<LayoutContext>();
+  const [searchParams] = useSearchParams();
 
   // Get settings from our store
   const {
@@ -45,12 +46,17 @@ const Settings = () => {
   });
 
   useEffect(() => {
-    // Check for URL hash to set active tab
+    // Check for URL query parameter or hash to set active tab
+    const tabParam = searchParams.get('tab');
     const hash = window.location.hash?.substring(1);
-    if (hash && ["general", "apis", "notifications", "advanced", "diagnostics"].includes(hash)) {
+
+    // Query parameter takes precedence over hash
+    if (tabParam && ["general", "apis", "notifications", "advanced", "diagnostics"].includes(tabParam)) {
+      setActiveSettingsTab(tabParam);
+    } else if (hash && ["general", "apis", "notifications", "advanced", "diagnostics"].includes(hash)) {
       setActiveSettingsTab(hash);
     }
-  }, [setActiveSettingsTab]);
+  }, [setActiveSettingsTab, searchParams]);
 
   const handleTabChange = (value: string) => {
     setActiveSettingsTab(value);
@@ -109,7 +115,7 @@ const Settings = () => {
 
         <TabsContent value="apis" className="space-y-6">
           <ApiKeyDescription />
-          <HeliusSetup />
+          <HeliusApiConfig />
           <ApiUsageMonitor />
         </TabsContent>
 

@@ -155,7 +155,7 @@ const WalletTracking: React.FC = () => {
         </div>
 
         <div className="flex gap-2">
-          <Link to="/wallet-tracking/analytics">
+          <Link to="/wallet-tracking/analytics?view=all">
             <Button variant="outline" className="bg-trading-darkAccent border-white/10 hover:bg-white/10">
               <BarChart3 size={16} className="mr-2" />
               Analytics
@@ -299,7 +299,7 @@ const WalletTracking: React.FC = () => {
                                   View on Explorer
                                 </DropdownMenuItem>
                                 <DropdownMenuItem className="cursor-pointer">
-                                  <Link to="/wallet-tracking/analytics" className="flex items-center w-full">
+                                  <Link to={`/wallet-tracking/analytics?wallet=${wallet.id}`} className="flex items-center w-full">
                                     <BarChart3 size={14} className="mr-2" />
                                     View Analytics
                                   </Link>
@@ -414,7 +414,7 @@ const WalletTracking: React.FC = () => {
                       </div>
 
                       <div className="mt-4 flex justify-end">
-                        <Link to="/wallet-tracking/analytics">
+                        <Link to={`/wallet-tracking/analytics?wallet=${wallet.id}`}>
                           <Button variant="outline" size="sm" className="bg-black/20 border-white/10 hover:bg-white/10">
                             <BarChart3 size={14} className="mr-2" />
                             Analytics

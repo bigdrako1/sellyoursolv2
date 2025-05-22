@@ -5,7 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { getMarketOverview } from '@/utils/marketUtils';
 import { formatCurrency } from '@/utils/marketUtils';
-import { Search } from 'lucide-react';
+import { Search, ExternalLink } from 'lucide-react';
+import useTokenDetails from '@/hooks/useTokenDetails';
 
 /**
  * TokenList component displays a list of tokens with search functionality
@@ -14,6 +15,7 @@ const TokenList = () => {
   const [tokens, setTokens] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [marketOverview, setMarketOverview] = useState<any>(null);
+  const { openTokenDetails, TokenDetailsDialog } = useTokenDetails();
 
   useEffect(() => {
     const fetchMarketData = async () => {
@@ -89,19 +91,20 @@ const TokenList = () => {
   );
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle>Token List</CardTitle>
-        <div className="relative w-1/2">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
-          <Input
-            placeholder="Search tokens..."
-            className="pl-8"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
-      </CardHeader>
+    <>
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle>Token List</CardTitle>
+          <div className="relative w-1/2">
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+            <Input
+              placeholder="Search tokens..."
+              className="pl-8"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+        </CardHeader>
       <CardContent className="p-0">
         <div className="overflow-x-auto">
           <table className="w-full">
@@ -150,7 +153,7 @@ const TokenList = () => {
                           size="sm"
                           variant="outline"
                           className="h-8 px-2 py-1 text-xs"
-                          onClick={() => window.open(`https://birdeye.so/token/${token.symbol}?chain=solana`, '_blank')}
+                          onClick={() => openTokenDetails(token.symbol)}
                         >
                           View
                         </Button>
@@ -176,6 +179,8 @@ const TokenList = () => {
         </div>
       </CardContent>
     </Card>
+    <TokenDetailsDialog />
+    </>
   );
 };
 
