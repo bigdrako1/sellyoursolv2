@@ -8,7 +8,7 @@ import os
 from typing import Dict, Any
 import asyncio
 
-from api.routes import agent_routes, agent_types_routes, monitoring, notifications
+from api.routes import agent_routes, agent_types_routes, monitoring, notifications, mobile_api
 from core.agent_registry import AgentRegistry
 from core.cache_manager import CacheManager, CacheLevel, InvalidationStrategy
 from database import initialize_database, close_database
@@ -41,6 +41,7 @@ app.include_router(agent_routes.router)
 app.include_router(agent_types_routes.router)
 app.include_router(monitoring.router)
 app.include_router(notifications.router)
+app.include_router(mobile_api.router)
 # Include other routers as needed
 
 # Mount dashboard static files
