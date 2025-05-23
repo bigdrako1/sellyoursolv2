@@ -1,0 +1,163 @@
+{
+    "exchange_id": "binance",
+    "timeframes": ["1h", "4h", "1d"],
+    "symbols": ["BTC/USDT", "ETH/USDT", "SOL/USDT", "BNB/USDT"],
+    "short_period": 14,
+    "medium_period": 50,
+    "long_period": 200,
+    "low_volatility_threshold": 0.5,
+    "high_volatility_threshold": 2.0,
+    "trend_strength_threshold": 25,
+    "breakout_threshold": 2.0,
+    "update_interval": 300,
+    "indicators": {
+        "moving_averages": {
+            "enabled": true,
+            "types": ["sma", "ema"],
+            "periods": [14, 50, 200]
+        },
+        "volatility": {
+            "enabled": true,
+            "types": ["atr", "bollinger_bands"],
+            "periods": [14, 20]
+        },
+        "momentum": {
+            "enabled": true,
+            "types": ["rsi", "macd", "stochastic"],
+            "periods": [14, 9]
+        },
+        "trend": {
+            "enabled": true,
+            "types": ["adx", "directional_movement"],
+            "periods": [14]
+        },
+        "volume": {
+            "enabled": true,
+            "types": ["obv", "volume_profile"],
+            "periods": [14, 20]
+        }
+    },
+    "regimes": {
+        "bullish": {
+            "description": "Strong uptrend with positive momentum",
+            "indicators": {
+                "sma_short > sma_medium > sma_long": true,
+                "rsi > 50": true,
+                "adx > 25": true
+            }
+        },
+        "bearish": {
+            "description": "Strong downtrend with negative momentum",
+            "indicators": {
+                "sma_short < sma_medium < sma_long": true,
+                "rsi < 50": true,
+                "adx > 25": true
+            }
+        },
+        "ranging": {
+            "description": "Price moving sideways in a range",
+            "indicators": {
+                "atr_pct < low_volatility_threshold": true,
+                "adx < 20": true
+            }
+        },
+        "volatile": {
+            "description": "High volatility with large price swings",
+            "indicators": {
+                "atr_pct > high_volatility_threshold": true
+            }
+        },
+        "trending": {
+            "description": "Strong trend in either direction",
+            "indicators": {
+                "adx > trend_strength_threshold": true
+            }
+        },
+        "reversal": {
+            "description": "Potential trend reversal",
+            "indicators": {
+                "sma_crossover": true,
+                "rsi_extreme": true
+            }
+        },
+        "breakout": {
+            "description": "Price breaking out of a range",
+            "indicators": {
+                "price_deviation > breakout_threshold": true,
+                "volume_increase > 50%": true
+            }
+        }
+    },
+    "recommendations": {
+        "bullish": {
+            "bias": "bullish",
+            "position_sizing": "normal",
+            "stop_loss": "trailing",
+            "take_profit": "extended",
+            "strategy": "trend_following",
+            "risk_level": "medium"
+        },
+        "bearish": {
+            "bias": "bearish",
+            "position_sizing": "reduced",
+            "stop_loss": "tight",
+            "take_profit": "normal",
+            "strategy": "counter_trend",
+            "risk_level": "high"
+        },
+        "ranging": {
+            "bias": "neutral",
+            "position_sizing": "reduced",
+            "stop_loss": "normal",
+            "take_profit": "tight",
+            "strategy": "range_trading",
+            "risk_level": "medium"
+        },
+        "volatile": {
+            "bias": "neutral",
+            "position_sizing": "minimum",
+            "stop_loss": "wide",
+            "take_profit": "tight",
+            "strategy": "volatility_breakout",
+            "risk_level": "high"
+        },
+        "trending": {
+            "bias": "follow_trend",
+            "position_sizing": "normal",
+            "stop_loss": "trailing",
+            "take_profit": "extended",
+            "strategy": "trend_following",
+            "risk_level": "medium"
+        },
+        "reversal": {
+            "bias": "counter_trend",
+            "position_sizing": "reduced",
+            "stop_loss": "tight",
+            "take_profit": "normal",
+            "strategy": "reversal",
+            "risk_level": "high"
+        },
+        "breakout": {
+            "bias": "follow_breakout",
+            "position_sizing": "normal",
+            "stop_loss": "normal",
+            "take_profit": "extended",
+            "strategy": "breakout",
+            "risk_level": "medium"
+        },
+        "unknown": {
+            "bias": "neutral",
+            "position_sizing": "minimum",
+            "stop_loss": "tight",
+            "take_profit": "tight",
+            "strategy": "wait_and_see",
+            "risk_level": "high"
+        }
+    },
+    "logging": {
+        "level": "INFO",
+        "file": "logs/market_detector.log",
+        "max_size": 10485760,
+        "backup_count": 5
+    }
+}

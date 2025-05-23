@@ -1,0 +1,176 @@
+{
+    "name": "reinforcement",
+    "display_name": "Reinforcement Learning Agent",
+    "description": "Agent for trading based on reinforcement learning models",
+    "class_path": "trading_agents.agents.reinforcement_agent.ReinforcementAgent",
+    "default_config": {
+        "exchange_id": "binance",
+        "symbols": ["BTC/USDT"],
+        "model_id": "",
+        "model_dir": "models",
+        "trade_enabled": false,
+        "position_size_pct": 5.0,
+        "max_positions": 1,
+        "timeframe": "1h",
+        "window_size": 30,
+        "lookback_periods": 100,
+        "cycle_interval": 300
+    },
+    "config_schema": {
+        "type": "object",
+        "properties": {
+            "exchange_id": {
+                "type": "string",
+                "description": "Exchange to use"
+            },
+            "symbols": {
+                "type": "array",
+                "items": {
+                    "type": "string"
+                },
+                "description": "Symbols to monitor"
+            },
+            "model_id": {
+                "type": "string",
+                "description": "ID of the model to use"
+            },
+            "model_dir": {
+                "type": "string",
+                "description": "Directory containing models"
+            },
+            "trade_enabled": {
+                "type": "boolean",
+                "description": "Enable/disable trade execution"
+            },
+            "position_size_pct": {
+                "type": "number",
+                "minimum": 0.1,
+                "maximum": 100,
+                "description": "Position size as percentage of available balance"
+            },
+            "max_positions": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "Maximum number of concurrent positions"
+            },
+            "timeframe": {
+                "type": "string",
+                "enum": ["1m", "5m", "15m", "30m", "1h", "4h", "1d"],
+                "description": "Timeframe for market data"
+            },
+            "window_size": {
+                "type": "integer",
+                "minimum": 10,
+                "description": "Window size for state representation"
+            },
+            "lookback_periods": {
+                "type": "integer",
+                "minimum": 10,
+                "description": "Number of periods to look back for market data"
+            },
+            "cycle_interval": {
+                "type": "number",
+                "minimum": 1,
+                "description": "Interval between agent cycles (seconds)"
+            }
+        },
+        "required": ["exchange_id", "symbols", "model_id"]
+    },
+    "metrics": {
+        "symbols_monitored": {
+            "type": "gauge",
+            "description": "Number of symbols being monitored"
+        },
+        "trades_executed": {
+            "type": "counter",
+            "description": "Number of trades executed"
+        },
+        "active_positions": {
+            "type": "gauge",
+            "description": "Number of active positions"
+        },
+        "total_profit": {
+            "type": "gauge",
+            "description": "Total profit from executed trades"
+        },
+        "last_action_time": {
+            "type": "timestamp",
+            "description": "Timestamp of the last action"
+        }
+    },
+    "commands": {
+        "get_actions": {
+            "description": "Get current actions",
+            "method": "get_actions",
+            "parameters": {}
+        },
+        "get_positions": {
+            "description": "Get active positions",
+            "method": "get_positions",
+            "parameters": {}
+        },
+        "add_symbol": {
+            "description": "Add a symbol to monitor",
+            "method": "add_symbol",
+            "parameters": {
+                "symbol": {
+                    "type": "string",
+                    "description": "Symbol to add"
+                }
+            }
+        },
+        "remove_symbol": {
+            "description": "Remove a symbol from monitoring",
+            "method": "remove_symbol",
+            "parameters": {
+                "symbol": {
+                    "type": "string",
+                    "description": "Symbol to remove"
+                }
+            }
+        },
+        "set_model": {
+            "description": "Set the model to use",
+            "method": "set_model",
+            "parameters": {
+                "model_id": {
+                    "type": "string",
+                    "description": "Model ID"
+                }
+            }
+        },
+        "enable_trading": {
+            "description": "Enable/disable trade execution",
+            "method": "set_config",
+            "parameters": {
+                "key": "trade_enabled",
+                "value": {
+                    "type": "boolean",
+                    "description": "Enable/disable trade execution"
+                }
+            }
+        },
+        "set_position_size": {
+            "description": "Set position size percentage",
+            "method": "set_config",
+            "parameters": {
+                "key": "position_size_pct",
+                "value": {
+                    "type": "number",
+                    "description": "Position size as percentage of available balance"
+                }
+            }
+        },
+        "set_max_positions": {
+            "description": "Set maximum number of concurrent positions",
+            "method": "set_config",
+            "parameters": {
+                "key": "max_positions",
+                "value": {
+                    "type": "integer",
+                    "description": "Maximum number of concurrent positions"
+                }
+            }
+        }
+    }
+}

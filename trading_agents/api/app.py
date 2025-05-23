@@ -8,7 +8,7 @@ import os
 from typing import Dict, Any
 import asyncio
 
-from api.routes import agent_routes, agent_types_routes
+from api.routes import agent_routes, agent_types_routes, monitoring, notifications
 from core.agent_registry import AgentRegistry
 from core.cache_manager import CacheManager, CacheLevel, InvalidationStrategy
 from database import initialize_database, close_database
@@ -39,7 +39,12 @@ app.add_middleware(
 # Include routers
 app.include_router(agent_routes.router)
 app.include_router(agent_types_routes.router)
+app.include_router(monitoring.router)
+app.include_router(notifications.router)
 # Include other routers as needed
+
+# Mount dashboard static files
+monitoring.mount_dashboard(app)
 
 # Startup and shutdown events
 @app.on_event("startup")
@@ -113,6 +118,26 @@ async def startup_event():
         scheduler.performance_weight = 0.3
         scheduler.system_weight = 0.2
 
+        # Initialize performance monitoring
+        monitoring_config = {
+            "metrics_interval": 60,  # Collect metrics every 60 seconds
+            "metrics_history_size": 100,  # Keep 100 data points
+            "alert_levels": {
+                "cpu_usage": 80,  # Alert if CPU usage > 80%
+                "memory_usage": 80,  # Alert if memory usage > 80%
+                "disk_usage": 80,  # Alert if disk usage > 80%
+                "cache_hit_rate": 50,  # Alert if cache hit rate < 50%
+                "http_error_rate": 10  # Alert if HTTP error rate > 10%
+            }
+        }
+        monitoring.initialize_monitoring(
+            resource_pool=resource_pool,
+            execution_engine=execution_engine,
+            config=monitoring_config
+        )
+        await monitoring.start_monitoring()
+        logger.info("Performance monitoring started")
+
         logger.info("Services initialized successfully")
     except Exception as e:
         logger.error(f"Error initializing services: {str(e)}")
@@ -138,6 +163,13 @@ async def shutdown_event():
             logger.info("Cache preloader stopped")
         except Exception as e:
             logger.error(f"Error stopping cache preloader: {str(e)}")
+
+        # Stop performance monitoring
+        try:
+            await monitoring.stop_monitoring()
+            logger.info("Performance monitoring stopped")
+        except Exception as e:
+            logger.error(f"Error stopping performance monitoring: {str(e)}")
 
         # Stop agent registry
         await registry.stop()

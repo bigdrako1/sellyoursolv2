@@ -1,0 +1,172 @@
+{
+    "name": "arbitrage",
+    "display_name": "Arbitrage Agent",
+    "description": "Agent for identifying and executing arbitrage opportunities across multiple exchanges",
+    "class_path": "trading_agents.agents.arbitrage_agent.ArbitrageAgent",
+    "default_config": {
+        "exchanges": ["binance", "coinbase", "kraken"],
+        "symbols": ["BTC/USDT", "ETH/USDT", "SOL/USDT", "BNB/USDT"],
+        "min_profit_threshold": 0.5,
+        "max_trade_amount": 100.0,
+        "execution_delay": 0.5,
+        "execute_trades": false,
+        "enable_triangular": true,
+        "max_path_length": 3,
+        "max_opportunities": 100,
+        "cycle_interval": 5
+    },
+    "config_schema": {
+        "type": "object",
+        "properties": {
+            "exchanges": {
+                "type": "array",
+                "items": {
+                    "type": "string"
+                },
+                "description": "List of exchanges to monitor"
+            },
+            "symbols": {
+                "type": "array",
+                "items": {
+                    "type": "string"
+                },
+                "description": "List of symbols to monitor"
+            },
+            "min_profit_threshold": {
+                "type": "number",
+                "minimum": 0,
+                "description": "Minimum profit threshold (percentage)"
+            },
+            "max_trade_amount": {
+                "type": "number",
+                "minimum": 0,
+                "description": "Maximum trade amount"
+            },
+            "execution_delay": {
+                "type": "number",
+                "minimum": 0,
+                "description": "Execution delay (seconds)"
+            },
+            "execute_trades": {
+                "type": "boolean",
+                "description": "Enable/disable trade execution"
+            },
+            "enable_triangular": {
+                "type": "boolean",
+                "description": "Enable/disable triangular arbitrage"
+            },
+            "max_path_length": {
+                "type": "integer",
+                "minimum": 2,
+                "maximum": 5,
+                "description": "Maximum path length for triangular arbitrage"
+            },
+            "max_opportunities": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "Maximum number of opportunities to store in history"
+            },
+            "cycle_interval": {
+                "type": "number",
+                "minimum": 1,
+                "description": "Interval between agent cycles (seconds)"
+            }
+        },
+        "required": ["exchanges", "symbols", "min_profit_threshold", "max_trade_amount", "execute_trades"]
+    },
+    "metrics": {
+        "opportunities_found": {
+            "type": "counter",
+            "description": "Number of arbitrage opportunities found"
+        },
+        "opportunities_executed": {
+            "type": "counter",
+            "description": "Number of arbitrage opportunities executed"
+        },
+        "total_profit": {
+            "type": "gauge",
+            "description": "Total profit from executed arbitrage opportunities"
+        },
+        "last_opportunity_time": {
+            "type": "timestamp",
+            "description": "Timestamp of the last arbitrage opportunity found"
+        },
+        "exchanges_monitored": {
+            "type": "gauge",
+            "description": "Number of exchanges being monitored"
+        },
+        "symbols_monitored": {
+            "type": "gauge",
+            "description": "Number of symbols being monitored"
+        }
+    },
+    "commands": {
+        "get_opportunities": {
+            "description": "Get arbitrage opportunities history",
+            "method": "get_opportunity_history",
+            "parameters": {}
+        },
+        "set_profit_threshold": {
+            "description": "Set minimum profit threshold",
+            "method": "set_config",
+            "parameters": {
+                "key": "min_profit_threshold",
+                "value": {
+                    "type": "number",
+                    "description": "Minimum profit threshold (percentage)"
+                }
+            }
+        },
+        "set_execute_trades": {
+            "description": "Enable/disable trade execution",
+            "method": "set_config",
+            "parameters": {
+                "key": "execute_trades",
+                "value": {
+                    "type": "boolean",
+                    "description": "Enable/disable trade execution"
+                }
+            }
+        },
+        "add_exchange": {
+            "description": "Add an exchange to monitor",
+            "method": "add_exchange",
+            "parameters": {
+                "exchange_id": {
+                    "type": "string",
+                    "description": "Exchange identifier"
+                }
+            }
+        },
+        "remove_exchange": {
+            "description": "Remove an exchange from monitoring",
+            "method": "remove_exchange",
+            "parameters": {
+                "exchange_id": {
+                    "type": "string",
+                    "description": "Exchange identifier"
+                }
+            }
+        },
+        "add_symbol": {
+            "description": "Add a symbol to monitor",
+            "method": "add_symbol",
+            "parameters": {
+                "symbol": {
+                    "type": "string",
+                    "description": "Trading symbol"
+                }
+            }
+        },
+        "remove_symbol": {
+            "description": "Remove a symbol from monitoring",
+            "method": "remove_symbol",
+            "parameters": {
+                "symbol": {
+                    "type": "string",
+                    "description": "Trading symbol"
+                }
+            }
+        }
+    }
+}

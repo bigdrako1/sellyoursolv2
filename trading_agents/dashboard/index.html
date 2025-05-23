@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trading Agents Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            padding-top: 56px;
+            background-color: #f8f9fa;
+        }
+        .sidebar {
+            position: fixed;
+            top: 56px;
+            bottom: 0;
+            left: 0;
+            z-index: 100;
+            padding: 48px 0 0;
+            box-shadow: inset -1px 0 0 rgba(0, 0, 0, .1);
+            background-color: #343a40;
+            color: white;
+        }
+        .sidebar-sticky {
+            position: relative;
+            top: 0;
+            height: calc(100vh - 48px);
+            padding-top: .5rem;
+            overflow-x: hidden;
+            overflow-y: auto;
+        }
+        .nav-link {
+            color: rgba(255, 255, 255, .5);
+            font-weight: 500;
+        }
+        .nav-link:hover {
+            color: rgba(255, 255, 255, .75);
+        }
+        .nav-link.active {
+            color: #fff;
+        }
+        .card {
+            margin-bottom: 20px;
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+        }
+        .metric-card {
+            text-align: center;
+            padding: 15px;
+        }
+        .metric-value {
+            font-size: 2rem;
+            font-weight: bold;
+        }
+        .metric-label {
+            font-size: 0.9rem;
+            color: #6c757d;
+        }
+        .alert-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            padding: 3px 6px;
+            border-radius: 50%;
+            background-color: #dc3545;
+            color: white;
+            font-size: 0.7rem;
+        }
+        .chart-container {
+            position: relative;
+            height: 300px;
+            width: 100%;
+        }
+        .progress-bar-container {
+            height: 30px;
+            margin-bottom: 10px;
+        }
+        .table-responsive {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-dark bg-dark fixed-top">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">Trading Agents Dashboard</a>
+            <div class="d-flex">
+                <span class="navbar-text me-3" id="last-updated">Last updated: Never</span>
+                <button class="btn btn-outline-light btn-sm" id="refresh-btn">
+                    <i class="bi bi-arrow-clockwise"></i> Refresh
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid">
+        <div class="row">
+            <nav id="sidebar" class="col-md-3 col-lg-2 d-md-block sidebar collapse">
+                <div class="position-sticky sidebar-sticky">
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link active" href="#overview" data-bs-toggle="tab">
+                                <i class="bi bi-speedometer2 me-2"></i>
+                                Overview
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#cache" data-bs-toggle="tab">
+                                <i class="bi bi-hdd-stack me-2"></i>
+                                Cache
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#execution" data-bs-toggle="tab">
+                                <i class="bi bi-cpu me-2"></i>
+                                Execution Engine
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#http" data-bs-toggle="tab">
+                                <i class="bi bi-globe me-2"></i>
+                                HTTP Client
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#agents" data-bs-toggle="tab">
+                                <i class="bi bi-robot me-2"></i>
+                                Trading Agents
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#advanced" data-bs-toggle="tab">
+                                <i class="bi bi-graph-up me-2"></i>
+                                Advanced Analytics
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#alerts" data-bs-toggle="tab">
+                                <i class="bi bi-exclamation-triangle me-2"></i>
+                                Alerts
+                                <span class="alert-badge" id="alert-count">0</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+                <div class="tab-content" id="main-content">
+                    <!-- Overview Tab -->
+                    <div class="tab-pane fade show active" id="overview">
+                        <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                            <h1 class="h2">System Overview</h1>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="card metric-card">
+                                    <div class="metric-value" id="cpu-usage">0%</div>
+                                    <div class="metric-label">CPU Usage</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card metric-card">
+                                    <div class="metric-value" id="memory-usage">0%</div>
+                                    <div class="metric-label">Memory Usage</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card metric-card">
+                                    <div class="metric-value" id="disk-usage">0%</div>
+                                    <div class="metric-label">Disk Usage</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card metric-card">
+                                    <div class="metric-value" id="active-agents">0</div>
+                                    <div class="metric-label">Active Agents</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mt-4">
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">
+                                        System Resource Usage
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="chart-container">
+                                            <canvas id="system-chart"></canvas>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">
+                                        Recent Alerts
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="table-responsive">
+                                            <table class="table table-striped table-sm" id="recent-alerts-table">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Time</th>
+                                                        <th>Level</th>
+                                                        <th>Source</th>
+                                                        <th>Message</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <!-- Alerts will be populated here -->
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Cache Tab -->
+                    <div class="tab-pane fade" id="cache">
+                        <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                            <h1 class="h2">Cache Performance</h1>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="card metric-card">
+                                    <div class="metric-value" id="memory-hit-rate">0%</div>
+                                    <div class="metric-label">Memory Hit Rate</div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card metric-card">
+                                    <div class="metric-value" id="disk-hit-rate">0%</div>
+                                    <div class="metric-label">Disk Hit Rate</div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card metric-card">
+                                    <div class="metric-value" id="distributed-hit-rate">0%</div>
+                                    <div class="metric-label">Distributed Hit Rate</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mt-4">
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">
+                                        Cache Hit Rates
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="chart-container">
+                                            <canvas id="cache-hit-chart"></canvas>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">
+                                        Cache Size
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="chart-container">
+                                            <canvas id="cache-size-chart"></canvas>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Trading Agents Tab -->
+                    <div class="tab-pane fade" id="agents">
+                        <h2 class="mt-4">Trading Agents</h2>
+
+                        <div class="row mt-4">
+                            <div class="col-md-12">
+                                <div class="card">
+                                    <div class="card-header">
+                                        Agent Performance Comparison
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="chart-container" style="height: 400px;">
+                                            <canvas id="agent-performance-chart"></canvas>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mt-4">
+                            <div class="col-md-12">
+                                <div class="card">
+                                    <div class="card-header">
+                                        Agent Status
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="table-responsive">
+                                            <table class="table table-striped table-sm" id="agent-status-table">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Agent ID</th>
+                                                        <th>Type</th>
+                                                        <th>Status</th>
+                                                        <th>Last Run</th>
+                                                        <th>Success Rate</th>
+                                                        <th>Actions</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <!-- Agent status will be populated here -->
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Advanced Analytics Tab -->
+                    <div class="tab-pane fade" id="advanced">
+                        <h2 class="mt-4">Advanced Analytics</h2>
+
+                        <div class="row mt-4">
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">
+                                        Cache Performance
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="chart-container" style="height: 300px;">
+                                            <canvas id="cache-performance-chart"></canvas>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">
+                                        Real-Time API Metrics
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="chart-container" style="height: 300px;">
+                                            <canvas id="real-time-metrics-chart"></canvas>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mt-4">
+                            <div class="col-md-12">
+                                <div class="card">
+                                    <div class="card-header">
+                                        Strategy Backtesting Results
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="chart-container" style="height: 400px;">
+                                            <canvas id="strategy-backtest-chart"></canvas>
+                                        </div>
+                                        <div class="mt-3">
+                                            <select id="strategy-selector" class="form-select">
+                                                <option value="">Select a strategy to view backtesting results</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- More tabs will be added here -->
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1"></script>
+    <script src="js/advanced-charts.js"></script>
+    <script src="js/dashboard.js"></script>
+</body>
+</html>

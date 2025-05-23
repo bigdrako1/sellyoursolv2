@@ -1,0 +1,239 @@
+{
+    "name": "grid_trading",
+    "display_name": "Grid Trading Agent",
+    "description": "Agent for implementing grid trading strategies with dynamic grid sizing and auto-rebalancing",
+    "class_path": "trading_agents.agents.grid_trading_agent.GridTradingAgent",
+    "default_config": {
+        "exchange_id": "binance",
+        "symbol": "BTC/USDT",
+        "grid_levels": 10,
+        "grid_spacing_pct": 1.0,
+        "upper_price": null,
+        "lower_price": null,
+        "order_amount": 0.01,
+        "order_type": "limit",
+        "dynamic_grid": true,
+        "volatility_period": 24,
+        "volatility_multiplier": 2.0,
+        "auto_rebalance": true,
+        "rebalance_threshold_pct": 10.0,
+        "rebalance_interval": 24,
+        "take_profit": false,
+        "profit_target_pct": 5.0,
+        "trailing_stop": false,
+        "trailing_stop_pct": 2.0,
+        "cycle_interval": 60
+    },
+    "config_schema": {
+        "type": "object",
+        "properties": {
+            "exchange_id": {
+                "type": "string",
+                "description": "Exchange to use"
+            },
+            "symbol": {
+                "type": "string",
+                "description": "Trading symbol"
+            },
+            "grid_levels": {
+                "type": "integer",
+                "minimum": 2,
+                "maximum": 100,
+                "description": "Number of grid levels"
+            },
+            "grid_spacing_pct": {
+                "type": "number",
+                "minimum": 0.1,
+                "description": "Grid spacing percentage"
+            },
+            "upper_price": {
+                "type": ["number", "null"],
+                "description": "Upper price limit (null for automatic calculation)"
+            },
+            "lower_price": {
+                "type": ["number", "null"],
+                "description": "Lower price limit (null for automatic calculation)"
+            },
+            "order_amount": {
+                "type": "number",
+                "minimum": 0.00001,
+                "description": "Order amount"
+            },
+            "order_type": {
+                "type": "string",
+                "enum": ["limit", "market"],
+                "description": "Order type"
+            },
+            "dynamic_grid": {
+                "type": "boolean",
+                "description": "Enable/disable dynamic grid sizing"
+            },
+            "volatility_period": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "Volatility calculation period (hours)"
+            },
+            "volatility_multiplier": {
+                "type": "number",
+                "minimum": 0.1,
+                "description": "Volatility multiplier for grid range"
+            },
+            "auto_rebalance": {
+                "type": "boolean",
+                "description": "Enable/disable auto-rebalancing"
+            },
+            "rebalance_threshold_pct": {
+                "type": "number",
+                "minimum": 1.0,
+                "description": "Rebalance threshold percentage"
+            },
+            "rebalance_interval": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "Minimum interval between rebalances (hours)"
+            },
+            "take_profit": {
+                "type": "boolean",
+                "description": "Enable/disable profit taking"
+            },
+            "profit_target_pct": {
+                "type": "number",
+                "minimum": 0.1,
+                "description": "Profit target percentage"
+            },
+            "trailing_stop": {
+                "type": "boolean",
+                "description": "Enable/disable trailing stop"
+            },
+            "trailing_stop_pct": {
+                "type": "number",
+                "minimum": 0.1,
+                "description": "Trailing stop percentage"
+            },
+            "cycle_interval": {
+                "type": "number",
+                "minimum": 1,
+                "description": "Interval between agent cycles (seconds)"
+            }
+        },
+        "required": ["exchange_id", "symbol", "grid_levels", "grid_spacing_pct", "order_amount"]
+    },
+    "metrics": {
+        "grid_levels": {
+            "type": "gauge",
+            "description": "Number of grid levels"
+        },
+        "current_price": {
+            "type": "gauge",
+            "description": "Current market price"
+        },
+        "upper_price": {
+            "type": "gauge",
+            "description": "Upper price limit"
+        },
+        "lower_price": {
+            "type": "gauge",
+            "description": "Lower price limit"
+        },
+        "total_profit": {
+            "type": "gauge",
+            "description": "Total profit from grid trading"
+        },
+        "trades_executed": {
+            "type": "counter",
+            "description": "Number of trades executed"
+        },
+        "active_orders": {
+            "type": "gauge",
+            "description": "Number of active orders"
+        },
+        "last_rebalance": {
+            "type": "timestamp",
+            "description": "Timestamp of the last grid rebalance"
+        },
+        "current_value": {
+            "type": "gauge",
+            "description": "Current portfolio value"
+        },
+        "initial_investment": {
+            "type": "gauge",
+            "description": "Initial investment amount"
+        },
+        "roi": {
+            "type": "gauge",
+            "description": "Return on investment percentage"
+        }
+    },
+    "commands": {
+        "get_grid_levels": {
+            "description": "Get grid levels",
+            "method": "get_grid_levels",
+            "parameters": {}
+        },
+        "set_grid_levels": {
+            "description": "Set number of grid levels",
+            "method": "set_config",
+            "parameters": {
+                "key": "grid_levels",
+                "value": {
+                    "type": "integer",
+                    "description": "Number of grid levels"
+                }
+            }
+        },
+        "set_grid_spacing": {
+            "description": "Set grid spacing percentage",
+            "method": "set_config",
+            "parameters": {
+                "key": "grid_spacing_pct",
+                "value": {
+                    "type": "number",
+                    "description": "Grid spacing percentage"
+                }
+            }
+        },
+        "set_order_amount": {
+            "description": "Set order amount",
+            "method": "set_config",
+            "parameters": {
+                "key": "order_amount",
+                "value": {
+                    "type": "number",
+                    "description": "Order amount"
+                }
+            }
+        },
+        "enable_dynamic_grid": {
+            "description": "Enable/disable dynamic grid sizing",
+            "method": "set_config",
+            "parameters": {
+                "key": "dynamic_grid",
+                "value": {
+                    "type": "boolean",
+                    "description": "Enable/disable dynamic grid sizing"
+                }
+            }
+        },
+        "enable_auto_rebalance": {
+            "description": "Enable/disable auto-rebalancing",
+            "method": "set_config",
+            "parameters": {
+                "key": "auto_rebalance",
+                "value": {
+                    "type": "boolean",
+                    "description": "Enable/disable auto-rebalancing"
+                }
+            }
+        },
+        "change_symbol": {
+            "description": "Change trading symbol",
+            "method": "add_symbol",
+            "parameters": {
+                "symbol": {
+                    "type": "string",
+                    "description": "Trading symbol"
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,221 @@
+{
+    "name": "sentiment",
+    "display_name": "Sentiment Analysis Agent",
+    "description": "Agent for analyzing social media sentiment to inform trading decisions",
+    "class_path": "trading_agents.agents.sentiment_agent.SentimentAgent",
+    "default_config": {
+        "exchange_id": "binance",
+        "symbols": ["BTC/USDT", "ETH/USDT"],
+        "sources": {
+            "twitter": {
+                "enabled": true,
+                "weight": 1.0,
+                "api_key": "",
+                "api_secret": "",
+                "bearer_token": ""
+            },
+            "reddit": {
+                "enabled": true,
+                "weight": 0.8,
+                "client_id": "",
+                "client_secret": "",
+                "user_agent": "SentimentAgent/1.0",
+                "subreddits": ["CryptoCurrency", "Bitcoin", "Ethereum"]
+            },
+            "news": {
+                "enabled": true,
+                "weight": 1.2,
+                "api_key": "",
+                "sources": ["cryptopanic", "coindesk", "cointelegraph"]
+            }
+        },
+        "lookback_hours": 24,
+        "signal_threshold": 0.2,
+        "sentiment_window": 6,
+        "trade_enabled": false,
+        "position_size_pct": 5.0,
+        "max_positions": 3,
+        "stop_loss_pct": 5.0,
+        "take_profit_pct": 10.0,
+        "max_signals": 100,
+        "cycle_interval": 300
+    },
+    "config_schema": {
+        "type": "object",
+        "properties": {
+            "exchange_id": {
+                "type": "string",
+                "description": "Exchange to use"
+            },
+            "symbols": {
+                "type": "array",
+                "items": {
+                    "type": "string"
+                },
+                "description": "Symbols to monitor"
+            },
+            "sources": {
+                "type": "object",
+                "description": "Sentiment sources configuration"
+            },
+            "lookback_hours": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "Hours to look back for sentiment data"
+            },
+            "signal_threshold": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1,
+                "description": "Minimum sentiment score threshold for generating signals"
+            },
+            "sentiment_window": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "Window size for sentiment analysis (hours)"
+            },
+            "trade_enabled": {
+                "type": "boolean",
+                "description": "Enable/disable trade execution"
+            },
+            "position_size_pct": {
+                "type": "number",
+                "minimum": 0.1,
+                "maximum": 100,
+                "description": "Position size as percentage of available balance"
+            },
+            "max_positions": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "Maximum number of concurrent positions"
+            },
+            "stop_loss_pct": {
+                "type": "number",
+                "minimum": 0.1,
+                "description": "Stop loss percentage"
+            },
+            "take_profit_pct": {
+                "type": "number",
+                "minimum": 0.1,
+                "description": "Take profit percentage"
+            },
+            "max_signals": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "Maximum number of signals to store in history"
+            },
+            "cycle_interval": {
+                "type": "number",
+                "minimum": 1,
+                "description": "Interval between agent cycles (seconds)"
+            }
+        },
+        "required": ["exchange_id", "symbols", "sources", "lookback_hours", "signal_threshold"]
+    },
+    "metrics": {
+        "symbols_monitored": {
+            "type": "gauge",
+            "description": "Number of symbols being monitored"
+        },
+        "signals_generated": {
+            "type": "counter",
+            "description": "Number of trading signals generated"
+        },
+        "trades_executed": {
+            "type": "counter",
+            "description": "Number of trades executed"
+        },
+        "active_positions": {
+            "type": "gauge",
+            "description": "Number of active positions"
+        },
+        "total_profit": {
+            "type": "gauge",
+            "description": "Total profit from executed trades"
+        },
+        "last_signal_time": {
+            "type": "timestamp",
+            "description": "Timestamp of the last signal generated"
+        }
+    },
+    "commands": {
+        "get_sentiment_history": {
+            "description": "Get sentiment history",
+            "method": "get_sentiment_history",
+            "parameters": {
+                "symbol": {
+                    "type": "string",
+                    "description": "Symbol to get history for (optional)"
+                }
+            }
+        },
+        "get_signals": {
+            "description": "Get signal history",
+            "method": "get_signals",
+            "parameters": {
+                "limit": {
+                    "type": "integer",
+                    "description": "Maximum number of signals to return (optional)"
+                }
+            }
+        },
+        "get_positions": {
+            "description": "Get active positions",
+            "method": "get_positions",
+            "parameters": {}
+        },
+        "add_symbol": {
+            "description": "Add a symbol to monitor",
+            "method": "add_symbol",
+            "parameters": {
+                "symbol": {
+                    "type": "string",
+                    "description": "Symbol to add"
+                }
+            }
+        },
+        "remove_symbol": {
+            "description": "Remove a symbol from monitoring",
+            "method": "remove_symbol",
+            "parameters": {
+                "symbol": {
+                    "type": "string",
+                    "description": "Symbol to remove"
+                }
+            }
+        },
+        "enable_trading": {
+            "description": "Enable/disable trade execution",
+            "method": "set_config",
+            "parameters": {
+                "key": "trade_enabled",
+                "value": {
+                    "type": "boolean",
+                    "description": "Enable/disable trade execution"
+                }
+            }
+        },
+        "set_position_size": {
+            "description": "Set position size percentage",
+            "method": "set_config",
+            "parameters": {
+                "key": "position_size_pct",
+                "value": {
+                    "type": "number",
+                    "description": "Position size as percentage of available balance"
+                }
+            }
+        },
+        "set_signal_threshold": {
+            "description": "Set signal threshold",
+            "method": "set_config",
+            "parameters": {
+                "key": "signal_threshold",
+                "value": {
+                    "type": "number",
+                    "description": "Minimum sentiment score threshold for generating signals"
+                }
+            }
+        }
+    }
+}

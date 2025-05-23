@@ -4,11 +4,14 @@ Monitoring API routes for the trading agents system.
 This module provides API endpoints for accessing performance metrics and alerts.
 """
 from typing import Dict, Any, List, Optional
-from fastapi import APIRouter, Depends, Query, HTTPException, BackgroundTasks
+from fastapi import APIRouter, Depends, Query, HTTPException, BackgroundTasks, Request
+from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 from enum import Enum
 import logging
 import json
+import os
 from datetime import datetime
 
 from core.performance_monitor import PerformanceMonitor, AlertLevel
@@ -202,3 +205,32 @@ async def clear_alerts(
         "message": "Alerts cleared",
         "timestamp": datetime.now().isoformat()
     }
+
+@router.get("/dashboard")
+async def get_dashboard():
+    """
+    Get dashboard HTML.
+
+    Returns:
+        Redirect to dashboard index.html
+    """
+    return RedirectResponse(url="/dashboard/index.html")
+
+# Mount static files for dashboard
+def mount_dashboard(app):
+    """
+    Mount dashboard static files.
+
+    Args:
+        app: FastAPI application
+    """
+    dashboard_dir = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
+        "dashboard"
+    )
+
+    if os.path.exists(dashboard_dir):
+        app.mount("/dashboard", StaticFiles(directory=dashboard_dir), name="dashboard")
+        logger.info(f"Mounted dashboard static files from {dashboard_dir}")
+    else:
+        logger.warning(f"Dashboard directory not found: {dashboard_dir}")

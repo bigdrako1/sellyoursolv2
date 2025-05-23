@@ -3,9 +3,11 @@ Advanced cache manager for optimized data caching.
 
 This module provides a sophisticated caching system with features like:
 - Tiered caching (memory, disk)
+- Distributed caching with Redis
 - Cache invalidation strategies
 - Pattern-based cache key management
 - Cache statistics and monitoring
+- Dependency tracking between cached items
 """
 import asyncio
 import json
@@ -19,12 +21,15 @@ from enum import Enum
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Pattern, Set, Tuple, Union
 
+from .cache_adapters import CacheAdapterFactory
+
 logger = logging.getLogger(__name__)
 
 class CacheLevel(Enum):
     """Cache storage levels."""
     MEMORY = "memory"
     DISK = "disk"
+    DISTRIBUTED = "distributed"
     ALL = "all"
 
 class InvalidationStrategy(Enum):
@@ -156,12 +161,33 @@ class CacheManager:
             config.get("invalidation_strategy", InvalidationStrategy.LRU.value)
         )
 
+        # Distributed cache configuration
+        self.distributed_cache_enabled = config.get("distributed_cache_enabled", False)
+        self.distributed_cache_type = config.get("distributed_cache_type", "redis")
+        self.distributed_cache_config = config.get("distributed_cache", {})
+
+        # Cache dependency tracking
+        self.dependency_tracking_enabled = config.get("dependency_tracking_enabled", False)
+        self.dependencies: Dict[str, Set[str]] = {}  # key -> dependent keys
+        self.dependents: Dict[str, Set[str]] = {}    # key -> keys it depends on
+
         # Create cache storage
         self.memory_cache: Dict[str, CacheEntry] = {}
+        self.distributed_adapter = None
 
         # Create disk cache directory if enabled
         if self.disk_cache_enabled:
             os.makedirs(self.disk_cache_dir, exist_ok=True)
+
+        # Initialize distributed cache if enabled
+        if self.distributed_cache_enabled:
+            self.distributed_adapter = CacheAdapterFactory.create_adapter(
+                self.distributed_cache_type,
+                self.distributed_cache_config
+            )
+            if not self.distributed_adapter:
+                logger.warning(f"Failed to create {self.distributed_cache_type} adapter. Distributed caching disabled.")
+                self.distributed_cache_enabled = False
 
         # Pattern subscriptions for invalidation
         self.pattern_subscriptions: Dict[str, Pattern] = {}
@@ -170,15 +196,22 @@ class CacheManager:
         self._memory_lock = asyncio.Lock()
         self._disk_lock = asyncio.Lock()
         self._pattern_lock = asyncio.Lock()
+        self._distributed_lock = asyncio.Lock()
+        self._dependency_lock = asyncio.Lock()
 
         # Statistics
         self._memory_hit_count = 0
         self._memory_miss_count = 0
         self._disk_hit_count = 0
         self._disk_miss_count = 0
+        self._distributed_hit_count = 0
+        self._distributed_miss_count = 0
         self._eviction_count = 0
 
-        logger.info("Cache manager initialized")
+        logger.info("Cache manager initialized with " +
+                   f"memory={'enabled'}, " +
+                   f"disk={'enabled' if self.disk_cache_enabled else 'disabled'}, " +
+                   f"distributed={'enabled' if self.distributed_cache_enabled else 'disabled'}")
 
     async def get(
         self,
@@ -252,6 +285,30 @@ class CacheManager:
                     logger.error(f"Error reading from disk cache: {str(e)}")
                     self._disk_miss_count += 1
 
+        # Check distributed cache if enabled and not found in memory or disk
+        if self.distributed_cache_enabled and level in (CacheLevel.DISTRIBUTED, CacheLevel.ALL):
+            async with self._distributed_lock:
+                try:
+                    if self.distributed_adapter:
+                        value = await self.distributed_adapter.get(key)
+
+                        if value is not None:
+                            # Promote to memory cache if ALL level
+                            if level == CacheLevel.ALL:
+                                async with self._memory_lock:
+                                    # Check memory cache size
+                                    await self._ensure_memory_capacity()
+                                    entry = CacheEntry(key, value, self.default_ttl, CacheLevel.MEMORY)
+                                    self.memory_cache[key] = entry
+
+                            self._distributed_hit_count += 1
+                            return value
+                        else:
+                            self._distributed_miss_count += 1
+                except Exception as e:
+                    logger.error(f"Error reading from distributed cache: {str(e)}")
+                    self._distributed_miss_count += 1
+
         return default
 
     async def set(
@@ -260,7 +317,8 @@ class CacheManager:
         value: Any,
         ttl: Optional[int] = None,
         level: CacheLevel = CacheLevel.ALL,
-        tags: Optional[List[str]] = None
+        tags: Optional[List[str]] = None,
+        depends_on: Optional[List[str]] = None
     ) -> None:
         """
         Set a value in the cache.
@@ -271,6 +329,7 @@ class CacheManager:
             ttl: Time to live in seconds (None for default)
             level: Cache level to store at
             tags: Tags for grouping and invalidation
+            depends_on: Keys that this key depends on
         """
         ttl = ttl or self.default_ttl
         entry = CacheEntry(key, value, ttl, level, tags)
@@ -295,6 +354,19 @@ class CacheManager:
                         pickle.dump(entry, f)
                 except Exception as e:
                     logger.error(f"Error writing to disk cache: {str(e)}")
+
+        # Store in distributed cache if enabled
+        if self.distributed_cache_enabled and level in (CacheLevel.DISTRIBUTED, CacheLevel.ALL):
+            async with self._distributed_lock:
+                try:
+                    if self.distributed_adapter:
+                        await self.distributed_adapter.set(key, value, ttl, tags)
+                except Exception as e:
+                    logger.error(f"Error writing to distributed cache: {str(e)}")
+
+        # Track dependencies if enabled
+        if self.dependency_tracking_enabled and depends_on:
+            await self._track_dependencies(key, depends_on)
 
     async def delete(self, key: str, level: CacheLevel = CacheLevel.ALL) -> bool:
         """
@@ -328,6 +400,20 @@ class CacheManager:
                 except Exception as e:
                     logger.error(f"Error deleting from disk cache: {str(e)}")
 
+        # Delete from distributed cache if enabled
+        if self.distributed_cache_enabled and level in (CacheLevel.DISTRIBUTED, CacheLevel.ALL):
+            async with self._distributed_lock:
+                try:
+                    if self.distributed_adapter:
+                        if await self.distributed_adapter.delete(key):
+                            deleted = True
+                except Exception as e:
+                    logger.error(f"Error deleting from distributed cache: {str(e)}")
+
+        # Clean up dependencies if enabled
+        if self.dependency_tracking_enabled:
+            await self._clean_dependencies(key)
+
         return deleted
 
     async def clear(self, level: CacheLevel = CacheLevel.ALL) -> None:
@@ -351,6 +437,21 @@ class CacheManager:
                 except Exception as e:
                     logger.error(f"Error clearing disk cache: {str(e)}")
 
+        # Clear distributed cache if enabled
+        if self.distributed_cache_enabled and level in (CacheLevel.DISTRIBUTED, CacheLevel.ALL):
+            async with self._distributed_lock:
+                try:
+                    if self.distributed_adapter:
+                        await self.distributed_adapter.clear()
+                except Exception as e:
+                    logger.error(f"Error clearing distributed cache: {str(e)}")
+
+        # Clear dependencies if enabled
+        if self.dependency_tracking_enabled and level == CacheLevel.ALL:
+            async with self._dependency_lock:
+                self.dependencies.clear()
+                self.dependents.clear()
+
     async def invalidate_by_pattern(self, pattern: str, level: CacheLevel = CacheLevel.ALL) -> int:
         """
         Invalidate cache entries by key pattern.
@@ -364,6 +465,7 @@ class CacheManager:
         """
         count = 0
         regex = re.compile(pattern)
+        invalidated_keys = []
 
         # Invalidate memory cache
         if level in (CacheLevel.MEMORY, CacheLevel.ALL):
@@ -372,6 +474,7 @@ class CacheManager:
 
                 for key in keys_to_delete:
                     del self.memory_cache[key]
+                    invalidated_keys.append(key)
                     count += 1
 
         # Invalidate disk cache if enabled
@@ -383,9 +486,26 @@ class CacheManager:
 
                         if regex.match(key):
                             os.remove(file_path)
-                            count += 1
+                            if key not in invalidated_keys:
+                                invalidated_keys.append(key)
+                                count += 1
                 except Exception as e:
                     logger.error(f"Error invalidating disk cache by pattern: {str(e)}")
+
+        # Invalidate distributed cache if enabled
+        if self.distributed_cache_enabled and level in (CacheLevel.DISTRIBUTED, CacheLevel.ALL):
+            async with self._distributed_lock:
+                try:
+                    if self.distributed_adapter:
+                        distributed_count = await self.distributed_adapter.invalidate_by_pattern(pattern)
+                        count += distributed_count
+                except Exception as e:
+                    logger.error(f"Error invalidating distributed cache by pattern: {str(e)}")
+
+        # Invalidate dependencies
+        if self.dependency_tracking_enabled:
+            for key in invalidated_keys:
+                await self._invalidate_dependents(key)
 
         return count
 
@@ -401,6 +521,7 @@ class CacheManager:
             Number of invalidated entries
         """
         count = 0
+        invalidated_keys = []
 
         # Invalidate memory cache
         if level in (CacheLevel.MEMORY, CacheLevel.ALL):
@@ -412,6 +533,7 @@ class CacheManager:
 
                 for key in keys_to_delete:
                     del self.memory_cache[key]
+                    invalidated_keys.append(key)
                     count += 1
 
         # Invalidate disk cache if enabled
@@ -425,11 +547,28 @@ class CacheManager:
 
                             if tag in entry.tags:
                                 os.remove(file_path)
-                                count += 1
+                                if entry.key not in invalidated_keys:
+                                    invalidated_keys.append(entry.key)
+                                    count += 1
                         except Exception as e:
                             logger.error(f"Error checking tags for {file_path}: {str(e)}")
                 except Exception as e:
                     logger.error(f"Error invalidating disk cache by tag: {str(e)}")
+
+        # Invalidate distributed cache if enabled
+        if self.distributed_cache_enabled and level in (CacheLevel.DISTRIBUTED, CacheLevel.ALL):
+            async with self._distributed_lock:
+                try:
+                    if self.distributed_adapter:
+                        distributed_count = await self.distributed_adapter.invalidate_by_tag(tag)
+                        count += distributed_count
+                except Exception as e:
+                    logger.error(f"Error invalidating distributed cache by tag: {str(e)}")
+
+        # Invalidate dependencies
+        if self.dependency_tracking_enabled:
+            for key in invalidated_keys:
+                await self._invalidate_dependents(key)
 
         return count
 
@@ -476,6 +615,10 @@ class CacheManager:
         if self._disk_hit_count + self._disk_miss_count > 0:
             disk_hit_rate = self._disk_hit_count / (self._disk_hit_count + self._disk_miss_count)
 
+        distributed_hit_rate = 0
+        if self._distributed_hit_count + self._distributed_miss_count > 0:
+            distributed_hit_rate = self._distributed_hit_count / (self._distributed_hit_count + self._distributed_miss_count)
+
         disk_size = 0
         if self.disk_cache_enabled:
             try:
@@ -483,7 +626,24 @@ class CacheManager:
             except Exception as e:
                 logger.error(f"Error calculating disk cache size: {str(e)}")
 
-        return {
+        # Get distributed cache stats if enabled
+        distributed_stats = {}
+        if self.distributed_cache_enabled and self.distributed_adapter:
+            try:
+                distributed_stats = await self.distributed_adapter.get_stats()
+            except Exception as e:
+                logger.error(f"Error getting distributed cache stats: {str(e)}")
+
+        # Get dependency stats if enabled
+        dependency_stats = {}
+        if self.dependency_tracking_enabled:
+            dependency_stats = {
+                "dependency_count": sum(len(deps) for deps in self.dependencies.values()),
+                "dependent_keys_count": len(self.dependencies),
+                "dependency_keys_count": len(self.dependents)
+            }
+
+        stats = {
             "memory_size": memory_size,
             "memory_max_size": self.memory_max_size,
             "memory_usage": memory_size / self.memory_max_size if self.memory_max_size > 0 else 0,
@@ -497,10 +657,25 @@ class CacheManager:
             "disk_hit_count": self._disk_hit_count,
             "disk_miss_count": self._disk_miss_count,
             "disk_hit_rate": disk_hit_rate,
+            "distributed_enabled": self.distributed_cache_enabled,
+            "distributed_hit_count": self._distributed_hit_count,
+            "distributed_miss_count": self._distributed_miss_count,
+            "distributed_hit_rate": distributed_hit_rate,
             "eviction_count": self._eviction_count,
             "invalidation_strategy": self.invalidation_strategy.value,
-            "pattern_subscriptions": list(self.pattern_subscriptions.keys())
+            "pattern_subscriptions": list(self.pattern_subscriptions.keys()),
+            "dependency_tracking_enabled": self.dependency_tracking_enabled
         }
+
+        # Add distributed stats if available
+        if distributed_stats:
+            stats["distributed"] = distributed_stats
+
+        # Add dependency stats if enabled
+        if dependency_stats:
+            stats["dependencies"] = dependency_stats
+
+        return stats
 
     async def _ensure_memory_capacity(self) -> None:
         """Ensure memory cache has capacity for a new entry."""
@@ -618,6 +793,124 @@ class CacheManager:
         hashed_key = key.replace("/", "_").replace(":", "_").replace("?", "_")
         return self.disk_cache_dir / f"{hashed_key}.cache"
 
+    async def _track_dependencies(self, key: str, depends_on: List[str]) -> None:
+        """
+        Track dependencies between cache keys.
+
+        Args:
+            key: The dependent key
+            depends_on: Keys that this key depends on
+        """
+        if not self.dependency_tracking_enabled or not depends_on:
+            return
+
+        async with self._dependency_lock:
+            # Add dependencies
+            for dependency_key in depends_on:
+                # Add to dependencies (dependency_key -> keys that depend on it)
+                if dependency_key not in self.dependencies:
+                    self.dependencies[dependency_key] = set()
+                self.dependencies[dependency_key].add(key)
+
+                # Add to dependents (key -> keys it depends on)
+                if key not in self.dependents:
+                    self.dependents[key] = set()
+                self.dependents[key].add(dependency_key)
+
+    async def _clean_dependencies(self, key: str) -> None:
+        """
+        Clean up dependencies when a key is deleted.
+
+        Args:
+            key: The key being deleted
+        """
+        if not self.dependency_tracking_enabled:
+            return
+
+        async with self._dependency_lock:
+            # Remove from dependencies (keys that depend on this key)
+            if key in self.dependencies:
+                del self.dependencies[key]
+
+            # Remove from dependents
+            if key in self.dependents:
+                # Get keys this key depends on
+                dependency_keys = self.dependents[key]
+
+                # Remove this key from their dependencies
+                for dependency_key in dependency_keys:
+                    if dependency_key in self.dependencies:
+                        self.dependencies[dependency_key].discard(key)
+
+                        # Clean up empty sets
+                        if not self.dependencies[dependency_key]:
+                            del self.dependencies[dependency_key]
+
+                # Remove this key's dependents
+                del self.dependents[key]
+
+    async def _invalidate_dependents(self, key: str) -> int:
+        """
+        Invalidate all keys that depend on this key.
+
+        Args:
+            key: The key whose dependents should be invalidated
+
+        Returns:
+            Number of invalidated keys
+        """
+        if not self.dependency_tracking_enabled:
+            return 0
+
+        count = 0
+
+        async with self._dependency_lock:
+            # Get keys that depend on this key
+            dependent_keys = self.dependencies.get(key, set()).copy()
+
+            # Invalidate each dependent key
+            for dependent_key in dependent_keys:
+                # Recursively invalidate dependents first
+                count += await self._invalidate_dependents(dependent_key)
+
+                # Then invalidate this key
+                if await self.delete(dependent_key):
+                    count += 1
+
+        return count
+
+    async def get_dependencies(self, key: str) -> List[str]:
+        """
+        Get keys that a key depends on.
+
+        Args:
+            key: Cache key
+
+        Returns:
+            List of keys that this key depends on
+        """
+        if not self.dependency_tracking_enabled:
+            return []
+
+        async with self._dependency_lock:
+            return list(self.dependents.get(key, set()))
+
+    async def get_dependents(self, key: str) -> List[str]:
+        """
+        Get keys that depend on a key.
+
+        Args:
+            key: Cache key
+
+        Returns:
+            List of keys that depend on this key
+        """
+        if not self.dependency_tracking_enabled:
+            return []
+
+        async with self._dependency_lock:
+            return list(self.dependencies.get(key, set()))
+
     async def prefetch(self, keys: List[str], level: CacheLevel = CacheLevel.ALL) -> Dict[str, Any]:
         """
         Prefetch multiple cache keys at once.
@@ -641,7 +934,8 @@ class CacheManager:
         items: Dict[str, Any],
         ttl: Optional[int] = None,
         level: CacheLevel = CacheLevel.ALL,
-        tags: Optional[List[str]] = None
+        tags: Optional[List[str]] = None,
+        dependencies: Optional[Dict[str, List[str]]] = None
     ) -> None:
         """
         Set multiple values in the cache at once.
@@ -651,9 +945,13 @@ class CacheManager:
             ttl: Time to live in seconds (None for default)
             level: Cache level to store at
             tags: Tags for grouping and invalidation
+            dependencies: Dictionary mapping keys to their dependencies
         """
+        dependencies = dependencies or {}
+
         for key, value in items.items():
-            await self.set(key, value, ttl, level, tags)
+            depends_on = dependencies.get(key)
+            await self.set(key, value, ttl, level, tags, depends_on)
 
     async def touch(self, key: str, ttl: int) -> bool:
         """
@@ -692,5 +990,19 @@ class CacheManager:
                         updated = True
                 except Exception as e:
                     logger.error(f"Error touching disk cache entry: {str(e)}")
+
+        # Update distributed cache if enabled
+        if self.distributed_cache_enabled and self.distributed_adapter:
+            async with self._distributed_lock:
+                try:
+                    # Get the current value
+                    value = await self.distributed_adapter.get(key)
+
+                    if value is not None:
+                        # Set with new TTL
+                        await self.distributed_adapter.set(key, value, ttl)
+                        updated = True
+                except Exception as e:
+                    logger.error(f"Error touching distributed cache entry: {str(e)}")
 
         return updated
