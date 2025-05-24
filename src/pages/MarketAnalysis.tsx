@@ -6,6 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { BarChart, Activity, TrendingUp, DollarSign, PieChart, LineChart, RefreshCw } from "lucide-react";
 import { getTrendingTokens } from "@/utils/marketUtils";
+import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 interface TokenData {
   name: string;
@@ -27,6 +29,7 @@ interface MarketMetrics {
 }
 
 const MarketAnalysis = () => {
+  const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
   const [topTokens, setTopTokens] = useState<TokenData[]>([]);
   const [marketMetrics, setMarketMetrics] = useState<MarketMetrics>({
@@ -82,6 +85,31 @@ const MarketAnalysis = () => {
     return `$${value.toFixed(2)}`;
   };
 
+  // Quick Actions handlers
+  const handleViewAllTokens = () => {
+    navigate('/tokens');
+  };
+
+  const handleAdvancedAnalytics = () => {
+    navigate('/portfolio');
+    toast.success('Navigating to Portfolio Analytics');
+  };
+
+  const handleSetPriceAlerts = () => {
+    navigate('/auto-trading');
+    toast.success('Navigating to Trading Alerts Configuration');
+  };
+
+  // Enhanced refresh with user feedback
+  const handleRefreshData = async () => {
+    try {
+      await loadMarketData();
+      toast.success('Market data refreshed successfully');
+    } catch (error) {
+      toast.error('Failed to refresh market data');
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -91,7 +119,7 @@ const MarketAnalysis = () => {
           <p className="text-gray-400 mt-1">Real-time Solana ecosystem market data and insights</p>
         </div>
         <Button
-          onClick={loadMarketData}
+          onClick={handleRefreshData}
           variant="outline"
           size="sm"
           disabled={isLoading}
@@ -376,15 +404,26 @@ const MarketAnalysis = () => {
               <CardTitle className="text-white">Quick Actions</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <Button className="w-full bg-trading-highlight hover:bg-trading-highlight/80">
+              <Button
+                className="w-full bg-trading-highlight hover:bg-trading-highlight/80"
+                onClick={handleViewAllTokens}
+              >
                 <TrendingUp className="h-4 w-4 mr-2" />
                 View All Tokens
               </Button>
-              <Button variant="outline" className="w-full bg-black/20 border-white/10 text-white hover:bg-white/10">
+              <Button
+                variant="outline"
+                className="w-full bg-black/20 border-white/10 text-white hover:bg-white/10"
+                onClick={handleAdvancedAnalytics}
+              >
                 <BarChart className="h-4 w-4 mr-2" />
                 Advanced Analytics
               </Button>
-              <Button variant="outline" className="w-full bg-black/20 border-white/10 text-white hover:bg-white/10">
+              <Button
+                variant="outline"
+                className="w-full bg-black/20 border-white/10 text-white hover:bg-white/10"
+                onClick={handleSetPriceAlerts}
+              >
                 <Activity className="h-4 w-4 mr-2" />
                 Set Price Alerts
               </Button>

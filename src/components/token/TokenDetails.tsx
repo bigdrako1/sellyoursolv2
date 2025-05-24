@@ -25,6 +25,7 @@ import {
   Wallet,
 } from "lucide-react";
 import { toast } from "sonner";
+import TradingModal from '@/components/TradingModal';
 import { formatCurrency, formatNumber, formatPercentage } from "@/utils/formatters";
 
 // Mock token data interface - in a real app, this would come from your API
@@ -62,19 +63,20 @@ const TokenDetails: React.FC<TokenDetailsProps> = ({
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("overview");
   const [copied, setCopied] = useState(false);
+  const [tradingModalOpen, setTradingModalOpen] = useState(false);
 
   // Fetch token data when the component mounts or tokenAddress changes
   useEffect(() => {
     const fetchTokenData = async () => {
       if (!tokenAddress || !isOpen) return;
-      
+
       setLoading(true);
-      
+
       try {
         // In a real app, this would be an API call
         // For demo purposes, we'll simulate a delay and return mock data
         await new Promise(resolve => setTimeout(resolve, 1000));
-        
+
         // Mock data
         setToken({
           address: tokenAddress,
@@ -107,14 +109,14 @@ const TokenDetails: React.FC<TokenDetailsProps> = ({
 
   const copyToClipboard = () => {
     if (!token) return;
-    
+
     navigator.clipboard.writeText(token.address);
     setCopied(true);
-    
+
     setTimeout(() => {
       setCopied(false);
     }, 2000);
-    
+
     toast.success("Address copied to clipboard");
   };
 
@@ -125,7 +127,7 @@ const TokenDetails: React.FC<TokenDetailsProps> = ({
 
   const handleTradeToken = () => {
     if (!token) return;
-    window.open(`https://jup.ag/swap/SOL-${token.address}`, '_blank');
+    setTradingModalOpen(true);
   };
 
   return (
@@ -138,9 +140,9 @@ const TokenDetails: React.FC<TokenDetailsProps> = ({
             ) : (
               <>
                 {token?.logoUrl && (
-                  <img 
-                    src={token.logoUrl} 
-                    alt={token?.symbol} 
+                  <img
+                    src={token.logoUrl}
+                    alt={token?.symbol}
                     className="w-6 h-6 rounded-full"
                   />
                 )}
@@ -158,9 +160,9 @@ const TokenDetails: React.FC<TokenDetailsProps> = ({
               <>
                 <div className="font-mono text-xs text-gray-400">
                   {token?.address.substring(0, 8)}...{token?.address.substring(token.address.length - 8)}
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
+                  <Button
+                    variant="ghost"
+                    size="icon"
                     className="h-4 w-4 ml-1 hover:bg-white/5"
                     onClick={copyToClipboard}
                   >
@@ -169,10 +171,10 @@ const TokenDetails: React.FC<TokenDetailsProps> = ({
                 </div>
                 <div className="flex items-center gap-1">
                   {token?.qualityScore !== undefined && (
-                    <Badge 
+                    <Badge
                       className={`${
-                        token.qualityScore > 70 ? 'bg-green-900/20 text-green-400' : 
-                        token.qualityScore > 40 ? 'bg-yellow-900/20 text-yellow-400' : 
+                        token.qualityScore > 70 ? 'bg-green-900/20 text-green-400' :
+                        token.qualityScore > 40 ? 'bg-yellow-900/20 text-yellow-400' :
                         'bg-red-900/20 text-red-400'
                       }`}
                     >
@@ -196,7 +198,7 @@ const TokenDetails: React.FC<TokenDetailsProps> = ({
             <TabsTrigger value="metrics">Metrics</TabsTrigger>
             <TabsTrigger value="holders">Holders</TabsTrigger>
           </TabsList>
-          
+
           <TabsContent value="overview" className="space-y-4 mt-4">
             {loading ? (
               <div className="space-y-4">
@@ -216,7 +218,7 @@ const TokenDetails: React.FC<TokenDetailsProps> = ({
                       {formatPercentage(token?.priceChange24h || 0)} (24h)
                     </div>
                   </div>
-                  
+
                   <div className="bg-black/20 p-3 rounded-lg border border-white/5">
                     <div className="text-xs text-gray-400 mb-1 flex items-center">
                       <BarChart2 size={12} className="mr-1" />
@@ -224,7 +226,7 @@ const TokenDetails: React.FC<TokenDetailsProps> = ({
                     </div>
                     <div className="font-medium">{formatCurrency(token?.marketCap || 0)}</div>
                   </div>
-                  
+
                   <div className="bg-black/20 p-3 rounded-lg border border-white/5">
                     <div className="text-xs text-gray-400 mb-1 flex items-center">
                       <TrendingUp size={12} className="mr-1" />
@@ -232,7 +234,7 @@ const TokenDetails: React.FC<TokenDetailsProps> = ({
                     </div>
                     <div className="font-medium">{formatCurrency(token?.volume24h || 0)}</div>
                   </div>
-                  
+
                   <div className="bg-black/20 p-3 rounded-lg border border-white/5">
                     <div className="text-xs text-gray-400 mb-1 flex items-center">
                       <Users size={12} className="mr-1" />
@@ -241,18 +243,18 @@ const TokenDetails: React.FC<TokenDetailsProps> = ({
                     <div className="font-medium">{formatNumber(token?.holders || 0)}</div>
                   </div>
                 </div>
-                
+
                 {token?.description && (
                   <div className="bg-black/20 p-3 rounded-lg border border-white/5">
                     <div className="text-xs text-gray-400 mb-1">Description</div>
                     <p className="text-sm">{token.description}</p>
                   </div>
                 )}
-                
+
                 <div className="flex flex-wrap gap-2">
                   {token?.website && (
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="outline"
                       size="sm"
                       className="bg-black/20 border-white/10 text-xs h-7"
                       onClick={() => window.open(token.website, '_blank')}
@@ -261,10 +263,10 @@ const TokenDetails: React.FC<TokenDetailsProps> = ({
                       Website
                     </Button>
                   )}
-                  
+
                   {token?.twitter && (
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="outline"
                       size="sm"
                       className="bg-black/20 border-white/10 text-xs h-7"
                       onClick={() => window.open(token.twitter, '_blank')}
@@ -273,9 +275,9 @@ const TokenDetails: React.FC<TokenDetailsProps> = ({
                       Twitter
                     </Button>
                   )}
-                  
-                  <Button 
-                    variant="outline" 
+
+                  <Button
+                    variant="outline"
                     size="sm"
                     className="bg-black/20 border-white/10 text-xs h-7"
                     onClick={handleViewOnExplorer}
@@ -287,7 +289,7 @@ const TokenDetails: React.FC<TokenDetailsProps> = ({
               </>
             )}
           </TabsContent>
-          
+
           <TabsContent value="metrics" className="space-y-4 mt-4">
             {loading ? (
               <Skeleton className="h-40 w-full" />
@@ -297,7 +299,7 @@ const TokenDetails: React.FC<TokenDetailsProps> = ({
               </div>
             )}
           </TabsContent>
-          
+
           <TabsContent value="holders" className="space-y-4 mt-4">
             {loading ? (
               <Skeleton className="h-40 w-full" />
@@ -337,15 +339,15 @@ const TokenDetails: React.FC<TokenDetailsProps> = ({
         </Tabs>
 
         <DialogFooter className="flex flex-col sm:flex-row gap-2">
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             onClick={handleViewOnExplorer}
             className="flex-1"
           >
             <ArrowUpRight size={16} className="mr-2" />
             View on Explorer
           </Button>
-          <Button 
+          <Button
             onClick={handleTradeToken}
             className="flex-1"
           >
@@ -354,6 +356,24 @@ const TokenDetails: React.FC<TokenDetailsProps> = ({
           </Button>
         </DialogFooter>
       </DialogContent>
+
+      {/* Trading Modal */}
+      {token && (
+        <TradingModal
+          isOpen={tradingModalOpen}
+          onClose={() => setTradingModalOpen(false)}
+          token={{
+            symbol: token.symbol,
+            name: token.name,
+            address: token.address,
+            price: token.price,
+            change24h: token.priceChange24h,
+            volume: token.volume24h,
+            liquidity: token.liquidity
+          }}
+          defaultAction="buy"
+        />
+      )}
     </Dialog>
   );
 };

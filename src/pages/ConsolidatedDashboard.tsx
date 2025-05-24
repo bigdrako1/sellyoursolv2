@@ -339,14 +339,88 @@ const ConsolidatedDashboard: React.FC = () => {
 
         {/* Analytics Tab */}
         <TabsContent value="analytics" className="space-y-6">
+          {/* Performance Metrics Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <Card className="bg-trading-darkAccent border-white/5">
+              <CardContent className="pt-6">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-sm text-gray-400">Sharpe Ratio</p>
+                    <div className="flex items-baseline mt-1">
+                      <h3 className="text-2xl font-bold">2.34</h3>
+                      <span className="ml-2 text-sm text-green-500">Excellent</span>
+                    </div>
+                  </div>
+                  <div className="p-2 rounded-full bg-purple-500/20">
+                    <TrendingUp className="text-purple-500" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-trading-darkAccent border-white/5">
+              <CardContent className="pt-6">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-sm text-gray-400">Max Drawdown</p>
+                    <div className="flex items-baseline mt-1">
+                      <h3 className="text-2xl font-bold">-8.2%</h3>
+                      <span className="ml-2 text-sm text-green-500">Low Risk</span>
+                    </div>
+                  </div>
+                  <div className="p-2 rounded-full bg-red-500/20">
+                    <ArrowDownRight className="text-red-500" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-trading-darkAccent border-white/5">
+              <CardContent className="pt-6">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-sm text-gray-400">Avg Trade Size</p>
+                    <div className="flex items-baseline mt-1">
+                      <h3 className="text-2xl font-bold">0.85</h3>
+                      <span className="ml-2 text-sm text-gray-400">SOL</span>
+                    </div>
+                  </div>
+                  <div className="p-2 rounded-full bg-blue-500/20">
+                    <Coins className="text-blue-500" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-trading-darkAccent border-white/5">
+              <CardContent className="pt-6">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-sm text-gray-400">Volatility</p>
+                    <div className="flex items-baseline mt-1">
+                      <h3 className="text-2xl font-bold">12.4%</h3>
+                      <span className="ml-2 text-sm text-yellow-500">Moderate</span>
+                    </div>
+                  </div>
+                  <div className="p-2 rounded-full bg-yellow-500/20">
+                    <Activity className="text-yellow-500" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2">
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <LineChart className="h-5 w-5 text-blue-400" />
-                    Portfolio Performance
+                    Portfolio Performance vs Benchmark
                   </CardTitle>
+                  <CardDescription>
+                    Track your portfolio performance against SOL and market benchmarks
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="h-80">
@@ -390,13 +464,14 @@ const ConsolidatedDashboard: React.FC = () => {
               </Card>
             </div>
 
-            <div>
+            <div className="space-y-6">
               <Card>
                 <CardHeader>
                   <CardTitle>Asset Allocation</CardTitle>
+                  <CardDescription>Current portfolio distribution</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="h-80">
+                  <div className="h-64">
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
                         <Pie
@@ -416,6 +491,39 @@ const ConsolidatedDashboard: React.FC = () => {
                         <Tooltip formatter={(value) => `${value}%`} />
                       </PieChart>
                     </ResponsiveContainer>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <BarChart2 className="h-5 w-5 text-green-400" />
+                    Trading Insights
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-400">Best Performing Token</span>
+                    <div className="flex items-center gap-2">
+                      <Badge className="bg-green-500/20 text-green-400">BONK</Badge>
+                      <span className="text-sm text-green-400">+127%</span>
+                    </div>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-400">Most Traded Token</span>
+                    <div className="flex items-center gap-2">
+                      <Badge className="bg-blue-500/20 text-blue-400">SOL</Badge>
+                      <span className="text-sm">23 trades</span>
+                    </div>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-400">Avg Hold Time</span>
+                    <span className="text-sm">3.2 days</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-400">Success Rate</span>
+                    <span className="text-sm text-green-400">78.5%</span>
                   </div>
                 </CardContent>
               </Card>

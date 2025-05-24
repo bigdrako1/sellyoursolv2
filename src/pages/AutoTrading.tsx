@@ -15,7 +15,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Shield, TrendingUp, Bell, Wallet, MessageSquare, Activity } from "lucide-react";
 import { useAppStore } from "@/store/appStore";
 import { Link } from "react-router-dom";
-import { HeliusApiConfig } from "@/components/api";
 
 const AutoTrading = () => {
   const [activeTab, setActiveTab] = useState("overview");
@@ -26,31 +25,11 @@ const AutoTrading = () => {
   const {
     isConnected,
     systemLatency,
-    apiKeyConfigured,
     setConnected,
-    setSystemLatency,
-    setApiKeyConfigured
+    setSystemLatency
   } = useAppStore();
 
   const [apiConnectionChecked, setApiConnectionChecked] = useState(false);
-
-  // Check if Helius API key is already set
-  useEffect(() => {
-    const storedApiKey = localStorage.getItem('helius_api_key');
-    if (storedApiKey) {
-      setApiKeyConfigured(true);
-    }
-  }, [setApiKeyConfigured]);
-
-  // Handle API key configuration
-  const handleApiKeySet = (apiKey: string) => {
-    if (apiKey) {
-      setApiKeyConfigured(true);
-      toast.success("Your Helius API key has been set up successfully.");
-    } else {
-      setApiKeyConfigured(false);
-    }
-  };
 
   // Check API connection on mount and periodically
   useEffect(() => {
@@ -99,12 +78,6 @@ const AutoTrading = () => {
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">Automated Trading</h1>
-
-      {!apiKeyConfigured && (
-        <div className="mb-6">
-          <HeliusApiConfig onApiKeySet={handleApiKeySet} />
-        </div>
-      )}
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className="bg-black/20 border-white/10 border">

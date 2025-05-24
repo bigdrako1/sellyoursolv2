@@ -185,35 +185,33 @@ const LivePriceTracker = () => {
 
   // Handle price animation with enhanced visual feedback
   useEffect(() => {
-    if (solPrice && lastPrice !== 0) {
-      // Type assertion for solPrice
+    if (solPrice) {
       const currentPrice = Number(solPrice);
 
-      if (currentPrice > lastPrice) {
-        setPriceDirection('up');
-      } else if (currentPrice < lastPrice) {
-        setPriceDirection('down');
-      } else {
-        // No change in price
-        setPriceDirection(null);
-        setAnimatePrice(false);
-        return;
+      if (lastPrice !== 0 && currentPrice !== lastPrice) {
+        if (currentPrice > lastPrice) {
+          setPriceDirection('up');
+        } else if (currentPrice < lastPrice) {
+          setPriceDirection('down');
+        }
+
+        // Reset animation if it's already running
+        setAnimationKey(prev => prev + 1);
+
+        // Start new animation
+        setAnimatePrice(true);
+        const timer = setTimeout(() => setAnimatePrice(false), 2000);
+
+        // Update last price after comparison
+        setLastPrice(currentPrice);
+
+        return () => clearTimeout(timer);
+      } else if (lastPrice === 0) {
+        // Initial price load
+        setLastPrice(currentPrice);
       }
-
-      // Reset animation if it's already running
-      setAnimationKey(prev => prev + 1);
-
-      // Start new animation
-      setAnimatePrice(true);
-      const timer = setTimeout(() => setAnimatePrice(false), 2000);
-      return () => clearTimeout(timer);
     }
-
-    if (solPrice) {
-      // Type assertion for solPrice
-      setLastPrice(Number(solPrice));
-    }
-  }, [solPrice, lastPrice]);
+  }, [solPrice]); // Removed lastPrice from dependencies to prevent infinite loop
 
   // Use the utility function for currency conversion
   const convertToCurrency = (value: number): number => {

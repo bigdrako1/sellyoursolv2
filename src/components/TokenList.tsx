@@ -6,12 +6,17 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { getMarketOverview } from '@/utils/marketUtils';
 import { formatCurrency } from '@/utils/marketUtils';
-import { Search } from 'lucide-react';
+import { Search, Eye, TrendingUp } from 'lucide-react';
+import TradingModal from '@/components/TradingModal';
+import TokenDetailsModal from '@/components/TokenDetailsModal';
 
 const TokenList = () => {
   const [tokens, setTokens] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [marketOverview, setMarketOverview] = useState<any>(null);
+  const [tradingModalOpen, setTradingModalOpen] = useState(false);
+  const [tokenDetailsOpen, setTokenDetailsOpen] = useState(false);
+  const [selectedToken, setSelectedToken] = useState<any>(null);
 
   useEffect(() => {
     const fetchMarketData = async () => {
@@ -86,6 +91,34 @@ const TokenList = () => {
     token.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  // Handle view token details
+  const handleViewToken = (token: any) => {
+    setSelectedToken({
+      symbol: token.symbol,
+      name: token.name,
+      address: token.address || `${token.symbol.toLowerCase()}_mock_address`,
+      price: token.price,
+      change24h: token.change24h,
+      volume: token.volume,
+      liquidity: token.liquidity
+    });
+    setTokenDetailsOpen(true);
+  };
+
+  // Handle trade button click
+  const handleTradeClick = (token: any) => {
+    setSelectedToken({
+      symbol: token.symbol,
+      name: token.name,
+      address: token.address || `${token.symbol.toLowerCase()}_mock_address`,
+      price: token.price,
+      change24h: token.change24h,
+      volume: token.volume,
+      liquidity: token.liquidity
+    });
+    setTradingModalOpen(true);
+  };
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
@@ -147,15 +180,20 @@ const TokenList = () => {
                         <Button
                           size="sm"
                           variant="outline"
-                          className="h-8 px-2 py-1 text-xs"
-                          onClick={() => window.open(`https://birdeye.so/token/${token.symbol}?chain=solana`, '_blank')}
+                          className="h-8 px-2 py-1 text-xs bg-black/20 border-white/10 text-white hover:bg-white/10"
+                          onClick={() => handleViewToken(token)}
+                          title="View token details"
                         >
+                          <Eye className="h-3 w-3 mr-1" />
                           View
                         </Button>
                         <Button
                           size="sm"
                           className="h-8 px-2 py-1 text-xs bg-green-600 hover:bg-green-700"
+                          onClick={() => handleTradeClick(token)}
+                          title="Trade token"
                         >
+                          <TrendingUp className="h-3 w-3 mr-1" />
                           Trade
                         </Button>
                       </div>
@@ -174,6 +212,29 @@ const TokenList = () => {
         </div>
       </CardContent>
     </Card>
+
+    {/* Token Details Modal */}
+    <TokenDetailsModal
+      isOpen={tokenDetailsOpen}
+      onClose={() => {
+        setTokenDetailsOpen(false);
+        setSelectedToken(null);
+      }}
+      tokenAddress={selectedToken?.address || ''}
+      tokenSymbol={selectedToken?.symbol}
+      tokenName={selectedToken?.name}
+    />
+
+    {/* Trading Modal */}
+    <TradingModal
+      isOpen={tradingModalOpen}
+      onClose={() => {
+        setTradingModalOpen(false);
+        setSelectedToken(null);
+      }}
+      token={selectedToken}
+      defaultAction="buy"
+    />
   );
 };
 

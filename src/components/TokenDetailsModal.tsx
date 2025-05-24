@@ -4,18 +4,19 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
-  ExternalLink, 
-  TrendingUp, 
-  TrendingDown, 
-  DollarSign, 
-  BarChart3, 
-  Users, 
+import {
+  ExternalLink,
+  TrendingUp,
+  TrendingDown,
+  DollarSign,
+  BarChart3,
+  Users,
   Shield,
   Copy,
   CheckCircle
 } from 'lucide-react';
 import { toast } from 'sonner';
+import TradingModal from '@/components/TradingModal';
 
 interface TokenDetailsModalProps {
   isOpen: boolean;
@@ -58,6 +59,7 @@ const TokenDetailsModal: React.FC<TokenDetailsModalProps> = ({
   const [tokenData, setTokenData] = useState<TokenData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [tradingModalOpen, setTradingModalOpen] = useState(false);
 
   // Mock data for demonstration
   const mockTokenData: TokenData = {
@@ -200,8 +202,8 @@ const TokenDetailsModal: React.FC<TokenDetailsModalProps> = ({
                         {tokenData.change24h >= 0 ? '+' : ''}{tokenData.change24h.toFixed(2)}%
                       </p>
                     </div>
-                    {tokenData.change24h >= 0 ? 
-                      <TrendingUp className="h-8 w-8 text-green-400" /> : 
+                    {tokenData.change24h >= 0 ?
+                      <TrendingUp className="h-8 w-8 text-green-400" /> :
                       <TrendingDown className="h-8 w-8 text-red-400" />
                     }
                   </div>
@@ -343,8 +345,16 @@ const TokenDetailsModal: React.FC<TokenDetailsModalProps> = ({
               </TabsContent>
             </Tabs>
 
-            {/* External Links */}
+            {/* Action Buttons */}
             <div className="flex gap-2 pt-4 border-t border-white/10">
+              <Button
+                size="sm"
+                onClick={() => setTradingModalOpen(true)}
+                className="bg-green-600 hover:bg-green-700 text-white"
+              >
+                <TrendingUp className="h-4 w-4 mr-2" />
+                Trade Token
+              </Button>
               <Button
                 variant="outline"
                 size="sm"
@@ -371,6 +381,24 @@ const TokenDetailsModal: React.FC<TokenDetailsModalProps> = ({
           </div>
         )}
       </DialogContent>
+
+      {/* Trading Modal */}
+      {tokenData && (
+        <TradingModal
+          isOpen={tradingModalOpen}
+          onClose={() => setTradingModalOpen(false)}
+          token={{
+            symbol: tokenData.symbol,
+            name: tokenData.name,
+            address: tokenData.address,
+            price: tokenData.price,
+            change24h: tokenData.change24h,
+            volume: tokenData.volume24h,
+            liquidity: tokenData.liquidity
+          }}
+          defaultAction="buy"
+        />
+      )}
     </Dialog>
   );
 };

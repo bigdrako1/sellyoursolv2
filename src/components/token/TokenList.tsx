@@ -5,8 +5,9 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { getMarketOverview } from '@/utils/marketUtils';
 import { formatCurrency } from '@/utils/marketUtils';
-import { Search, ExternalLink } from 'lucide-react';
+import { Search, Eye, TrendingUp } from 'lucide-react';
 import useTokenDetails from '@/hooks/useTokenDetails';
+import TradingModal from '@/components/TradingModal';
 
 /**
  * TokenList component displays a list of tokens with search functionality
@@ -15,6 +16,8 @@ const TokenList = () => {
   const [tokens, setTokens] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [marketOverview, setMarketOverview] = useState<any>(null);
+  const [tradingModalOpen, setTradingModalOpen] = useState(false);
+  const [selectedTokenForTrade, setSelectedTokenForTrade] = useState<any>(null);
   const { openTokenDetails, TokenDetailsDialog } = useTokenDetails();
 
   useEffect(() => {
@@ -90,6 +93,20 @@ const TokenList = () => {
     token.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  // Handle trade button click
+  const handleTradeClick = (token: any) => {
+    setSelectedTokenForTrade({
+      symbol: token.symbol,
+      name: token.name,
+      address: token.address || `${token.symbol.toLowerCase()}_mock_address`,
+      price: token.price,
+      change24h: token.change24h,
+      volume: token.volume,
+      liquidity: token.liquidity
+    });
+    setTradingModalOpen(true);
+  };
+
   return (
     <>
       <Card>
@@ -152,15 +169,20 @@ const TokenList = () => {
                         <Button
                           size="sm"
                           variant="outline"
-                          className="h-8 px-2 py-1 text-xs"
+                          className="h-8 px-2 py-1 text-xs bg-black/20 border-white/10 text-white hover:bg-white/10"
                           onClick={() => openTokenDetails(token.symbol)}
+                          title="View token details"
                         >
+                          <Eye className="h-3 w-3 mr-1" />
                           View
                         </Button>
                         <Button
                           size="sm"
                           className="h-8 px-2 py-1 text-xs bg-green-600 hover:bg-green-700"
+                          onClick={() => handleTradeClick(token)}
+                          title="Trade token"
                         >
+                          <TrendingUp className="h-3 w-3 mr-1" />
                           Trade
                         </Button>
                       </div>
@@ -180,6 +202,15 @@ const TokenList = () => {
       </CardContent>
     </Card>
     <TokenDetailsDialog />
+    <TradingModal
+      isOpen={tradingModalOpen}
+      onClose={() => {
+        setTradingModalOpen(false);
+        setSelectedTokenForTrade(null);
+      }}
+      token={selectedTokenForTrade}
+      defaultAction="buy"
+    />
     </>
   );
 };

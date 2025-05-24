@@ -4,9 +4,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
-import { 
-  TrendingUp, 
-  Wallet, 
+import {
+  TrendingUp,
+  Wallet,
   Bot,
   AlertCircle,
   ExternalLink,
@@ -104,37 +104,38 @@ const TokenTracker: React.FC<TokenTrackerProps> = ({
   // Load tokens (would fetch from API in a real implementation)
   useEffect(() => {
     if (!showAlerts) return;
-    
+
     const fetchTokens = async () => {
       if (!alertsEnabled) return;
-      
+
       setLoading(true);
       setErrorMessage(null);
       try {
         // Fetch real token data using our service
         const tokenActivity = await getRecentTokenActivity();
-        
+
         if (tokenActivity && Array.isArray(tokenActivity) && tokenActivity.length > 0) {
           // Process token data
           const tokenData: Token[] = tokenActivity.map(token => {
             const processedToken = tokenInfoToToken(token);
-            
+
             // Calculate runner potential if quality score exists
             if (processedToken.qualityScore) {
               processedToken.runnerPotential = getRunnerPotentialGrade(processedToken.qualityScore);
             }
-            
+
             return processedToken;
           });
-          
-          setTokens(tokenData);
-          
-          // Play sound notification for new tokens
-          if (tokenData.length > 0 && tokens.length > 0) {
-            if (tokenData[0].address !== tokens[0].address) {
-              playSound('alert');
+
+          setTokens(prevTokens => {
+            // Play sound notification for new tokens
+            if (tokenData.length > 0 && prevTokens.length > 0) {
+              if (tokenData[0].address !== prevTokens[0].address) {
+                playSound('alert');
+              }
             }
-          }
+            return tokenData;
+          });
         } else {
           // No tokens found or API error
           console.log("No token data returned from API");
@@ -147,33 +148,33 @@ const TokenTracker: React.FC<TokenTrackerProps> = ({
         setLoading(false);
       }
     };
-    
+
     fetchTokens();
-    
+
     // Set up polling for new tokens
     const intervalId = setInterval(fetchTokens, 60000);
     return () => clearInterval(intervalId);
-  }, [alertsEnabled, tokens, showAlerts]);
+  }, [alertsEnabled, showAlerts]); // Removed 'tokens' from dependencies to prevent infinite loop
 
   // Fetch trending tokens
   useEffect(() => {
     if (!showTrending) return;
-    
+
     const fetchTrendingTokens = async () => {
       setTrendingLoading(true);
       try {
         const trending = await getTrendingTokens();
-        
+
         if (trending && Array.isArray(trending)) {
           // Convert TokenInfo to Token
           const trendingTokenData = trending.map(token => {
             const processedToken = tokenInfoToToken(token);
-            
+
             // Calculate runner potential if quality score exists
             if (processedToken.qualityScore) {
               processedToken.runnerPotential = getRunnerPotentialGrade(processedToken.qualityScore);
             }
-            
+
             return processedToken;
           });
           setTrendingTokens(trendingTokenData);
@@ -184,9 +185,9 @@ const TokenTracker: React.FC<TokenTrackerProps> = ({
         setTrendingLoading(false);
       }
     };
-    
+
     fetchTrendingTokens();
-    
+
     // Refresh trending tokens every 5 minutes
     const intervalId = setInterval(fetchTrendingTokens, 300000);
     return () => clearInterval(intervalId);
@@ -195,23 +196,23 @@ const TokenTracker: React.FC<TokenTrackerProps> = ({
   // Fetch pump.fun tokens
   useEffect(() => {
     if (!showPumpFun) return;
-    
+
     const fetchPumpFunTokens = async () => {
       setPumpFunLoading(true);
       try {
         const pumpTokens = await getPumpFunTokens();
-        
+
         if (pumpTokens && Array.isArray(pumpTokens)) {
           // Convert TokenInfo to Token
           const pumpTokenData = pumpTokens.map(token => {
             const processedToken = tokenInfoToToken(token);
             processedToken.isPumpFun = true;
-            
+
             // Calculate runner potential if quality score exists
             if (processedToken.qualityScore) {
               processedToken.runnerPotential = getRunnerPotentialGrade(processedToken.qualityScore);
             }
-            
+
             return processedToken;
           });
           setPumpFunTokens(pumpTokenData);
@@ -222,9 +223,9 @@ const TokenTracker: React.FC<TokenTrackerProps> = ({
         setPumpFunLoading(false);
       }
     };
-    
+
     fetchPumpFunTokens();
-    
+
     // Refresh pump.fun tokens every 5 minutes
     const intervalId = setInterval(fetchPumpFunTokens, 300000);
     return () => clearInterval(intervalId);
@@ -236,8 +237,8 @@ const TokenTracker: React.FC<TokenTrackerProps> = ({
     toast(
       alertsEnabled ? "Alerts Disabled" : "Alerts Enabled",
       {
-        description: alertsEnabled 
-          ? "You will no longer receive token alerts" 
+        description: alertsEnabled
+          ? "You will no longer receive token alerts"
           : "You will now receive alerts for new tokens"
       }
     );
@@ -246,34 +247,34 @@ const TokenTracker: React.FC<TokenTrackerProps> = ({
   // Handle token selection
   const handleTradeToken = (token: Token) => {
     setSelectedToken(token);
-    
+
     if (onTokenSelected) {
       onTokenSelected(token);
     }
-    
+
     if (enableTrading) {
       setTradeDialogOpen(true);
     }
   };
-  
+
   // Handle token tracking
   const handleTrackToken = (token: Token) => {
     toast(`${token.symbol} has been added to your watchlist`);
   };
-  
+
   // Execute trade
   const handleExecuteTrade = async () => {
     if (!selectedToken) return;
-    
+
     setIsProcessing(true);
-    
+
     try {
       // Execute trade using internal system
       const result = await executeTrade(
         selectedToken.address,
         tradeAmount
       );
-      
+
       if (result.success) {
         // Create a position if tracking is enabled
         if (trackingEnabled) {
@@ -285,13 +286,13 @@ const TokenTracker: React.FC<TokenTrackerProps> = ({
             tradeAmount * 100, // Convert SOL to USD for simplicity
             selectedToken.source || "Unknown"
           );
-          
+
           toast(`Successfully added ${selectedToken.symbol} to your portfolio`);
         }
-        
+
         // Close dialog and show success
         setTradeDialogOpen(false);
-        
+
         toast(`Purchased ${selectedToken.symbol} for ${tradeAmount} SOL`);
       } else {
         toast.error(result.error || "There was an error executing your trade. Please try again.");
@@ -314,7 +315,7 @@ const TokenTracker: React.FC<TokenTrackerProps> = ({
 
   const getRunnerPotentialBadge = (potential?: string) => {
     if (!potential) return null;
-    
+
     switch (potential) {
       case "Very High":
         return <Badge className="bg-purple-500 flex items-center gap-1"><Zap className="h-3 w-3" /> Very High</Badge>;
@@ -332,7 +333,7 @@ const TokenTracker: React.FC<TokenTrackerProps> = ({
   const getTrendingBadge = (score: number | string[] = 1) => {
     // Handle both number and string[] types for trendingScore
     const scoreValue = Array.isArray(score) ? score.length : score;
-    
+
     if (scoreValue >= 3) return <Badge className="bg-purple-500 flex items-center gap-1"><TrendingUp className="h-3 w-3" /> Hot</Badge>;
     if (scoreValue >= 2) return <Badge className="bg-blue-500 flex items-center gap-1"><TrendingUp className="h-3 w-3" /> Trending</Badge>;
     return <Badge className="bg-gray-500 flex items-center gap-1"><TrendingUp className="h-3 w-3" /> Active</Badge>;
@@ -344,15 +345,15 @@ const TokenTracker: React.FC<TokenTrackerProps> = ({
 
   const formatTimeAgo = (date: Date | string | undefined) => {
     if (!date) return "unknown";
-    
+
     try {
       // Convert string dates to Date objects
       const dateObj = typeof date === 'string' ? new Date(date) : date;
-      
+
       if (isNaN(dateObj.getTime())) {
         return "unknown";
       }
-      
+
       const minutes = Math.floor((new Date().getTime() - dateObj.getTime()) / 60000);
       if (minutes < 60) return `${minutes}m ago`;
       return `${Math.floor(minutes / 60)}h ${minutes % 60}m ago`;
@@ -361,12 +362,12 @@ const TokenTracker: React.FC<TokenTrackerProps> = ({
       return "unknown";
     }
   };
-  
+
   // View token on explorer
   const handleViewToken = (address: string) => {
     window.open(`https://birdeye.so/token/${address}?chain=solana`, '_blank');
   };
-  
+
   // View token on pump.fun
   const handlePumpFunView = (address: string) => {
     window.open(`https://pump.fun/token/${address}`, '_blank');
@@ -401,8 +402,8 @@ const TokenTracker: React.FC<TokenTrackerProps> = ({
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <CardTitle>{title}</CardTitle>
         {showAlerts && (
-          <Button 
-            variant="ghost" 
+          <Button
+            variant="ghost"
             size="icon"
             onClick={toggleAlerts}
             className={alertsEnabled ? "text-green-500" : "text-gray-500"}
@@ -420,19 +421,19 @@ const TokenTracker: React.FC<TokenTrackerProps> = ({
             {showTrending && <TabsTrigger value="trending">Trending</TabsTrigger>}
             {showPumpFun && <TabsTrigger value="pumpfun">Pump.fun</TabsTrigger>}
           </TabsList>
-          
+
           <TabsContent value="all" className="px-4 pb-4">
             {/* All tokens view */}
           </TabsContent>
-          
+
           <TabsContent value="alerts" className="px-4 pb-4">
             {/* Alerts view */}
           </TabsContent>
-          
+
           <TabsContent value="trending" className="px-4 pb-4">
             {/* Trending view */}
           </TabsContent>
-          
+
           <TabsContent value="pumpfun" className="px-4 pb-4">
             {/* Pump.fun view */}
           </TabsContent>
@@ -449,7 +450,7 @@ const TokenTracker: React.FC<TokenTrackerProps> = ({
                 Trade {selectedToken?.symbol}
               </DialogTitle>
             </DialogHeader>
-            
+
             {selectedToken && (
               <div className="space-y-4 py-2">
                 <div className="bg-black/20 p-3 rounded-lg">
@@ -464,7 +465,7 @@ const TokenTracker: React.FC<TokenTrackerProps> = ({
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="tradeAmount">Trade Amount (SOL)</Label>
                   <div className="flex gap-2 items-center">
@@ -494,7 +495,7 @@ const TokenTracker: React.FC<TokenTrackerProps> = ({
                     <span>1 SOL</span>
                   </div>
                 </div>
-                
+
                 <div className="pt-2 flex items-center justify-between bg-gray-800/50 p-3 rounded-lg">
                   <div className="text-sm text-gray-300">Track position</div>
                   <input
@@ -504,7 +505,7 @@ const TokenTracker: React.FC<TokenTrackerProps> = ({
                     className="toggle"
                   />
                 </div>
-                
+
                 <div className="bg-blue-500/10 text-blue-300 p-3 rounded-lg text-xs space-y-2">
                   <p className="flex gap-2 items-center">
                     <BarChart size={14} />
@@ -517,17 +518,17 @@ const TokenTracker: React.FC<TokenTrackerProps> = ({
                 </div>
               </div>
             )}
-            
+
             <DialogFooter>
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 onClick={() => setTradeDialogOpen(false)}
                 disabled={isProcessing}
               >
                 Cancel
               </Button>
-              <Button 
-                onClick={handleExecuteTrade} 
+              <Button
+                onClick={handleExecuteTrade}
                 disabled={isProcessing || tradeAmount <= 0}
                 className="relative"
               >
