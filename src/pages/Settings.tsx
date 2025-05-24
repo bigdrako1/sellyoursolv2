@@ -15,7 +15,7 @@ import { useSettingsStore } from "@/store/settingsStore";
 import { useOutletContext, useSearchParams } from "react-router-dom";
 import { AlertTriangle } from "lucide-react";
 import SystemControls from "@/components/SystemControls";
-import { HeliusApiConfig } from "@/components/api";
+
 
 // Define the type for the outlet context
 interface LayoutContext {
@@ -115,7 +115,36 @@ const Settings = () => {
 
         <TabsContent value="apis" className="space-y-6">
           <ApiKeyDescription />
-          <HeliusApiConfig />
+          <Card className="bg-trading-darkAccent border-white/10">
+            <CardHeader>
+              <CardTitle className="text-white flex items-center gap-2">
+                <Settings className="h-5 w-5 text-blue-400" />
+                API Configuration
+              </CardTitle>
+              <CardDescription className="text-gray-400">
+                API configuration has been moved to a dedicated page for better organization
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <AlertTriangle className="h-4 w-4 text-blue-400" />
+                    <span className="text-sm font-medium text-blue-400">Moved to Dedicated Page</span>
+                  </div>
+                  <p className="text-xs text-gray-400 mb-3">
+                    All API configurations (Helius, BirdEye, Jupiter) are now managed in the dedicated API Configuration page.
+                  </p>
+                  <Link to="/api-config">
+                    <Button className="bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/20 text-blue-400">
+                      <Settings className="h-4 w-4 mr-2" />
+                      Go to API Configuration
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
           <ApiUsageMonitor />
         </TabsContent>
 

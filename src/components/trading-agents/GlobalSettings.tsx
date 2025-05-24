@@ -31,23 +31,18 @@ interface GlobalSettings {
   maxConcurrentTrades: number;
   stopLossPercentage: number;
   takeProfitPercentage: number;
-  
-  // API Configuration
-  heliusApiKey: string;
-  birdeyeApiKey: string;
-  jupiterApiKey: string;
-  
+
   // Trading Parameters
   defaultSlippage: number;
   gasPrice: number;
   priorityFee: number;
-  
+
   // System Settings
   enableNotifications: boolean;
   enableLogging: boolean;
   logLevel: 'debug' | 'info' | 'warning' | 'error';
   autoRestart: boolean;
-  
+
   // Performance
   cacheEnabled: boolean;
   cacheTtl: number;
@@ -61,9 +56,6 @@ const defaultSettings: GlobalSettings = {
   maxConcurrentTrades: 5,
   stopLossPercentage: 10,
   takeProfitPercentage: 20,
-  heliusApiKey: '',
-  birdeyeApiKey: '',
-  jupiterApiKey: '',
   defaultSlippage: 1,
   gasPrice: 0.000005,
   priorityFee: 0.0001,
@@ -112,12 +104,12 @@ const GlobalSettingsComponent: React.FC<GlobalSettingsProps> = ({ onSettingsChan
     try {
       // Save to localStorage
       localStorage.setItem('globalAgentSettings', JSON.stringify(settings));
-      
+
       // Notify parent component
       if (onSettingsChange) {
         onSettingsChange(settings);
       }
-      
+
       setHasChanges(false);
       toast.success('Global settings saved successfully');
     } catch (error) {
@@ -173,7 +165,6 @@ const GlobalSettingsComponent: React.FC<GlobalSettingsProps> = ({ onSettingsChan
       <Tabs defaultValue="risk" className="space-y-6">
         <TabsList className="bg-trading-darkAccent border-white/10">
           <TabsTrigger value="risk">Risk Management</TabsTrigger>
-          <TabsTrigger value="api">API Configuration</TabsTrigger>
           <TabsTrigger value="trading">Trading Parameters</TabsTrigger>
           <TabsTrigger value="system">System Settings</TabsTrigger>
         </TabsList>
@@ -202,7 +193,7 @@ const GlobalSettingsComponent: React.FC<GlobalSettingsProps> = ({ onSettingsChan
                     className="bg-black/20 border-white/10 text-white"
                   />
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="maxDailyLoss" className="text-white">Max Daily Loss (USDC)</Label>
                   <Input
@@ -213,7 +204,7 @@ const GlobalSettingsComponent: React.FC<GlobalSettingsProps> = ({ onSettingsChan
                     className="bg-black/20 border-white/10 text-white"
                   />
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="maxConcurrentTrades" className="text-white">Max Concurrent Trades</Label>
                   <Input
@@ -224,7 +215,7 @@ const GlobalSettingsComponent: React.FC<GlobalSettingsProps> = ({ onSettingsChan
                     className="bg-black/20 border-white/10 text-white"
                   />
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="stopLossPercentage" className="text-white">Stop Loss (%)</Label>
                   <Input
@@ -236,7 +227,7 @@ const GlobalSettingsComponent: React.FC<GlobalSettingsProps> = ({ onSettingsChan
                     className="bg-black/20 border-white/10 text-white"
                   />
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="takeProfitPercentage" className="text-white">Take Profit (%)</Label>
                   <Input
@@ -249,72 +240,11 @@ const GlobalSettingsComponent: React.FC<GlobalSettingsProps> = ({ onSettingsChan
                   />
                 </div>
               </div>
-              
+
               <Alert className="bg-red-500/20 border-red-500/30">
                 <AlertTriangle className="h-4 w-4" />
                 <AlertDescription className="text-red-300">
                   These risk limits will be applied to all agents. Individual agents can have more restrictive limits but cannot exceed these global limits.
-                </AlertDescription>
-              </Alert>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* API Configuration Tab */}
-        <TabsContent value="api" className="space-y-4">
-          <Card className="bg-trading-darkAccent border-white/10">
-            <CardHeader>
-              <CardTitle className="text-white flex items-center gap-2">
-                <Key className="h-5 w-5 text-blue-400" />
-                API Configuration
-              </CardTitle>
-              <CardDescription className="text-gray-400">
-                Configure API keys and endpoints for external services
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="heliusApiKey" className="text-white">Helius API Key</Label>
-                  <Input
-                    id="heliusApiKey"
-                    type="password"
-                    value={settings.heliusApiKey}
-                    onChange={(e) => handleSettingChange('heliusApiKey', e.target.value)}
-                    placeholder="Enter your Helius API key"
-                    className="bg-black/20 border-white/10 text-white"
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="birdeyeApiKey" className="text-white">BirdEye API Key</Label>
-                  <Input
-                    id="birdeyeApiKey"
-                    type="password"
-                    value={settings.birdeyeApiKey}
-                    onChange={(e) => handleSettingChange('birdeyeApiKey', e.target.value)}
-                    placeholder="Enter your BirdEye API key"
-                    className="bg-black/20 border-white/10 text-white"
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="jupiterApiKey" className="text-white">Jupiter API Key (Optional)</Label>
-                  <Input
-                    id="jupiterApiKey"
-                    type="password"
-                    value={settings.jupiterApiKey}
-                    onChange={(e) => handleSettingChange('jupiterApiKey', e.target.value)}
-                    placeholder="Enter your Jupiter API key"
-                    className="bg-black/20 border-white/10 text-white"
-                  />
-                </div>
-              </div>
-              
-              <Alert className="bg-blue-500/20 border-blue-500/30">
-                <Key className="h-4 w-4" />
-                <AlertDescription className="text-blue-300">
-                  API keys are stored securely in your browser's local storage and are never transmitted to our servers.
                 </AlertDescription>
               </Alert>
             </CardContent>
@@ -346,7 +276,7 @@ const GlobalSettingsComponent: React.FC<GlobalSettingsProps> = ({ onSettingsChan
                     className="bg-black/20 border-white/10 text-white"
                   />
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="gasPrice" className="text-white">Gas Price (SOL)</Label>
                   <Input
@@ -358,7 +288,7 @@ const GlobalSettingsComponent: React.FC<GlobalSettingsProps> = ({ onSettingsChan
                     className="bg-black/20 border-white/10 text-white"
                   />
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="priorityFee" className="text-white">Priority Fee (SOL)</Label>
                   <Input
@@ -399,9 +329,9 @@ const GlobalSettingsComponent: React.FC<GlobalSettingsProps> = ({ onSettingsChan
                     onCheckedChange={(checked) => handleSettingChange('enableNotifications', checked)}
                   />
                 </div>
-                
+
                 <Separator className="bg-white/10" />
-                
+
                 <div className="flex items-center justify-between">
                   <div>
                     <Label className="text-white">Enable Logging</Label>
@@ -412,7 +342,7 @@ const GlobalSettingsComponent: React.FC<GlobalSettingsProps> = ({ onSettingsChan
                     onCheckedChange={(checked) => handleSettingChange('enableLogging', checked)}
                   />
                 </div>
-                
+
                 <div className="flex items-center justify-between">
                   <div>
                     <Label className="text-white">Auto Restart</Label>
@@ -423,9 +353,9 @@ const GlobalSettingsComponent: React.FC<GlobalSettingsProps> = ({ onSettingsChan
                     onCheckedChange={(checked) => handleSettingChange('autoRestart', checked)}
                   />
                 </div>
-                
+
                 <Separator className="bg-white/10" />
-                
+
                 <div className="flex items-center justify-between">
                   <div>
                     <Label className="text-white">Enable Caching</Label>
@@ -436,7 +366,7 @@ const GlobalSettingsComponent: React.FC<GlobalSettingsProps> = ({ onSettingsChan
                     onCheckedChange={(checked) => handleSettingChange('cacheEnabled', checked)}
                   />
                 </div>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <Label htmlFor="cacheTtl" className="text-white">Cache TTL (seconds)</Label>
@@ -449,7 +379,7 @@ const GlobalSettingsComponent: React.FC<GlobalSettingsProps> = ({ onSettingsChan
                       disabled={!settings.cacheEnabled}
                     />
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="maxRequestsPerMinute" className="text-white">Max Requests/Minute</Label>
                     <Input
