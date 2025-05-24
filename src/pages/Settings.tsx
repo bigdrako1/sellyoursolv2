@@ -1,6 +1,6 @@
 
 import React, { useEffect } from "react";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import ApiKeyDescription from "@/components/ApiKeyDescription";
 import ApiUsageMonitor from "@/components/ApiUsageMonitor";
@@ -12,8 +12,8 @@ import DebugPanel from "@/components/DebugPanel";
 import NotificationSettings from "@/components/NotificationSettings";
 import AdvancedSettings from "@/components/AdvancedSettings";
 import { useSettingsStore } from "@/store/settingsStore";
-import { useOutletContext, useSearchParams } from "react-router-dom";
-import { AlertTriangle } from "lucide-react";
+import { useOutletContext, useSearchParams, Link } from "react-router-dom";
+import { AlertTriangle, Settings } from "lucide-react";
 import SystemControls from "@/components/SystemControls";
 
 

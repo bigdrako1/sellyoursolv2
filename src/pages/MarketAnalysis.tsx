@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { BarChart, Activity, TrendingUp, DollarSign, PieChart, LineChart, RefreshCw } from "lucide-react";
+import { BarChart, Activity, TrendingUp, DollarSign, PieChart, LineChart, RefreshCw, Eye, Star, ShoppingCart } from "lucide-react";
 import { getTrendingTokens } from "@/utils/marketUtils";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -108,6 +108,22 @@ const MarketAnalysis = () => {
     } catch (error) {
       toast.error('Failed to refresh market data');
     }
+  };
+
+  // Token interaction handlers
+  const handleTokenClick = (token: TokenData) => {
+    navigate(`/tokens/${token.symbol}`);
+    toast.success(`Viewing ${token.name} details`);
+  };
+
+  const handleAddToWatchlist = (token: TokenData) => {
+    // Add to watchlist logic would go here
+    toast.success(`${token.name} added to watchlist`);
+  };
+
+  const handleQuickTrade = (token: TokenData) => {
+    navigate('/auto-trading', { state: { selectedToken: token } });
+    toast.success(`Opening trading interface for ${token.name}`);
   };
 
   return (
@@ -236,27 +252,72 @@ const MarketAnalysis = () => {
                     <div className="space-y-3">
                       {topTokens.length > 0 ? (
                         topTokens.map((token, index) => (
-                          <div key={`${token.symbol}-${index}`} className="flex items-center justify-between p-3 bg-black/20 rounded-lg hover:bg-black/30 transition-colors">
-                            <div className="flex items-center gap-3">
-                              <div className="bg-gradient-to-br from-purple-500/30 to-blue-500/30 h-10 w-10 rounded-full flex items-center justify-center font-bold border border-purple-500/20">
-                                {token.symbol.slice(0, 2)}
-                              </div>
-                              <div>
-                                <div className="font-medium text-white">{token.name}</div>
-                                <div className="text-sm text-gray-400">
-                                  {token.symbol} {token.source && <span className="text-xs text-purple-300">• {token.source}</span>}
+                          <div key={`${token.symbol}-${index}`} className="group relative">
+                            <div
+                              className="flex items-center justify-between p-3 bg-black/20 rounded-lg hover:bg-black/30 transition-all duration-200 cursor-pointer border border-transparent hover:border-purple-500/30"
+                              onClick={() => handleTokenClick(token)}
+                            >
+                              <div className="flex items-center gap-3">
+                                <div className="bg-gradient-to-br from-purple-500/30 to-blue-500/30 h-10 w-10 rounded-full flex items-center justify-center font-bold border border-purple-500/20 group-hover:border-purple-500/40 transition-colors">
+                                  {token.symbol.slice(0, 2)}
+                                </div>
+                                <div>
+                                  <div className="font-medium text-white group-hover:text-purple-300 transition-colors">{token.name}</div>
+                                  <div className="text-sm text-gray-400">
+                                    {token.symbol} {token.source && <span className="text-xs text-purple-300">• {token.source}</span>}
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-                            <div className="text-right">
-                              <div className="text-white font-medium">
-                                ${token.price.toLocaleString(undefined, {
-                                  minimumFractionDigits: token.price < 0.01 ? 8 : 2,
-                                  maximumFractionDigits: token.price < 0.01 ? 8 : 2
-                                })}
-                              </div>
-                              <div className={`text-sm font-medium ${token.change24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                                {token.change24h >= 0 ? '+' : ''}{token.change24h.toFixed(2)}%
+                              <div className="flex items-center gap-3">
+                                <div className="text-right">
+                                  <div className="text-white font-medium">
+                                    ${token.price.toLocaleString(undefined, {
+                                      minimumFractionDigits: token.price < 0.01 ? 8 : 2,
+                                      maximumFractionDigits: token.price < 0.01 ? 8 : 2
+                                    })}
+                                  </div>
+                                  <div className={`text-sm font-medium ${token.change24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                    {token.change24h >= 0 ? '+' : ''}{token.change24h.toFixed(2)}%
+                                  </div>
+                                </div>
+                                <div className="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="h-7 w-7 p-0 bg-blue-500/20 border-blue-500/30 hover:bg-blue-500/30"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleTokenClick(token);
+                                    }}
+                                    title="View Details"
+                                  >
+                                    <Eye className="h-3 w-3 text-blue-400" />
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="h-7 w-7 p-0 bg-yellow-500/20 border-yellow-500/30 hover:bg-yellow-500/30"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleAddToWatchlist(token);
+                                    }}
+                                    title="Add to Watchlist"
+                                  >
+                                    <Star className="h-3 w-3 text-yellow-400" />
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="h-7 w-7 p-0 bg-green-500/20 border-green-500/30 hover:bg-green-500/30"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleQuickTrade(token);
+                                    }}
+                                    title="Quick Trade"
+                                  >
+                                    <ShoppingCart className="h-3 w-3 text-green-400" />
+                                  </Button>
+                                </div>
                               </div>
                             </div>
                           </div>

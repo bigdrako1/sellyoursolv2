@@ -33,7 +33,7 @@ interface AgentConfigDialogProps {
 
 interface ConfigField {
   key: string;
-  type: 'string' | 'number' | 'boolean' | 'array' | 'select';
+  type: 'string' | 'number' | 'boolean' | 'array' | 'select' | 'percentage';
   label: string;
   description?: string;
   min?: number;
@@ -64,13 +64,13 @@ const AgentConfigDialog: React.FC<AgentConfigDialogProps> = ({
           { key: 'usdc_size', type: 'number', label: 'USDC Size', description: 'USDC size per trade', min: 10, max: 10000, required: true },
           { key: 'days_back', type: 'number', label: 'Days Back', description: 'Days back to analyze transactions', min: 0, max: 7, required: true },
           { key: 'tp_multiplier', type: 'number', label: 'Take Profit Multiplier', description: 'Take profit multiplier', min: 1.1, max: 10, required: true },
-          { key: 'sl_percentage', type: 'number', label: 'Stop Loss %', description: 'Stop loss percentage', min: -0.9, max: -0.1, required: true }
+          { key: 'sl_percentage', type: 'percentage', label: 'Stop Loss %', description: 'Stop loss percentage (1-90)', min: 1, max: 90, required: true }
         ];
       case 'sol_scanner':
         return [
           { key: 'new_token_hours', type: 'number', label: 'New Token Hours', description: 'Hours to look back for new tokens', min: 1, max: 24, required: true },
           { key: 'min_liquidity', type: 'number', label: 'Min Liquidity', description: 'Minimum liquidity threshold', min: 1000, max: 1000000, required: true },
-          { key: 'max_top10_holder_percent', type: 'number', label: 'Max Top 10 Holder %', description: 'Maximum top 10 holder percentage', min: 0.1, max: 0.9, required: true },
+          { key: 'max_top10_holder_percent', type: 'percentage', label: 'Max Top 10 Holder %', description: 'Maximum top 10 holder percentage (1-90)', min: 1, max: 90, required: true },
           { key: 'drop_if_no_website', type: 'boolean', label: 'Drop if No Website', description: 'Drop tokens without website' },
           { key: 'drop_if_no_twitter', type: 'boolean', label: 'Drop if No Twitter', description: 'Drop tokens without Twitter' }
         ];
@@ -86,8 +86,8 @@ const AgentConfigDialog: React.FC<AgentConfigDialogProps> = ({
           { key: 'usdc_size', type: 'number', label: 'USDC Size', description: 'USDC size per snipe', min: 10, max: 10000, required: true },
           { key: 'max_positions', type: 'number', label: 'Max Positions', description: 'Maximum open positions', min: 1, max: 20, required: true },
           { key: 'sell_at_multiple', type: 'number', label: 'Sell at Multiple', description: 'Sell at multiple', min: 1.5, max: 20, required: true },
-          { key: 'sell_amount_perc', type: 'number', label: 'Sell Amount %', description: 'Percentage to sell', min: 0.1, max: 1, required: true },
-          { key: 'max_top10_holder_percent', type: 'number', label: 'Max Top 10 Holder %', description: 'Max top 10 holder %', min: 0.1, max: 0.9, required: true },
+          { key: 'sell_amount_perc', type: 'percentage', label: 'Sell Amount %', description: 'Percentage to sell (1-100)', min: 1, max: 100, required: true },
+          { key: 'max_top10_holder_percent', type: 'percentage', label: 'Max Top 10 Holder %', description: 'Max top 10 holder % (1-90)', min: 1, max: 90, required: true },
           { key: 'drop_if_mutable_metadata', type: 'boolean', label: 'Drop if Mutable Metadata', description: 'Drop if mutable metadata' }
         ];
       default:
@@ -123,7 +123,7 @@ const AgentConfigDialog: React.FC<AgentConfigDialogProps> = ({
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
-    
+
     if (!formData.name?.trim()) {
       newErrors.name = 'Agent name is required';
     }
@@ -137,8 +137,8 @@ const AgentConfigDialog: React.FC<AgentConfigDialogProps> = ({
       if (field.required && (formData[field.key] === undefined || formData[field.key] === '')) {
         newErrors[field.key] = `${field.label} is required`;
       }
-      
-      if (field.type === 'number' && formData[field.key] !== undefined) {
+
+      if ((field.type === 'number' || field.type === 'percentage') && formData[field.key] !== undefined) {
         const value = Number(formData[field.key]);
         if (isNaN(value)) {
           newErrors[field.key] = `${field.label} must be a number`;
@@ -163,13 +163,13 @@ const AgentConfigDialog: React.FC<AgentConfigDialogProps> = ({
     setIsSaving(true);
     try {
       const { name, agent_type, ...config } = formData;
-      
+
       if (isEditing) {
         await onSave({ name, config });
       } else {
         await onSave({ name, agent_type, config });
       }
-      
+
       onClose();
     } catch (error) {
       console.error('Error saving agent configuration:', error);
@@ -224,6 +224,31 @@ const AgentConfigDialog: React.FC<AgentConfigDialogProps> = ({
           </div>
         );
 
+      case 'percentage':
+        return (
+          <div key={field.key} className="space-y-2">
+            <Label htmlFor={field.key} className="text-white">{field.label}</Label>
+            <div className="relative">
+              <Input
+                id={field.key}
+                type="number"
+                value={value || ''}
+                onChange={(e) => handleInputChange(field.key, Number(e.target.value))}
+                className="bg-trading-darkAccent border-white/10 text-white pr-8"
+                min={field.min}
+                max={field.max}
+                step="1"
+                placeholder="Enter percentage"
+              />
+              <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm">%</span>
+            </div>
+            {field.description && (
+              <p className="text-xs text-gray-400">{field.description}</p>
+            )}
+            {error && <p className="text-xs text-red-400">{error}</p>}
+          </div>
+        );
+
       default:
         return (
           <div key={field.key} className="space-y-2">
@@ -257,7 +282,7 @@ const AgentConfigDialog: React.FC<AgentConfigDialogProps> = ({
             {isEditing ? 'Edit Agent Configuration' : 'Create New Trading Agent'}
           </DialogTitle>
           <DialogDescription className="text-gray-400">
-            {isEditing 
+            {isEditing
               ? 'Modify the configuration for your trading agent'
               : 'Configure a new automated trading agent'
             }
