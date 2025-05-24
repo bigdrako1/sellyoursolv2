@@ -1,5 +1,45 @@
 import { fetchApi } from './apiService';
 
+// Mock data storage for development
+const MOCK_AGENTS_KEY = 'mock_trading_agents';
+const MOCK_ENABLED = true; // Set to false when real backend is available
+
+// Mock data helpers
+const getMockAgents = (): TradingAgent[] => {
+  if (typeof window === 'undefined') return [];
+  const stored = localStorage.getItem(MOCK_AGENTS_KEY);
+  return stored ? JSON.parse(stored) : [];
+};
+
+const setMockAgents = (agents: TradingAgent[]): void => {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(MOCK_AGENTS_KEY, JSON.stringify(agents));
+};
+
+const generateMockId = (): string => {
+  return 'agent_' + Math.random().toString(36).substr(2, 9);
+};
+
+const createMockAgent = (config: AgentConfig): TradingAgent => {
+  const now = new Date().toISOString();
+  return {
+    id: generateMockId(),
+    name: config.name,
+    agent_type: config.agent_type,
+    status: 'stopped',
+    created_at: now,
+    updated_at: now,
+    config: config.config,
+    metrics: {
+      total_trades: 0,
+      win_rate: 0,
+      pnl: 0,
+      uptime: '0h 0m',
+      last_activity: 'Never'
+    }
+  };
+};
+
 // Types for trading agents
 export interface TradingAgent {
   id: string;
@@ -69,6 +109,30 @@ export const getTradingAgents = async (params?: {
   limit?: number;
   offset?: number;
 }): Promise<AgentListResponse> => {
+  if (MOCK_ENABLED) {
+    // Mock implementation
+    await new Promise(resolve => setTimeout(resolve, 500)); // Simulate network delay
+    let agents = getMockAgents();
+
+    // Apply filters
+    if (params?.agent_type) {
+      agents = agents.filter(agent => agent.agent_type === params.agent_type);
+    }
+    if (params?.status) {
+      agents = agents.filter(agent => agent.status === params.status);
+    }
+
+    // Apply pagination
+    const offset = params?.offset || 0;
+    const limit = params?.limit || 100;
+    const paginatedAgents = agents.slice(offset, offset + limit);
+
+    return {
+      agents: paginatedAgents,
+      total: agents.length
+    };
+  }
+
   const queryParams = new URLSearchParams();
 
   if (params?.agent_type) queryParams.append('agent_type', params.agent_type);
@@ -102,6 +166,18 @@ export const getTradingAgent = async (agentId: string): Promise<TradingAgent> =>
  * Create a new trading agent
  */
 export const createTradingAgent = async (agentConfig: AgentConfig): Promise<TradingAgent> => {
+  if (MOCK_ENABLED) {
+    // Mock implementation
+    await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate network delay
+
+    const newAgent = createMockAgent(agentConfig);
+    const agents = getMockAgents();
+    agents.push(newAgent);
+    setMockAgents(agents);
+
+    return newAgent;
+  }
+
   return fetchApi<TradingAgent>(TRADING_AGENTS_API_BASE, {
     method: 'POST',
     headers: {
@@ -131,6 +207,26 @@ export const updateTradingAgent = async (
  * Delete a trading agent
  */
 export const deleteTradingAgent = async (agentId: string): Promise<ActionResponse> => {
+  if (MOCK_ENABLED) {
+    // Mock implementation
+    await new Promise(resolve => setTimeout(resolve, 400)); // Simulate network delay
+
+    const agents = getMockAgents();
+    const agentIndex = agents.findIndex(agent => agent.id === agentId);
+
+    if (agentIndex === -1) {
+      throw new Error('Agent not found');
+    }
+
+    agents.splice(agentIndex, 1);
+    setMockAgents(agents);
+
+    return {
+      success: true,
+      message: 'Agent deleted successfully'
+    };
+  }
+
   return fetchApi<ActionResponse>(`${TRADING_AGENTS_API_BASE}/${agentId}`, {
     method: 'DELETE',
     headers: {
@@ -143,6 +239,27 @@ export const deleteTradingAgent = async (agentId: string): Promise<ActionRespons
  * Start a trading agent
  */
 export const startTradingAgent = async (agentId: string): Promise<TradingAgent> => {
+  if (MOCK_ENABLED) {
+    // Mock implementation
+    await new Promise(resolve => setTimeout(resolve, 800)); // Simulate network delay
+
+    const agents = getMockAgents();
+    const agentIndex = agents.findIndex(agent => agent.id === agentId);
+
+    if (agentIndex === -1) {
+      throw new Error('Agent not found');
+    }
+
+    agents[agentIndex] = {
+      ...agents[agentIndex],
+      status: 'running',
+      updated_at: new Date().toISOString()
+    };
+
+    setMockAgents(agents);
+    return agents[agentIndex];
+  }
+
   return fetchApi<TradingAgent>(`${TRADING_AGENTS_API_BASE}/${agentId}/start`, {
     method: 'POST',
     headers: {
@@ -155,6 +272,27 @@ export const startTradingAgent = async (agentId: string): Promise<TradingAgent> 
  * Stop a trading agent
  */
 export const stopTradingAgent = async (agentId: string): Promise<TradingAgent> => {
+  if (MOCK_ENABLED) {
+    // Mock implementation
+    await new Promise(resolve => setTimeout(resolve, 600)); // Simulate network delay
+
+    const agents = getMockAgents();
+    const agentIndex = agents.findIndex(agent => agent.id === agentId);
+
+    if (agentIndex === -1) {
+      throw new Error('Agent not found');
+    }
+
+    agents[agentIndex] = {
+      ...agents[agentIndex],
+      status: 'stopped',
+      updated_at: new Date().toISOString()
+    };
+
+    setMockAgents(agents);
+    return agents[agentIndex];
+  }
+
   return fetchApi<TradingAgent>(`${TRADING_AGENTS_API_BASE}/${agentId}/stop`, {
     method: 'POST',
     headers: {
@@ -330,6 +468,15 @@ export const getPythonBotMapping = (): Record<string, {
  * Health check for trading agents service
  */
 export const healthCheck = async (): Promise<{ status: string; service: string }> => {
+  if (MOCK_ENABLED) {
+    // Mock implementation
+    await new Promise(resolve => setTimeout(resolve, 200)); // Simulate network delay
+    return {
+      status: 'healthy',
+      service: 'trading-agents-mock'
+    };
+  }
+
   return fetchApi<{ status: string; service: string }>(`${TRADING_AGENTS_API_BASE}/health`, {
     method: 'GET',
     headers: {
