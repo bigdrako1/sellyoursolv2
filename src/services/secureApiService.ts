@@ -6,13 +6,34 @@
 import { fetchApi, showApiErrorToast } from './apiService';
 
 // API base URL - should be configured based on environment
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3002/api';
 
 /**
  * Get the authentication token from localStorage
+ * For wallet-based authentication, we use the user object
  */
 const getAuthToken = (): string | null => {
-  return localStorage.getItem('authToken');
+  // First try to get the authToken directly
+  const authToken = localStorage.getItem('authToken');
+  if (authToken) {
+    return authToken;
+  }
+
+  // If no authToken, check if we have a user object from wallet authentication
+  const userStr = localStorage.getItem('user');
+  if (userStr) {
+    try {
+      const user = JSON.parse(userStr);
+      // Use the wallet address as the token for wallet-based authentication
+      if (user && user.wallet_address) {
+        return user.wallet_address;
+      }
+    } catch (e) {
+      console.error("Failed to parse user data:", e);
+    }
+  }
+
+  return null;
 };
 
 /**
@@ -22,12 +43,12 @@ const createAuthHeaders = (): HeadersInit => {
   const headers: HeadersInit = {
     'Content-Type': 'application/json'
   };
-  
+
   const token = getAuthToken();
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
   }
-  
+
   return headers;
 };
 
@@ -48,7 +69,7 @@ export const heliusRpcCall = async (method: string, params: any[] = []): Promise
         ttl: 60000 // 1 minute cache
       }
     });
-    
+
     return response.result;
   } catch (error) {
     showApiErrorToast(error, `Helius RPC call (${method})`);
@@ -89,7 +110,7 @@ export const getSolPrice = async (): Promise<number> => {
         ttl: 60000 // 1 minute cache
       }
     });
-    
+
     return response?.data?.SOL?.price || 0;
   } catch (error) {
     showApiErrorToast(error, 'getting SOL price');
@@ -110,7 +131,7 @@ export const getToken24hChange = async (tokenSymbol: string): Promise<number> =>
         ttl: 60000 // 1 minute cache
       }
     });
-    
+
     return response?.data?.[tokenSymbol]?.priceChange24h || 0;
   } catch (error) {
     showApiErrorToast(error, `getting ${tokenSymbol} 24h change`);
@@ -126,7 +147,7 @@ export const getTokenPrices = async (tokenAddresses: string[]): Promise<Record<s
     if (!tokenAddresses || tokenAddresses.length === 0) {
       return {};
     }
-    
+
     const addresses = tokenAddresses.join(',');
     const response = await fetchApi<any>(`${API_BASE_URL}/jupiter/price?ids=${addresses}`, {
       method: 'GET',
@@ -136,24 +157,24 @@ export const getTokenPrices = async (tokenAddresses: string[]): Promise<Record<s
         ttl: 60000 // 1 minute cache
       }
     });
-    
+
     const prices: Record<string, number> = {};
     if (response?.data) {
       for (const address of tokenAddresses) {
         prices[address] = response.data[address]?.price || 0;
       }
     }
-    
+
     return prices;
   } catch (error) {
     showApiErrorToast(error, 'getting token prices');
-    
+
     // Return empty object with 0 prices for all requested tokens
     const fallbackPrices: Record<string, number> = {};
     tokenAddresses.forEach(address => {
       fallbackPrices[address] = 0;
     });
-    
+
     return fallbackPrices;
   }
 };
@@ -170,7 +191,7 @@ export const testHeliusConnection = async (): Promise<boolean> => {
         enabled: false // Don't cache connection tests
       }
     });
-    
+
     return response.connected;
   } catch (error) {
     console.error("Helius API connection failed:", error);
@@ -193,7 +214,7 @@ export const getApiUsageStats = async (): Promise<any> => {
     });
   } catch (error) {
     console.error("Failed to get API usage stats:", error);
-    
+
     // Return mock data if API call fails
     return {
       dailyRequests: Math.floor(Math.random() * 500) + 100,
@@ -207,4 +228,17 @@ export const getApiUsageStats = async (): Promise<any> => {
       }
     };
   }
+};
+
+// Export the secureApiService object with all the functions
+export const secureApiService = {
+  getAuthToken,
+  createAuthHeaders,
+  heliusRpcCall,
+  heliusApiCall,
+  getSolPrice,
+  getToken24hChange,
+  getTokenPrices,
+  testHeliusConnection,
+  getApiUsageStats
 };

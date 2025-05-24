@@ -12,6 +12,7 @@ import { Toaster } from "sonner";
 import Layout from "@/components/Layout";
 import NotFound from "@/pages/NotFound";
 import Auth from "@/pages/Auth";
+import ProtectedRoute from "@/components/ProtectedRoute";
 import Index from "@/pages/Index";
 
 // Lazy-loaded pages
@@ -23,7 +24,9 @@ const AutoTrading = lazy(() => import("@/pages/AutoTrading"));
 const WalletTracking = lazy(() => import("@/pages/WalletTracking"));
 const WalletTrackingAnalytics = lazy(() => import("@/pages/WalletTrackingAnalytics"));
 const ConsolidatedDashboard = lazy(() => import("@/pages/ConsolidatedDashboard"));
-const TradingAgents = lazy(() => import("@/pages/TradingAgents"));
+const TestPage = lazy(() => import("@/pages/TestPage"));
+const Agents = lazy(() => import("@/pages/Agents"));
+const ApiConfiguration = lazy(() => import("@/pages/ApiConfiguration"));
 
 // Create Query Client
 const queryClient = new QueryClient({
@@ -87,6 +90,14 @@ const router = createBrowserRouter([
         element: LazyComponent(AutoTrading),
       },
       {
+        path: "agents",
+        element: LazyComponent(Agents),
+      },
+      {
+        path: "api-config",
+        element: LazyComponent(ApiConfiguration),
+      },
+      {
         path: "wallet-tracking",
         element: LazyComponent(WalletTracking),
       },
@@ -95,8 +106,8 @@ const router = createBrowserRouter([
         element: LazyComponent(WalletTrackingAnalytics),
       },
       {
-        path: "trading-agents",
-        element: LazyComponent(TradingAgents),
+        path: "test-page",
+        element: LazyComponent(TestPage),
       }
     ],
   },

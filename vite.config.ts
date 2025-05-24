@@ -39,7 +39,7 @@ export default defineConfig(({ mode }) => ({
           // Split vendor chunks
           'vendor-react': ['react', 'react-dom', 'react-router-dom'],
           'vendor-ui': ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu', '@radix-ui/react-tabs', '@radix-ui/react-slot'],
-          'vendor-charts': ['recharts', 'chart.js'],
+          'vendor-charts': ['recharts'],
           'vendor-utils': ['date-fns', 'lucide-react', 'sonner'],
         },
       },

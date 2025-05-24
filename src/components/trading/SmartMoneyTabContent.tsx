@@ -1,6 +1,6 @@
 
 import React from 'react';
-import SmartMoneyAlerts from '@/components/SmartMoneyAlerts';
+import SmartMoneyAlerts from '@/components/smart-money/SmartMoneyAlerts';
 
 const SmartMoneyTabContent = () => {
   return (

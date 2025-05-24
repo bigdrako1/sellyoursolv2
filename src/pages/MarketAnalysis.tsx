@@ -1,12 +1,10 @@
 
 import { useState, useEffect } from "react";
-import { testHeliusConnection } from "@/utils/apiUtils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Skeleton } from "@/components/ui/skeleton";
-import { useToast } from "@/hooks/use-toast";
-import { BarChart, Activity, Wallet, Search } from "lucide-react";
-import ApiUsageMonitor from "@/components/ApiUsageMonitor";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { BarChart, Activity, TrendingUp, DollarSign, PieChart, LineChart, RefreshCw } from "lucide-react";
 import { getTrendingTokens } from "@/utils/marketUtils";
 
 interface TokenData {
@@ -15,152 +13,231 @@ interface TokenData {
   price: number;
   change24h: number;
   volume24h: number;
+  marketCap?: number;
   source?: string;
+}
+
+interface MarketMetrics {
+  totalMarketCap: number;
+  totalVolume24h: number;
+  dominanceSOL: number;
+  activeTokens: number;
+  topGainer: TokenData | null;
+  topLoser: TokenData | null;
 }
 
 const MarketAnalysis = () => {
   const [isLoading, setIsLoading] = useState(true);
-  const [apiConnected, setApiConnected] = useState(true);
-  const [apiConnectionChecked, setApiConnectionChecked] = useState(false);
   const [topTokens, setTopTokens] = useState<TokenData[]>([]);
-  const [systemLatency, setSystemLatency] = useState<number | null>(null);
-  const { toast } = useToast();
+  const [marketMetrics, setMarketMetrics] = useState<MarketMetrics>({
+    totalMarketCap: 0,
+    totalVolume24h: 0,
+    dominanceSOL: 0,
+    activeTokens: 0,
+    topGainer: null,
+    topLoser: null
+  });
 
-  // Check API connection on mount
+  // Load market data
   useEffect(() => {
-    const checkApiConnection = async () => {
-      try {
-        const startTime = Date.now();
-        const connected = await testHeliusConnection();
-        const latency = Date.now() - startTime;
-
-        setApiConnected(connected);
-        setApiConnectionChecked(true);
-        setSystemLatency(latency);
-      } catch (error) {
-        console.error("API connection test failed:", error);
-        setApiConnected(false);
-        setApiConnectionChecked(true);
-      }
-    };
-
-    checkApiConnection();
+    loadMarketData();
   }, []);
 
-  // Fetch trending tokens
-  useEffect(() => {
-    const fetchTrendingTokens = async () => {
-      try {
-        const tokens = await getTrendingTokens();
-        setTopTokens(tokens);
-      } catch (error) {
-        console.error("Failed to fetch trending tokens:", error);
-        toast({
-          title: "Data Fetch Failed",
-          description: "Could not load trending token data. Please try again later.",
-          variant: "destructive",
+  const loadMarketData = async () => {
+    setIsLoading(true);
+    try {
+      // Fetch trending tokens
+      const tokens = await getTrendingTokens();
+      setTopTokens(tokens);
+
+      // Calculate market metrics
+      if (tokens.length > 0) {
+        const totalVolume = tokens.reduce((sum, token) => sum + token.volume24h, 0);
+        const totalMarketCap = tokens.reduce((sum, token) => sum + (token.marketCap || 0), 0);
+
+        const sortedByChange = [...tokens].sort((a, b) => b.change24h - a.change24h);
+        const topGainer = sortedByChange[0];
+        const topLoser = sortedByChange[sortedByChange.length - 1];
+
+        setMarketMetrics({
+          totalMarketCap,
+          totalVolume24h: totalVolume,
+          dominanceSOL: 65.2, // Mock data
+          activeTokens: tokens.length,
+          topGainer,
+          topLoser
         });
-      } finally {
-        setIsLoading(false);
       }
-    };
+    } catch (error) {
+      console.error("Failed to fetch market data:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-    fetchTrendingTokens();
-  }, [toast]);
-
-  // Service status color indicator function
-  const getStatusColorClass = (isConnected: boolean) => {
-    return isConnected ? 'bg-green-500' : 'bg-red-500';
+  const formatCurrency = (value: number) => {
+    if (value >= 1e9) return `$${(value / 1e9).toFixed(2)}B`;
+    if (value >= 1e6) return `$${(value / 1e6).toFixed(2)}M`;
+    if (value >= 1e3) return `$${(value / 1e3).toFixed(2)}K`;
+    return `$${value.toFixed(2)}`;
   };
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Market Analysis</h1>
-
-      <div className="flex justify-end">
-        <div className="flex items-center">
-          <span className={`inline-flex h-2 w-2 rounded-full mr-2 ${apiConnected ? 'bg-green-500' : 'bg-red-500'}`}></span>
-          <span className="text-sm">{apiConnected ? 'API Connected' : 'API Disconnected'}</span>
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-white">Market Analysis</h1>
+          <p className="text-gray-400 mt-1">Real-time Solana ecosystem market data and insights</p>
         </div>
+        <Button
+          onClick={loadMarketData}
+          variant="outline"
+          size="sm"
+          disabled={isLoading}
+          className="bg-trading-darkAccent border-white/10 text-white hover:bg-white/10"
+        >
+          <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+          Refresh Data
+        </Button>
       </div>
 
+      {/* Market Overview Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="bg-trading-darkAccent border-white/10">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-400">Total Market Cap</p>
+                <p className="text-2xl font-bold text-white">
+                  {formatCurrency(marketMetrics.totalMarketCap)}
+                </p>
+              </div>
+              <DollarSign className="h-8 w-8 text-green-400" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-trading-darkAccent border-white/10">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-400">24h Volume</p>
+                <p className="text-2xl font-bold text-white">
+                  {formatCurrency(marketMetrics.totalVolume24h)}
+                </p>
+              </div>
+              <BarChart className="h-8 w-8 text-blue-400" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-trading-darkAccent border-white/10">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-400">SOL Dominance</p>
+                <p className="text-2xl font-bold text-white">{marketMetrics.dominanceSOL}%</p>
+              </div>
+              <PieChart className="h-8 w-8 text-purple-400" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-trading-darkAccent border-white/10">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-400">Active Tokens</p>
+                <p className="text-2xl font-bold text-white">{marketMetrics.activeTokens}</p>
+              </div>
+              <Activity className="h-8 w-8 text-orange-400" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Main Content */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
-          <Tabs defaultValue="overview">
-            <TabsList>
-              <TabsTrigger value="overview">
+          <Tabs defaultValue="trending" className="space-y-6">
+            <TabsList className="bg-trading-darkAccent border-white/10">
+              <TabsTrigger value="trending">
+                <TrendingUp className="h-4 w-4 mr-2" />
+                Trending Tokens
+              </TabsTrigger>
+              <TabsTrigger value="gainers">
+                <LineChart className="h-4 w-4 mr-2" />
+                Top Gainers/Losers
+              </TabsTrigger>
+              <TabsTrigger value="volume">
                 <BarChart className="h-4 w-4 mr-2" />
-                Market Overview
-              </TabsTrigger>
-              <TabsTrigger value="activity">
-                <Activity className="h-4 w-4 mr-2" />
-                Recent Activity
-              </TabsTrigger>
-              <TabsTrigger value="tokens">
-                <Wallet className="h-4 w-4 mr-2" />
-                Token Explorer
+                Volume Leaders
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="overview">
-              <Card>
+            <TabsContent value="trending" className="space-y-4">
+              <Card className="bg-trading-darkAccent border-white/10">
                 <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <span className="text-purple-400 mr-2">Trending Solana Tokens</span>
-                    <span className="bg-purple-500/20 text-xs rounded-full px-2 py-0.5 text-purple-300">
-                      Live Data
-                    </span>
+                  <CardTitle className="text-white flex items-center gap-2">
+                    <TrendingUp className="h-5 w-5 text-green-400" />
+                    Trending Solana Tokens
+                    <Badge className="bg-green-500/20 text-green-400 border-green-500/30">Live</Badge>
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   {isLoading ? (
                     <div className="space-y-4">
                       {[1, 2, 3, 4, 5].map((i) => (
-                        <div key={i} className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <Skeleton className="h-10 w-10 rounded-full" />
+                        <div key={i} className="flex items-center justify-between p-3 bg-black/20 rounded-lg">
+                          <div className="flex items-center gap-3">
+                            <div className="h-10 w-10 bg-gray-700 rounded-full animate-pulse" />
                             <div>
-                              <Skeleton className="h-4 w-24" />
-                              <Skeleton className="h-3 w-12 mt-1" />
+                              <div className="h-4 w-24 bg-gray-700 rounded animate-pulse" />
+                              <div className="h-3 w-16 bg-gray-700 rounded animate-pulse mt-1" />
                             </div>
                           </div>
                           <div className="text-right">
-                            <Skeleton className="h-4 w-20" />
-                            <Skeleton className="h-3 w-16 mt-1" />
+                            <div className="h-4 w-20 bg-gray-700 rounded animate-pulse" />
+                            <div className="h-3 w-16 bg-gray-700 rounded animate-pulse mt-1" />
                           </div>
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <div className="space-y-4">
+                    <div className="space-y-3">
                       {topTokens.length > 0 ? (
                         topTokens.map((token, index) => (
-                          <div key={`${token.symbol}-${index}`} className="flex items-center justify-between border-b border-gray-700 pb-3">
-                            <div className="flex items-center gap-2">
-                              <div className={`bg-gradient-to-br from-purple-500/30 to-blue-500/30 h-10 w-10 rounded-full flex items-center justify-center font-bold border border-purple-500/20`}>
-                                {token.symbol.slice(0, 1)}
+                          <div key={`${token.symbol}-${index}`} className="flex items-center justify-between p-3 bg-black/20 rounded-lg hover:bg-black/30 transition-colors">
+                            <div className="flex items-center gap-3">
+                              <div className="bg-gradient-to-br from-purple-500/30 to-blue-500/30 h-10 w-10 rounded-full flex items-center justify-center font-bold border border-purple-500/20">
+                                {token.symbol.slice(0, 2)}
                               </div>
                               <div>
-                                <div className="font-medium">{token.name}</div>
+                                <div className="font-medium text-white">{token.name}</div>
                                 <div className="text-sm text-gray-400">
                                   {token.symbol} {token.source && <span className="text-xs text-purple-300">• {token.source}</span>}
                                 </div>
                               </div>
                             </div>
                             <div className="text-right">
-                              <div>${token.price.toLocaleString(undefined, {
-                                minimumFractionDigits: token.price < 0.01 ? 8 : 2,
-                                maximumFractionDigits: token.price < 0.01 ? 8 : 2
-                              })}</div>
-                              <div className={`text-sm ${token.change24h >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                              <div className="text-white font-medium">
+                                ${token.price.toLocaleString(undefined, {
+                                  minimumFractionDigits: token.price < 0.01 ? 8 : 2,
+                                  maximumFractionDigits: token.price < 0.01 ? 8 : 2
+                                })}
+                              </div>
+                              <div className={`text-sm font-medium ${token.change24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                                 {token.change24h >= 0 ? '+' : ''}{token.change24h.toFixed(2)}%
                               </div>
                             </div>
                           </div>
                         ))
                       ) : (
-                        <div className="text-center py-6 text-gray-400">
-                          No trending token data available
+                        <div className="text-center py-8 text-gray-400">
+                          <TrendingUp className="h-12 w-12 mx-auto mb-3 opacity-30" />
+                          <p>No trending token data available</p>
+                          <p className="text-sm mt-1">Market data will appear here when available</p>
                         </div>
                       )}
                     </div>
@@ -169,39 +246,102 @@ const MarketAnalysis = () => {
               </Card>
             </TabsContent>
 
-            <TabsContent value="activity">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Recent Market Activity</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex flex-col items-center justify-center py-8 text-gray-400">
-                    <Activity className="h-12 w-12 mb-3 opacity-30" />
-                    <p>Market activity data will be displayed here</p>
-                    <p className="text-sm mt-1">Connect to Helius API to view on-chain metrics</p>
-                  </div>
-                </CardContent>
-              </Card>
+            <TabsContent value="gainers" className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Top Gainer */}
+                <Card className="bg-trading-darkAccent border-white/10">
+                  <CardHeader>
+                    <CardTitle className="text-white flex items-center gap-2">
+                      <TrendingUp className="h-5 w-5 text-green-400" />
+                      Top Gainer
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {marketMetrics.topGainer ? (
+                      <div className="flex items-center justify-between p-3 bg-green-500/10 rounded-lg border border-green-500/20">
+                        <div className="flex items-center gap-3">
+                          <div className="bg-green-500/20 h-10 w-10 rounded-full flex items-center justify-center font-bold">
+                            {marketMetrics.topGainer.symbol.slice(0, 2)}
+                          </div>
+                          <div>
+                            <div className="font-medium text-white">{marketMetrics.topGainer.name}</div>
+                            <div className="text-sm text-gray-400">{marketMetrics.topGainer.symbol}</div>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-white font-medium">${marketMetrics.topGainer.price.toFixed(6)}</div>
+                          <div className="text-green-400 font-medium">+{marketMetrics.topGainer.change24h.toFixed(2)}%</div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-center py-4 text-gray-400">No data available</div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Top Loser */}
+                <Card className="bg-trading-darkAccent border-white/10">
+                  <CardHeader>
+                    <CardTitle className="text-white flex items-center gap-2">
+                      <TrendingUp className="h-5 w-5 text-red-400 rotate-180" />
+                      Top Loser
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {marketMetrics.topLoser ? (
+                      <div className="flex items-center justify-between p-3 bg-red-500/10 rounded-lg border border-red-500/20">
+                        <div className="flex items-center gap-3">
+                          <div className="bg-red-500/20 h-10 w-10 rounded-full flex items-center justify-center font-bold">
+                            {marketMetrics.topLoser.symbol.slice(0, 2)}
+                          </div>
+                          <div>
+                            <div className="font-medium text-white">{marketMetrics.topLoser.name}</div>
+                            <div className="text-sm text-gray-400">{marketMetrics.topLoser.symbol}</div>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-white font-medium">${marketMetrics.topLoser.price.toFixed(6)}</div>
+                          <div className="text-red-400 font-medium">{marketMetrics.topLoser.change24h.toFixed(2)}%</div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-center py-4 text-gray-400">No data available</div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
             </TabsContent>
 
-            <TabsContent value="tokens">
-              <Card>
+            <TabsContent value="volume" className="space-y-4">
+              <Card className="bg-trading-darkAccent border-white/10">
                 <CardHeader>
-                  <CardTitle>Token Explorer</CardTitle>
+                  <CardTitle className="text-white flex items-center gap-2">
+                    <BarChart className="h-5 w-5 text-blue-400" />
+                    Volume Leaders
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="relative mb-4">
-                    <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                    <input
-                      type="text"
-                      className="w-full pl-10 pr-4 py-2 bg-gray-800 border border-gray-700 rounded-md"
-                      placeholder="Search for a token..."
-                    />
-                  </div>
-                  <div className="flex flex-col items-center justify-center py-8 text-gray-400">
-                    <Wallet className="h-12 w-12 mb-3 opacity-30" />
-                    <p>Enter a token address to search</p>
-                    <p className="text-sm mt-1">Token data will be loaded from connected APIs</p>
+                  <div className="space-y-3">
+                    {topTokens
+                      .sort((a, b) => b.volume24h - a.volume24h)
+                      .slice(0, 5)
+                      .map((token, index) => (
+                        <div key={`volume-${token.symbol}-${index}`} className="flex items-center justify-between p-3 bg-black/20 rounded-lg">
+                          <div className="flex items-center gap-3">
+                            <div className="bg-blue-500/20 h-8 w-8 rounded-full flex items-center justify-center text-sm font-bold">
+                              {index + 1}
+                            </div>
+                            <div>
+                              <div className="font-medium text-white">{token.name}</div>
+                              <div className="text-sm text-gray-400">{token.symbol}</div>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-white font-medium">{formatCurrency(token.volume24h)}</div>
+                            <div className="text-sm text-gray-400">24h Volume</div>
+                          </div>
+                        </div>
+                      ))}
                   </div>
                 </CardContent>
               </Card>
@@ -209,56 +349,45 @@ const MarketAnalysis = () => {
           </Tabs>
         </div>
 
+        {/* Sidebar */}
         <div className="space-y-6">
-          <ApiUsageMonitor />
-
-          <Card>
+          <Card className="bg-trading-darkAccent border-white/10">
             <CardHeader>
-              <CardTitle>API Information</CardTitle>
+              <CardTitle className="text-white">Market Summary</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-2">
+            <CardContent className="space-y-4">
               <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">Provider</span>
-                <span className="font-medium text-purple-400">Helius</span>
+                <span className="text-sm text-gray-400">Market Status</span>
+                <Badge className="bg-green-500/20 text-green-400 border-green-500/30">Active</Badge>
               </div>
               <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">Status</span>
-                <span className={`${apiConnected ? 'text-green-500' : 'text-red-500'}`}>
-                  {apiConnected ? 'Connected' : 'Disconnected'}
-                </span>
+                <span className="text-sm text-gray-400">Last Updated</span>
+                <span className="text-sm text-white">{new Date().toLocaleTimeString()}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">Latency</span>
-                <span className="font-medium">{systemLatency ? `${systemLatency}ms` : 'Measuring...'}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">Rate Limit</span>
-                <span className="font-medium">5 req/sec</span>
+                <span className="text-sm text-gray-400">Data Source</span>
+                <span className="text-sm text-white">Multiple APIs</span>
               </div>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="bg-trading-darkAccent border-white/10">
             <CardHeader>
-              <CardTitle>Connected Services</CardTitle>
+              <CardTitle className="text-white">Quick Actions</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <div className="flex justify-between items-center">
-                <span className="text-sm">Personal API Key</span>
-                <span className="text-xs bg-gray-800 px-2 py-1 rounded">For authentication and rate limits</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm">Solana RPC</span>
-                <span className={`inline-block w-3 h-3 rounded-full ${getStatusColorClass(apiConnected)}`}></span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm">Helius API</span>
-                <span className={`inline-block w-3 h-3 rounded-full ${getStatusColorClass(apiConnected)}`}></span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm">Webhooks</span>
-                <span className={`inline-block w-3 h-3 rounded-full ${getStatusColorClass(false)}`}></span>
-              </div>
+              <Button className="w-full bg-trading-highlight hover:bg-trading-highlight/80">
+                <TrendingUp className="h-4 w-4 mr-2" />
+                View All Tokens
+              </Button>
+              <Button variant="outline" className="w-full bg-black/20 border-white/10 text-white hover:bg-white/10">
+                <BarChart className="h-4 w-4 mr-2" />
+                Advanced Analytics
+              </Button>
+              <Button variant="outline" className="w-full bg-black/20 border-white/10 text-white hover:bg-white/10">
+                <Activity className="h-4 w-4 mr-2" />
+                Set Price Alerts
+              </Button>
             </CardContent>
           </Card>
         </div>

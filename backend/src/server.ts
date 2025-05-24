@@ -1,7 +1,7 @@
 import express from 'express';
 import http from 'http';
 import { Server } from 'socket.io';
-import { AgentServiceClient } from './clients/agentServiceClient';
+// AgentServiceClient removed - using direct proxy approach
 import { config } from './config';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -13,7 +13,7 @@ import heliusRoutes from './routes/heliusRoutes';
 import jupiterRoutes from './routes/jupiterRoutes';
 import birdeyeRoutes from './routes/birdeyeRoutes';
 import authRoutes from './routes/authRoutes';
-import agentRoutes from './routes/agentRoutes';
+import tradingAgentsRoutes from './routes/tradingAgentsRoutes';
 
 // Load environment variables
 dotenv.config();
@@ -47,7 +47,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api/helius', heliusRoutes);
 app.use('/api/jupiter', jupiterRoutes);
 app.use('/api/birdeye', birdeyeRoutes);
-app.use('/api/agents', agentRoutes);
+// Unified agent routes - consolidate to single endpoint
+app.use('/api/agents', tradingAgentsRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {
@@ -74,8 +75,7 @@ const io = new Server(server, {
   }
 });
 
-// Initialize agent service client for WebSocket connections
-const agentServiceClient = new AgentServiceClient(config.agentServiceUrl);
+// WebSocket connections will be implemented directly to Python service
 
 // Set up Socket.IO connection handler
 io.on('connection', (socket) => {
@@ -88,23 +88,9 @@ io.on('connection', (socket) => {
     // Create room for this agent
     socket.join(`agent:${agentId}`);
 
-    try {
-      // Connect to agent WebSocket
-      const ws = agentServiceClient.connectToAgentWebSocket(agentId);
-
-      // Forward messages to Socket.IO clients
-      agentServiceClient.on('ws:message', ({ agentId: id, message }) => {
-        if (id === agentId) {
-          io.to(`agent:${agentId}`).emit('agent:update', message);
-        }
-      });
-    } catch (error) {
-      console.error(`Error connecting to agent ${agentId} WebSocket:`, error);
-      socket.emit('agent:error', {
-        agentId,
-        error: 'Failed to connect to agent WebSocket'
-      });
-    }
+    // TODO: Implement WebSocket connection to Python service
+    // For now, just acknowledge the subscription
+    socket.emit('agent:subscribed', { agentId });
   });
 
   // Handle agent unsubscription

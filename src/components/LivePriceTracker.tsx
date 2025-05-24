@@ -269,17 +269,11 @@ const LivePriceTracker = () => {
 
   return (
     <div className="flex flex-col min-w-[140px]">
-      <div className="text-xs text-gray-400 flex items-center">
-        <span>SOL Price</span>
-        {fallbackMode && <span className="ml-1 text-trading-danger">(Last Known Price)</span>}
-        {!fallbackMode && priceSource !== PRICE_SOURCES.JUPITER &&
-          <span className="ml-1 text-xs text-gray-500">({priceSource})</span>
-        }
-      </div>
-      <div className="flex items-center justify-between">
+      <div className="flex items-center">
+        <span className="text-xs text-gray-400">SOL Price: </span>
         <span
           key={`price-${animationKey}`}
-          className={`text-lg font-bold transition-colors duration-500 ${
+          className={`ml-1 text-lg font-bold transition-colors duration-500 ${
             animatePrice
               ? (priceDirection === 'up'
                 ? 'text-trading-success animate-pulse-once'
@@ -300,6 +294,11 @@ const LivePriceTracker = () => {
             {Math.abs(displayChange).toFixed(2)}%
           </span>
         </div>
+
+        {fallbackMode && <span className="ml-1 text-xs text-trading-danger">(Last Known Price)</span>}
+        {!fallbackMode && priceSource !== PRICE_SOURCES.JUPITER &&
+          <span className="ml-1 text-xs text-gray-500">({priceSource})</span>
+        }
       </div>
 
       {(solFetching && !solLoading) && (

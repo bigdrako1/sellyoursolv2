@@ -5,22 +5,16 @@ import APP_CONFIG, { getActiveApiConfig } from "@/config/appDefinition";
 // Get active API config
 const apiConfig = getActiveApiConfig();
 
-// API keys (from config)
-export const HELIUS_API_KEY = apiConfig.apiKey || "a18d2c93-d9fa-4db2-8419-707a4f1782f7";
+// DEPRECATED: Direct API access - Use secureApiService instead
+// This file is kept for backward compatibility only
+// All new code should use src/services/secureApiService.ts
+
 export const BIRDEYE_API_KEY = "67f79318c29e4eda99c3184c2ac65116";
-export const MORALIS_API_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJub25jZSI6ImZlMjk1MDllLWQ0YWMtNDI0YS1hMDg4LTBhZTgwNTdkNzgyNyIsIm9yZ0lkIjoiNDQzOTg4IiwidXNlcklkIjoiNDU2ODA3IiwidHlwZUlkIjoiZGYxNjU0MWYtNTJhNy00MGFiLWFiN2EtODYxZTliYmZiN2U4IiwidHlwZSI6IlBST0pFQ1QiLCJpYXQiOjE3NDU2ODIzODUsImV4cCI6NDkwMTQ0MjM4NX0.eAg55zBFSaFEnnuKA_EmP-u-61Hkb6YqM8v1YhWduAo";
-
-// API endpoints - Using fallbacks to handle missing properties gracefully
-export const HELIUS_RPC_URL = apiConfig.rpcUrl || `https://mainnet.helius-rpc.com/?api-key=${HELIUS_API_KEY}`;
-export const HELIUS_API_BASE = apiConfig.baseUrl || "https://api.helius.xyz/v0";
-export const HELIUS_WS_URL = apiConfig.wsUrl || `wss://mainnet.helius-rpc.com/?api-key=${HELIUS_API_KEY}`;
-export const HELIUS_SECURE_RPC = apiConfig.secureRpcUrl || "https://christye-baw30v-fast-mainnet.helius-rpc.com";
-export const HELIUS_STAKED_RPC = apiConfig.stakedRpcUrl || `https://staked.helius-rpc.com?api-key=${HELIUS_API_KEY}`;
-export const PARSE_TX_URL = (apiConfig as any).parseTransactionsUrl || `https://api.helius.xyz/v0/transactions/?api-key=${HELIUS_API_KEY}`;
-export const TX_HISTORY_URL = (apiConfig as any).transactionHistoryUrl || `https://api.helius.xyz/v0/addresses/{address}/transactions/?api-key=${HELIUS_API_KEY}`;
-
 export const BIRDEYE_API_BASE = "https://public-api.birdeye.so";
 export const JUPITER_API_BASE = "https://price.jup.ag/v4";
+
+// Redirect Helius calls to secure service
+import { secureApiService } from '@/services/secureApiService';
 
 // Cache for API responses
 const apiCache = new Map<string, { data: any; timestamp: number }>();
@@ -45,31 +39,12 @@ let apiUsageStats: ApiUsageStats = {
 };
 
 /**
- * Test connection to Helius API
+ * Test connection to Helius API - DEPRECATED
+ * Use secureApiService.testHeliusConnection() instead
  */
 export const testHeliusConnection = async (): Promise<boolean> => {
-  try {
-    const response = await fetchWithTimeout(HELIUS_RPC_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        jsonrpc: '2.0',
-        id: 'helius-connection-test',
-        method: 'getHealth',
-      }),
-      timeout: 10000 // 10 second timeout
-    });
-
-    if (!response.ok) {
-      return false;
-    }
-
-    const data = await response.json();
-    return data.result === "ok" || data.result === 1;
-  } catch (error) {
-    console.error("Helius API connection failed:", error);
-    return false;
-  }
+  console.warn('testHeliusConnection is deprecated. Use secureApiService.testHeliusConnection() instead');
+  return secureApiService.testHeliusConnection();
 };
 
 /**
@@ -123,77 +98,21 @@ const getCachedOrFetch = async (
 };
 
 /**
- * Make a direct RPC call to Helius
+ * Make a direct RPC call to Helius - DEPRECATED
+ * Use secureApiService.heliusRpcCall() instead
  */
 export const heliusRpcCall = async (method: string, params: any[] = []): Promise<any> => {
-  try {
-    // Track API usage
-    apiUsageStats.dailyRequests++;
-    apiUsageStats.apiCalls[method] = (apiUsageStats.apiCalls[method] || 0) + 1;
-
-    const cacheKey = `helius_rpc_${method}_${JSON.stringify(params)}`;
-
-    return await getCachedOrFetch(cacheKey, async () => {
-      const response = await fetchWithTimeout(HELIUS_RPC_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          jsonrpc: '2.0',
-          id: `helius-${Date.now()}`,
-          method,
-          params,
-        }),
-        timeout: 10000
-      });
-
-      if (!response.ok) {
-        throw new Error(`Helius API error: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-
-      if (data.error) {
-        throw new Error(`Helius API error: ${data.error.message}`);
-      }
-
-      return data.result;
-    });
-  } catch (error) {
-    handleApiError(error, `Helius RPC call (${method})`);
-    throw error;
-  }
+  console.warn('heliusRpcCall is deprecated. Use secureApiService.heliusRpcCall() instead');
+  return secureApiService.heliusRpcCall(method, params);
 };
 
 /**
- * Make an API call to Helius API endpoints (non-RPC)
+ * Make an API call to Helius API endpoints (non-RPC) - DEPRECATED
+ * Use secureApiService.heliusApiCall() instead
  */
 export const heliusApiCall = async (endpoint: string, data: any = {}): Promise<any> => {
-  try {
-    // Track API usage
-    apiUsageStats.dailyRequests++;
-    apiUsageStats.requestsPerEndpoint[endpoint] = (apiUsageStats.requestsPerEndpoint[endpoint] || 0) + 1;
-
-    const cacheKey = `helius_api_${endpoint}_${JSON.stringify(data)}`;
-
-    return await getCachedOrFetch(cacheKey, async () => {
-      const url = `${HELIUS_API_BASE}/${endpoint}?api-key=${HELIUS_API_KEY}`;
-      const response = await fetchWithTimeout(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-        timeout: 10000
-      });
-
-      if (!response.ok) {
-        throw new Error(`Helius API error: ${response.statusText}`);
-      }
-
-      return await response.json();
-    });
-  } catch (error) {
-    handleApiError(error, `Helius API call (${endpoint})`);
-    throw error;
-  }
+  console.warn('heliusApiCall is deprecated. Use secureApiService.heliusApiCall() instead');
+  return secureApiService.heliusApiCall(endpoint, data);
 };
 
 /**

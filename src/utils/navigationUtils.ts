@@ -15,6 +15,7 @@ export const getPageTitle = (path: string): string => {
     "/": "Dashboard",
     "/market-analysis": "Market Analysis",
     "/auto-trading": "Auto Trading",
+    "/agents": "Agents",
     "/portfolio": "Portfolio",
     "/tokens": "Token Management",
     "/wallets": "Wallet Management",

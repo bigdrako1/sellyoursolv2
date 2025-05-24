@@ -6,7 +6,8 @@ import { toast } from "sonner";
 import { RefreshCw, AlertCircle, CheckCircle, XCircle } from "lucide-react";
 import APP_CONFIG from "@/config/appDefinition";
 import { testApiConnectivity } from "@/services/apiService";
-import { HELIUS_RPC_URL, JUPITER_API_BASE } from "@/utils/apiUtils";
+import { JUPITER_API_BASE } from "@/utils/apiUtils";
+import { secureApiService } from "@/services/secureApiService";
 
 export interface ConnectedServicesProps {
   servicesStatus?: {
@@ -24,42 +25,42 @@ const ConnectedServices: React.FC<ConnectedServicesProps> = ({ servicesStatus: i
     jupiterApi: false,
     webhooks: false,
   });
-  
+
   const [isCheckingConnections, setIsCheckingConnections] = useState(false);
   const [lastChecked, setLastChecked] = useState<Date | null>(null);
-  
+
   // Check connection status when component mounts
   useEffect(() => {
     checkConnections();
-    
+
     // Periodically check connections
     const interval = setInterval(() => {
       checkConnections(false); // Silent check
     }, 5 * 60 * 1000); // Every 5 minutes
-    
+
     return () => clearInterval(interval);
   }, []);
-  
+
   const checkConnections = async (showToast = true) => {
     if (isCheckingConnections) return;
     setIsCheckingConnections(true);
-    
+
     try {
-      // Test Helius RPC connection
-      const heliusConnected = await testApiConnectivity(HELIUS_RPC_URL);
-      
+      // Test Helius RPC connection through secure service
+      const heliusConnected = await secureApiService.testHeliusConnection();
+
       // Test Jupiter API connection
       const jupiterConnected = await testApiConnectivity(JUPITER_API_BASE);
-      
+
       setServicesStatus({
         solanaRpc: heliusConnected, // Using Helius for Solana RPC
         heliusApi: heliusConnected,
         jupiterApi: jupiterConnected,
         webhooks: false, // We don't have a way to test webhooks directly
       });
-      
+
       setLastChecked(new Date());
-      
+
       if (showToast) {
         toast("Connection check complete", {
           description: `Connected to ${[heliusConnected && 'Helius', jupiterConnected && 'Jupiter'].filter(Boolean).join(', ') || 'No services'}`,
@@ -79,14 +80,14 @@ const ConnectedServices: React.FC<ConnectedServicesProps> = ({ servicesStatus: i
       setIsCheckingConnections(false);
     }
   };
-  
+
   const getActiveServicesCount = () => {
     return Object.values(servicesStatus).filter(Boolean).length;
   };
-  
+
   const totalServices = Object.keys(servicesStatus).length;
   const activeServices = getActiveServicesCount();
-  
+
   const services = [
     {
       id: "solanaRpc",
@@ -125,9 +126,9 @@ const ConnectedServices: React.FC<ConnectedServicesProps> = ({ servicesStatus: i
                 Checking...
               </span>
             ) : (
-              <Button 
-                variant="ghost" 
-                size="sm" 
+              <Button
+                variant="ghost"
+                size="sm"
                 className="h-6 w-6 p-0 text-gray-400"
                 onClick={() => checkConnections()}
                 title="Refresh connections"
@@ -143,7 +144,7 @@ const ConnectedServices: React.FC<ConnectedServicesProps> = ({ servicesStatus: i
           {services.map((service) => (
             <div key={service.id} className="flex items-center justify-between">
               <div className="flex items-center">
-                <div 
+                <div
                   className={`w-2 h-2 rounded-full mr-3 ${service.active ? 'bg-green-500' : 'bg-red-500'}`}
                 ></div>
                 <span className={`font-medium ${service.active ? 'text-white' : 'text-gray-400'}`}>
@@ -166,7 +167,7 @@ const ConnectedServices: React.FC<ConnectedServicesProps> = ({ servicesStatus: i
             </div>
           ))}
         </div>
-        
+
         {lastChecked && (
           <div className="text-xs text-gray-500 mt-4 flex justify-end">
             Last checked: {lastChecked.toLocaleTimeString()}

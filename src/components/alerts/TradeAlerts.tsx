@@ -2,7 +2,8 @@ import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, ExternalLink, TrendingUp, Check, Loader2 } from "lucide-react";
+import { AlertCircle, ExternalLink, TrendingUp, Check, Loader2, Eye } from "lucide-react";
+import TokenDetailsModal from "@/components/TokenDetailsModal";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -51,6 +52,7 @@ const SAMPLE_ALERTS: TradeAlert[] = [
 const TradeAlerts: React.FC = () => {
   const [alerts] = useState<TradeAlert[]>(SAMPLE_ALERTS);
   const [tradeDialogOpen, setTradeDialogOpen] = useState(false);
+  const [tokenDetailsOpen, setTokenDetailsOpen] = useState(false);
   const [selectedToken, setSelectedToken] = useState<TradeAlert | null>(null);
   const [tradeAmount, setTradeAmount] = useState(0.1);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -88,6 +90,11 @@ const TradeAlerts: React.FC = () => {
   const handleTradeClick = (alert: TradeAlert) => {
     setSelectedToken(alert);
     setTradeDialogOpen(true);
+  };
+
+  const handleViewTokenDetails = (alert: TradeAlert) => {
+    setSelectedToken(alert);
+    setTokenDetailsOpen(true);
   };
 
   const handleExecuteTrade = async () => {
@@ -172,7 +179,17 @@ const TradeAlerts: React.FC = () => {
                     size="icon"
                     variant="outline"
                     className="bg-black/20 border-white/10 h-7 w-7"
+                    onClick={() => handleViewTokenDetails(alert)}
+                    title="View token details"
+                  >
+                    <Eye className="h-3 w-3" />
+                  </Button>
+                  <Button
+                    size="icon"
+                    variant="outline"
+                    className="bg-black/20 border-white/10 h-7 w-7"
                     onClick={() => window.open(`https://birdeye.so/token/${alert.tokenAddress}?chain=solana`, '_blank')}
+                    title="Open in external explorer"
                   >
                     <ExternalLink className="h-3 w-3" />
                   </Button>
@@ -288,6 +305,18 @@ const TradeAlerts: React.FC = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Token Details Modal */}
+      <TokenDetailsModal
+        isOpen={tokenDetailsOpen}
+        onClose={() => {
+          setTokenDetailsOpen(false);
+          setSelectedToken(null);
+        }}
+        tokenAddress={selectedToken?.tokenAddress || ''}
+        tokenSymbol={selectedToken?.tokenSymbol}
+        tokenName={selectedToken?.tokenName}
+      />
     </Card>
   );
 };

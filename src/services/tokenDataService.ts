@@ -1,93 +1,58 @@
 
 import { HeliusTokenData, HeliusTokenResponse } from '@/utils/heliusTypes';
 import { Token, WalletActivity } from '@/types/token.types';
-import { 
-  HELIUS_API_KEY, 
-  HELIUS_RPC_URL, 
-  HELIUS_API_BASE,
-  BIRDEYE_API_KEY 
+import {
+  BIRDEYE_API_KEY
 } from '@/utils/apiUtils';
+import { secureApiService } from '@/services/secureApiService';
 
 const BIRDEYE_API_BASE = "https://public-api.birdeye.so";
 
 // Test Helius API connection
 export const testHeliusConnection = async (): Promise<boolean> => {
-  try {
-    const response = await fetch(HELIUS_RPC_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        jsonrpc: "2.0",
-        id: "helius-connection-test",
-        method: "getHealth"
-      }),
-    });
-
-    if (!response.ok) {
-      return false;
-    }
-
-    const data = await response.json();
-    return data.result === "ok";
-  } catch (error) {
-    console.error('Error testing Helius connection:', error);
-    return false;
-  }
+  return secureApiService.testHeliusConnection();
 };
 
 // Utility function to fetch token metadata from Helius API
 export const fetchTokenMetadata = async (tokenAddress: string): Promise<HeliusTokenData | null> => {
   try {
-    const url = `${HELIUS_API_BASE}/tokens/metadata?api-key=${HELIUS_API_KEY}`;
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        mintAccounts: [tokenAddress],
-      }),
+    const response = await secureApiService.heliusApiCall('tokens/metadata', {
+      mintAccounts: [tokenAddress],
     });
 
-    if (!response.ok) {
-      throw new Error(`Failed to fetch token metadata: ${response.statusText}`);
-    }
+    const data = response;
 
-    const data = await response.json();
-    
     if (!data || !data.result || data.result.length === 0) {
       console.warn(`No metadata found for token: ${tokenAddress}`);
       return null;
     }
-    
+
     const tokenData: HeliusTokenResponse = data.result[0];
-    
+
     // Extract token data with fallbacks for different data structures
-    const name = 
-      tokenData.result?.onChainData?.data?.name || 
-      tokenData.result?.offChainData?.name || 
+    const name =
+      tokenData.result?.onChainData?.data?.name ||
+      tokenData.result?.offChainData?.name ||
       tokenData.result?.legacyMetadata?.name ||
       tokenData.result?.tokenData?.name ||
       'Unknown Token';
-      
-    const symbol = 
-      tokenData.result?.onChainData?.data?.symbol || 
-      tokenData.result?.offChainData?.symbol || 
+
+    const symbol =
+      tokenData.result?.onChainData?.data?.symbol ||
+      tokenData.result?.offChainData?.symbol ||
       tokenData.result?.legacyMetadata?.symbol ||
       tokenData.result?.tokenData?.symbol ||
       tokenAddress.substring(0, 4);
-      
-    const decimals = 
-      tokenData.result?.onChainData?.data?.decimals || 
-      tokenData.result?.offChainData?.decimals || 
+
+    const decimals =
+      tokenData.result?.onChainData?.data?.decimals ||
+      tokenData.result?.offChainData?.decimals ||
       tokenData.result?.legacyMetadata?.decimals ||
-      tokenData.result?.tokenData?.decimals || 
+      tokenData.result?.tokenData?.decimals ||
       9;
-    
+
     const supply = tokenData.result?.supply || tokenData.result?.tokenData?.supply || 0;
-      
+
     return {
       name,
       symbol,
@@ -132,22 +97,22 @@ export const getTokenInfo = async (tokenAddress: string): Promise<any> => {
         'X-API-KEY': BIRDEYE_API_KEY
       }
     });
-    
+
     if (!response.ok) {
       throw new Error('Failed to fetch token info from BirdEye');
     }
-    
+
     const data = await response.json();
-    
+
     if (data && data.data) {
       return data.data;
     }
-    
+
     throw new Error('No token data returned from BirdEye');
-    
+
   } catch (error) {
     console.error('Error fetching token info:', error);
-    
+
     // Fall back to Helius metadata
     try {
       return await fetchTokenMetadata(tokenAddress);
@@ -158,7 +123,7 @@ export const getTokenInfo = async (tokenAddress: string): Promise<any> => {
   }
 };
 
-// Get recent token activity 
+// Get recent token activity
 export const getRecentTokenActivity = async (): Promise<Token[]> => {
   try {
     // This would normally call an API - for now return mock data
@@ -210,7 +175,7 @@ export const getRecentTokenActivity = async (): Promise<Token[]> => {
         source: 'MEME1000X'
       }
     ];
-    
+
     return mockTokens;
   } catch (error) {
     console.error('Error getting recent token activity:', error);
@@ -254,7 +219,7 @@ export const getTrendingTokens = async (): Promise<Token[]> => {
         trendingScore: 92
       }
     ];
-    
+
     return mockTrending;
   } catch (error) {
     console.error('Error getting trending tokens:', error);
@@ -300,7 +265,7 @@ export const getPumpFunTokens = async (): Promise<Token[]> => {
         isPumpFun: true
       }
     ];
-    
+
     return mockPumpTokens;
   } catch (error) {
     console.error('Error getting pump.fun tokens:', error);
@@ -338,7 +303,7 @@ export const trackWalletActivities = async (walletAddresses: string[]): Promise<
         transactionHash: "3B1NsUdMFnmJ4wnTeGQ7s9gQG6tkNSx6UYbsU6w9L89s5A3XGvJeuT7ymgKHWgJrw5WcCQBwvvgWJU9Gt9gbzbFT"
       }
     ];
-    
+
     return mockActivities;
   } catch (error) {
     console.error('Error tracking wallet activities:', error);

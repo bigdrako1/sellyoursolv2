@@ -35,7 +35,7 @@ class RedisAdapter:
         db: int = 0,
         password: Optional[str] = None,
         prefix: str = "trading_agents:",
-        connection_pool: Optional[aioredis.ConnectionPool] = None,
+        connection_pool: Optional[aioredis.ConnectionsPool] = None,
         **kwargs
     ):
         """
@@ -54,8 +54,7 @@ class RedisAdapter:
 
         # Connection parameters
         self.connection_params = {
-            "host": host,
-            "port": port,
+            "address": f"redis://{host}:{port}",
             "db": db,
             "password": password,
             **kwargs
@@ -80,9 +79,9 @@ class RedisAdapter:
 
         try:
             if self.connection_pool:
-                self.redis = aioredis.Redis.from_pool(self.connection_pool)
+                self.redis = self.connection_pool
             else:
-                self.redis = aioredis.Redis(**self.connection_params)
+                self.redis = await aioredis.create_redis_pool(**self.connection_params)
 
             # Test connection
             await self.redis.ping()
@@ -98,7 +97,8 @@ class RedisAdapter:
             return
 
         try:
-            await self.redis.close()
+            self.redis.close()
+            await self.redis.wait_closed()
             self.redis = None
             logger.info("Disconnected from Redis server")
 

@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trading AI Demo</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            padding-top: 20px;
+            padding-bottom: 20px;
+        }
+        .navbar {
+            margin-bottom: 20px;
+        }
+        .card {
+            margin-bottom: 20px;
+        }
+        .badge-running {
+            background-color: #28a745;
+        }
+        .badge-stopped {
+            background-color: #dc3545;
+        }
+        .positive {
+            color: #28a745;
+        }
+        .negative {
+            color: #dc3545;
+        }
+        .notification-unread {
+            background-color: #f8f9fa;
+            border-left: 4px solid #007bff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+            <div class="container-fluid">
+                <a class="navbar-brand" href="#">Trading AI</a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav">
+                        <li class="nav-item">
+                            <a class="nav-link active" href="#dashboard">Dashboard</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#agents">Agents</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#markets">Markets</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#orders">Orders</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#positions">Positions</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#notifications">Notifications</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+
+        <div id="login-container" class="row justify-content-center">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Login</h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="login-form">
+                            <div class="mb-3">
+                                <label for="username" class="form-label">Username</label>
+                                <input type="text" class="form-control" id="username" value="testuser">
+                            </div>
+                            <div class="mb-3">
+                                <label for="password" class="form-label">Password</label>
+                                <input type="password" class="form-control" id="password" value="testpassword">
+                            </div>
+                            <button type="submit" class="btn btn-primary">Login</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="content-container" style="display: none;">
+            <div id="dashboard" class="section">
+                <h2>Dashboard</h2>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5>Account Summary</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-6">
+                                        <p>Balance</p>
+                                        <h4>$25,432.50</h4>
+                                    </div>
+                                    <div class="col-6">
+                                        <p>Portfolio Value</p>
+                                        <h4>$32,145.75</h4>
+                                    </div>
+                                </div>
+                                <div class="row mt-3">
+                                    <div class="col-6">
+                                        <p>24h Change</p>
+                                        <h4 class="positive">+2.5%</h4>
+                                    </div>
+                                    <div class="col-6">
+                                        <p>Open Positions</p>
+                                        <h4>2</h4>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5>Active Agents</h5>
+                            </div>
+                            <div class="card-body">
+                                <div id="active-agents-list">
+                                    <!-- Active agents will be loaded here -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5>Recent Trades</h5>
+                            </div>
+                            <div class="card-body">
+                                <div id="recent-orders-list">
+                                    <!-- Recent orders will be loaded here -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="agents" class="section" style="display: none;">
+                <h2>Trading Agents</h2>
+                <div id="agents-list">
+                    <!-- Agents will be loaded here -->
+                </div>
+            </div>
+
+            <div id="markets" class="section" style="display: none;">
+                <h2>Markets</h2>
+                <div id="markets-list">
+                    <!-- Markets will be loaded here -->
+                </div>
+            </div>
+
+            <div id="orders" class="section" style="display: none;">
+                <h2>Orders</h2>
+                <div id="orders-list">
+                    <!-- Orders will be loaded here -->
+                </div>
+            </div>
+
+            <div id="positions" class="section" style="display: none;">
+                <h2>Positions</h2>
+                <div id="positions-list">
+                    <!-- Positions will be loaded here -->
+                </div>
+            </div>
+
+            <div id="notifications" class="section" style="display: none;">
+                <h2>Notifications</h2>
+                <div id="notifications-list">
+                    <!-- Notifications will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Global variables
+        let token = '';
+        let socket = null;
+
+        // DOM elements
+        const loginContainer = document.getElementById('login-container');
+        const contentContainer = document.getElementById('content-container');
+        const loginForm = document.getElementById('login-form');
+        const navLinks = document.querySelectorAll('.nav-link');
+
+        // Event listeners
+        loginForm.addEventListener('submit', handleLogin);
+        navLinks.forEach(link => {
+            link.addEventListener('click', handleNavigation);
+        });
+
+        // Functions
+        async function handleLogin(event) {
+            event.preventDefault();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            try {
+                const response = await fetch('http://localhost:8000/api/mobile/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ username, password })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Login failed');
+                }
+
+                const data = await response.json();
+                token = data.access_token;
+
+                // Show content
+                loginContainer.style.display = 'none';
+                contentContainer.style.display = 'block';
+
+                // Load data
+                loadDashboard();
+                connectWebSocket();
+            } catch (error) {
+                console.error('Login error:', error);
+                alert('Login failed. Please try again.');
+            }
+        }
+
+        function handleNavigation(event) {
+            event.preventDefault();
+            const targetId = event.target.getAttribute('href').substring(1);
+            
+            // Hide all sections
+            document.querySelectorAll('.section').forEach(section => {
+                section.style.display = 'none';
+            });
+            
+            // Show target section
+            document.getElementById(targetId).style.display = 'block';
+            
+            // Update active link
+            navLinks.forEach(link => {
+                link.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // Load data for the section
+            switch (targetId) {
+                case 'dashboard':
+                    loadDashboard();
+                    break;
+                case 'agents':
+                    loadAgents();
+                    break;
+                case 'markets':
+                    loadMarkets();
+                    break;
+                case 'orders':
+                    loadOrders();
+                    break;
+                case 'positions':
+                    loadPositions();
+                    break;
+                case 'notifications':
+                    loadNotifications();
+                    break;
+            }
+        }
+
+        async function loadDashboard() {
+            await Promise.all([
+                loadActiveAgents(),
+                loadRecentOrders()
+            ]);
+        }
+
+        async function loadActiveAgents() {
+            try {
+                const response = await fetch('http://localhost:8000/api/mobile/agents', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to load agents');
+                }
+
+                const agents = await response.json();
+                const activeAgents = agents.filter(agent => agent.status === 'running');
+                
+                const activeAgentsList = document.getElementById('active-agents-list');
+                activeAgentsList.innerHTML = '';
+                
+                if (activeAgents.length === 0) {
+                    activeAgentsList.innerHTML = '<p>No active agents</p>';
+                    return;
+                }
+                
+                activeAgents.forEach(agent => {
+                    const agentHtml = `
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h6>${agent.name}</h6>
+                                    <p class="text-muted">${agent.type}</p>
+                                </div>
+                                <div>
+                                    <span class="badge badge-running">Running</span>
+                                    <p class="positive">+${agent.metrics.return}%</p>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    activeAgentsList.innerHTML += agentHtml;
+                });
+            } catch (error) {
+                console.error('Error loading active agents:', error);
+            }
+        }
+
+        async function loadRecentOrders() {
+            try {
+                const response = await fetch('http://localhost:8000/api/mobile/orders', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to load orders');
+                }
+
+                const orders = await response.json();
+                
+                const recentOrdersList = document.getElementById('recent-orders-list');
+                recentOrdersList.innerHTML = '';
+                
+                if (orders.length === 0) {
+                    recentOrdersList.innerHTML = '<p>No recent orders</p>';
+                    return;
+                }
+                
+                orders.forEach(order => {
+                    const orderHtml = `
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h6>${order.symbol}</h6>
+                                    <p class="text-muted">${new Date(order.created_at).toLocaleString()}</p>
+                                </div>
+                                <div>
+                                    <span class="badge ${order.side === 'BUY' ? 'bg-success' : 'bg-danger'}">${order.side}</span>
+                                    <p>${order.amount} @ ${order.price ? '$' + order.price.toFixed(2) : 'Market'}</p>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    recentOrdersList.innerHTML += orderHtml;
+                });
+            } catch (error) {
+                console.error('Error loading recent orders:', error);
+            }
+        }
+
+        async function loadAgents() {
+            try {
+                const response = await fetch('http://localhost:8000/api/mobile/agents', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to load agents');
+                }
+
+                const agents = await response.json();
+                
+                const agentsList = document.getElementById('agents-list');
+                agentsList.innerHTML = '';
+                
+                if (agents.length === 0) {
+                    agentsList.innerHTML = '<p>No agents found</p>';
+                    return;
+                }
+                
+                agents.forEach(agent => {
+                    const agentHtml = `
+                        <div class="card">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <h5>${agent.name}</h5>
+                                        <p class="text-muted">${agent.type}</p>
+                                    </div>
+                                    <div>
+                                        <span class="badge ${agent.status === 'running' ? 'badge-running' : 'badge-stopped'}">${agent.status}</span>
+                                    </div>
+                                </div>
+                                <div class="row mt-3">
+                                    <div class="col-4">
+                                        <p>Return</p>
+                                        <h6 class="${agent.metrics.return >= 0 ? 'positive' : 'negative'}">${agent.metrics.return}%</h6>
+                                    </div>
+                                    <div class="col-4">
+                                        <p>Win Rate</p>
+                                        <h6>${agent.metrics.winRate}%</h6>
+                                    </div>
+                                    <div class="col-4">
+                                        <p>Trades</p>
+                                        <h6>${agent.metrics.trades}</h6>
+                                    </div>
+                                </div>
+                                <div class="mt-3">
+                                    <p>Symbols: ${agent.config.symbols.join(', ')}</p>
+                                </div>
+                                <div class="mt-3">
+                                    <button class="btn btn-sm ${agent.status === 'running' ? 'btn-danger' : 'btn-success'}" onclick="toggleAgentStatus('${agent.id}', '${agent.status}')">
+                                        ${agent.status === 'running' ? 'Stop' : 'Start'}
+                                    </button>
+                                    <button class="btn btn-sm btn-primary">Details</button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    agentsList.innerHTML += agentHtml;
+                });
+            } catch (error) {
+                console.error('Error loading agents:', error);
+            }
+        }
+
+        async function loadMarkets() {
+            try {
+                const response = await fetch('http://localhost:8000/api/mobile/markets', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to load markets');
+                }
+
+                const markets = await response.json();
+                
+                const marketsList = document.getElementById('markets-list');
+                marketsList.innerHTML = '';
+                
+                if (markets.length === 0) {
+                    marketsList.innerHTML = '<p>No markets found</p>';
+                    return;
+                }
+                
+                markets.forEach(market => {
+                    const marketHtml = `
+                        <div class="card">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <h5>${market.base}/${market.quote}</h5>
+                                    </div>
+                                    <div>
+                                        <h5>$${market.price.toFixed(2)}</h5>
+                                    </div>
+                                </div>
+                                <div class="row mt-3">
+                                    <div class="col-6">
+                                        <p>24h Change</p>
+                                        <h6 class="${market.change_24h >= 0 ? 'positive' : 'negative'}">${market.change_24h.toFixed(2)}%</h6>
+                                    </div>
+                                    <div class="col-6">
+                                        <p>24h Volume</p>
+                                        <h6>$${(market.volume_24h / 1000000).toFixed(2)}M</h6>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    marketsList.innerHTML += marketHtml;
+                });
+            } catch (error) {
+                console.error('Error loading markets:', error);
+            }
+        }
+
+        async function loadOrders() {
+            try {
+                const response = await fetch('http://localhost:8000/api/mobile/orders', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to load orders');
+                }
+
+                const orders = await response.json();
+                
+                const ordersList = document.getElementById('orders-list');
+                ordersList.innerHTML = '';
+                
+                if (orders.length === 0) {
+                    ordersList.innerHTML = '<p>No orders found</p>';
+                    return;
+                }
+                
+                orders.forEach(order => {
+                    const orderHtml = `
+                        <div class="card">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <h5>${order.symbol}</h5>
+                                        <p class="text-muted">${new Date(order.created_at).toLocaleString()}</p>
+                                    </div>
+                                    <div>
+                                        <span class="badge bg-${getStatusColor(order.status)}">${order.status}</span>
+                                    </div>
+                                </div>
+                                <div class="row mt-3">
+                                    <div class="col-3">
+                                        <p>Type</p>
+                                        <h6>${order.type}</h6>
+                                    </div>
+                                    <div class="col-3">
+                                        <p>Side</p>
+                                        <h6 class="${order.side === 'BUY' ? 'positive' : 'negative'}">${order.side}</h6>
+                                    </div>
+                                    <div class="col-3">
+                                        <p>Amount</p>
+                                        <h6>${order.amount}</h6>
+                                    </div>
+                                    <div class="col-3">
+                                        <p>Price</p>
+                                        <h6>${order.price ? '$' + order.price.toFixed(2) : 'Market'}</h6>
+                                    </div>
+                                </div>
+                                ${order.status === 'OPEN' ? `
+                                <div class="mt-3">
+                                    <button class="btn btn-sm btn-danger">Cancel</button>
+                                </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    `;
+                    ordersList.innerHTML += orderHtml;
+                });
+            } catch (error) {
+                console.error('Error loading orders:', error);
+            }
+        }
+
+        async function loadPositions() {
+            try {
+                const response = await fetch('http://localhost:8000/api/mobile/positions', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to load positions');
+                }
+
+                const positions = await response.json();
+                
+                const positionsList = document.getElementById('positions-list');
+                positionsList.innerHTML = '';
+                
+                if (positions.length === 0) {
+                    positionsList.innerHTML = '<p>No positions found</p>';
+                    return;
+                }
+                
+                positions.forEach(position => {
+                    const positionHtml = `
+                        <div class="card">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <h5>${position.symbol}</h5>
+                                    </div>
+                                    <div>
+                                        <span class="badge ${position.side === 'LONG' ? 'bg-success' : 'bg-danger'}">${position.side}</span>
+                                    </div>
+                                </div>
+                                <div class="row mt-3">
+                                    <div class="col-3">
+                                        <p>Amount</p>
+                                        <h6>${position.amount}</h6>
+                                    </div>
+                                    <div class="col-3">
+                                        <p>Entry Price</p>
+                                        <h6>$${position.entry_price.toFixed(2)}</h6>
+                                    </div>
+                                    <div class="col-3">
+                                        <p>Current Price</p>
+                                        <h6>$${position.current_price.toFixed(2)}</h6>
+                                    </div>
+                                    <div class="col-3">
+                                        <p>P&L</p>
+                                        <h6 class="${position.pnl >= 0 ? 'positive' : 'negative'}">
+                                            $${position.pnl.toFixed(2)} (${position.pnl_percentage.toFixed(2)}%)
+                                        </h6>
+                                    </div>
+                                </div>
+                                <div class="mt-3">
+                                    <button class="btn btn-sm btn-danger">Close</button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    positionsList.innerHTML += positionHtml;
+                });
+            } catch (error) {
+                console.error('Error loading positions:', error);
+            }
+        }
+
+        async function loadNotifications() {
+            try {
+                const response = await fetch('http://localhost:8000/api/mobile/notifications', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to load notifications');
+                }
+
+                const notifications = await response.json();
+                
+                const notificationsList = document.getElementById('notifications-list');
+                notificationsList.innerHTML = '';
+                
+                if (notifications.length === 0) {
+                    notificationsList.innerHTML = '<p>No notifications found</p>';
+                    return;
+                }
+                
+                notifications.forEach(notification => {
+                    const notificationHtml = `
+                        <div class="card ${notification.read ? '' : 'notification-unread'}">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <h5>${notification.title}</h5>
+                                    </div>
+                                    <div>
+                                        <small class="text-muted">${new Date(notification.created_at).toLocaleString()}</small>
+                                    </div>
+                                </div>
+                                <p>${notification.message}</p>
+                                ${!notification.read ? `
+                                <div class="mt-3">
+                                    <button class="btn btn-sm btn-primary" onclick="markNotificationRead('${notification.id}')">Mark as Read</button>
+                                </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    `;
+                    notificationsList.innerHTML += notificationHtml;
+                });
+            } catch (error) {
+                console.error('Error loading notifications:', error);
+            }
+        }
+
+        async function toggleAgentStatus(agentId, status) {
+            try {
+                const endpoint = status === 'running' ? 'stop' : 'start';
+                const response = await fetch(`http://localhost:8000/api/mobile/agents/${agentId}/${endpoint}`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Failed to ${endpoint} agent`);
+                }
+
+                // Reload agents
+                loadAgents();
+                loadActiveAgents();
+            } catch (error) {
+                console.error(`Error toggling agent status:`, error);
+            }
+        }
+
+        async function markNotificationRead(notificationId) {
+            try {
+                const response = await fetch(`http://localhost:8000/api/mobile/notifications/${notificationId}/read`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to mark notification as read');
+                }
+
+                // Reload notifications
+                loadNotifications();
+            } catch (error) {
+                console.error('Error marking notification as read:', error);
+            }
+        }
+
+        function connectWebSocket() {
+            socket = new WebSocket('ws://localhost:8000/ws');
+            
+            socket.onopen = function(e) {
+                console.log('WebSocket connection established');
+            };
+            
+            socket.onmessage = function(event) {
+                const data = JSON.parse(event.data);
+                
+                if (data.type === 'market_update') {
+                    // Update markets if the markets section is visible
+                    if (document.getElementById('markets').style.display === 'block') {
+                        loadMarkets();
+                    }
+                    
+                    // Update positions if the positions section is visible
+                    if (document.getElementById('positions').style.display === 'block') {
+                        loadPositions();
+                    }
+                }
+            };
+            
+            socket.onclose = function(event) {
+                console.log('WebSocket connection closed');
+                // Try to reconnect after 5 seconds
+                setTimeout(connectWebSocket, 5000);
+            };
+            
+            socket.onerror = function(error) {
+                console.error('WebSocket error:', error);
+            };
+        }
+
+        function getStatusColor(status) {
+            switch (status) {
+                case 'OPEN':
+                case 'NEW':
+                    return 'primary';
+                case 'FILLED':
+                case 'CLOSED':
+                    return 'success';
+                case 'CANCELED':
+                case 'CANCELLED':
+                    return 'warning';
+                case 'REJECTED':
+                case 'EXPIRED':
+                    return 'danger';
+                default:
+                    return 'secondary';
+            }
+        }
+
+        // Make these functions available globally
+        window.toggleAgentStatus = toggleAgentStatus;
+        window.markNotificationRead = markNotificationRead;
+    </script>
+</body>
+</html>

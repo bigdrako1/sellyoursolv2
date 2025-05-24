@@ -190,12 +190,11 @@ async def shutdown_event():
 async def root():
     """
     Root endpoint.
+
+    Redirects to the dashboard.
     """
-    return {
-        "message": "Trading Agent Service API",
-        "version": "0.1.0",
-        "docs_url": "/docs"
-    }
+    from fastapi.responses import RedirectResponse
+    return RedirectResponse(url="/dashboard/index.html")
 
 @app.get("/health")
 async def health_check():

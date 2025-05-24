@@ -13,7 +13,10 @@ from datetime import datetime
 from typing import Any, Callable, Dict, List, Optional, Set
 from enum import Enum
 
-from .resource_pool import ResourcePool
+# Import typing only to avoid circular import
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from .resource_pool import ResourcePool
 
 logger = logging.getLogger(__name__)
 
@@ -49,7 +52,7 @@ class CachePreloader:
         startup_progress: Progress of startup warming (0-100)
     """
 
-    def __init__(self, resource_pool: ResourcePool):
+    def __init__(self, resource_pool: 'ResourcePool'):
         """
         Initialize the cache preloader.
 
